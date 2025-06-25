@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from models.scan_input import RepoRequest
 import requests
+from dotenv import load_dotenv
+import os
+
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 router = APIRouter(
     prefix='/scan',
@@ -29,6 +33,7 @@ async def scan_repo(repo_request: RepoRequest):
                 api_url,
                 headers={
                     "Accept": "application/vnd.github+json",
+                    "Authorization": f"Bearer {GITHUB_TOKEN}",  
                     "X-GitHub-Api-Version": "2022-11-28"
                 }
             )
