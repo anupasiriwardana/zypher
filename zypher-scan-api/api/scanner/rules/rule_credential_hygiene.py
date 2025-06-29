@@ -1,16 +1,13 @@
-import re
-from typing import Dict, List, Any, Optional, Tuple
 from .base_rule import BaseRule
 from models.vulnerability import Finding
+import re
+from typing import Dict, List, Any, Optional, Tuple
 
 class CredentialHygieneRule(BaseRule):
     METADATA = {
-        "id": "CICD-VULN-006",
-        "name": "Insufficient Credential Hygiene",
-        "description": "Identifies hardcoded credentials, improperly stored secrets, and insecure credential handling",
-        "severity": "CRITICAL",
-        "category": "CI/CD-SEC-6: Insufficient Credential Hygiene",
-        "remediation": "Use secret management services, avoid hardcoded credentials, and rotate secrets regularly"
+        "rule_id": "CICD-VULN-006",
+        "rule_name": "Insufficient Credential Hygiene",
+        "severity": "CRITICAL"
     }
     
     def __init__(self):
@@ -69,13 +66,13 @@ class CredentialHygieneRule(BaseRule):
                         line_num = self._find_key_line(file_lines, key)
                         if line_num:
                             findings.append(Finding(
-                                rule_id=self.METADATA["id"],
+                                rule_id=self.METADATA["rule_id"],
                                 severity=self.METADATA["severity"],
                                 description=f"Hardcoded credential in environment variable '{key}'",
                                 line_number=line_num,
                                 filepath=file_path,
                                 snippet=self._get_line_snippet(file_lines, line_num),
-                                recommendation=self.METADATA["remediation"],
+                                recommendation="Use secret management services, avoid hardcoded credentials, and rotate secrets regularly",
                                 confidence="HIGH"
                             ))
         return findings
@@ -89,13 +86,13 @@ class CredentialHygieneRule(BaseRule):
             for pattern in self.credential_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
                     findings.append(Finding(
-                        rule_id=self.METADATA["id"],
+                        rule_id=self.METADATA["rule_id"],
                         severity=self.METADATA["severity"],
                         description="Potential hardcoded credential found",
                         line_number=line_num,
                         filepath=file_path,
                         snippet=line.strip(),
-                        recommendation=self.METADATA["remediation"],
+                        recommendation="Use secret management services, avoid hardcoded credentials, and rotate secrets regularly",
                         confidence="MEDIUM"
                     ))
                     break  # Avoid multiple findings per line
@@ -103,7 +100,7 @@ class CredentialHygieneRule(BaseRule):
             # Check for AWS key patterns
             if re.search(self.aws_key_pattern, line, re.IGNORECASE):
                 findings.append(Finding(
-                    rule_id=self.METADATA["id"],
+                    rule_id=self.METADATA["rule_id"],
                     severity=self.METADATA["severity"],
                     description="AWS access key found in configuration",
                     line_number=line_num,
@@ -117,7 +114,7 @@ class CredentialHygieneRule(BaseRule):
             for pattern in self.secret_patterns:
                 if re.search(pattern, line):
                     findings.append(Finding(
-                        rule_id=self.METADATA["id"],
+                        rule_id=self.METADATA["rule_id"],
                         severity=self.METADATA["severity"],
                         description="Known secret pattern detected",
                         line_number=line_num,
@@ -143,7 +140,7 @@ class CredentialHygieneRule(BaseRule):
                                 line_num = self._find_step_line(file_lines, step)
                                 if line_num:
                                     findings.append(Finding(
-                                        rule_id=self.METADATA["id"],
+                                        rule_id=self.METADATA["rule_id"],
                                         severity=self.METADATA["severity"],
                                         description="Potential secret exposure through echo command",
                                         line_number=line_num,
@@ -160,7 +157,7 @@ class CredentialHygieneRule(BaseRule):
                     line_num = self._find_step_line(file_lines, step)
                     if line_num:
                         findings.append(Finding(
-                            rule_id=self.METADATA["id"],
+                            rule_id=self.METADATA["rule_id"],
                             severity=self.METADATA["severity"],
                             description="Potential secret exposure in logs",
                             line_number=line_num,

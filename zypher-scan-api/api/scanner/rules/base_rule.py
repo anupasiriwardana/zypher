@@ -1,9 +1,9 @@
 from typing import Dict, List, Any
-from models.rule_metadata import RuleMetadata
+from models.rule_metadata import RuleFileMetadata
 from models.vulnerability import Finding
 
 class BaseRule:
-    METADATA: RuleMetadata
+    METADATA: RuleFileMetadata
     
     def scan(self, 
              pipeline_data: Dict[str, Any], 

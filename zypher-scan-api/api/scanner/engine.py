@@ -7,7 +7,7 @@ class ScannerEngine:
     def __init__(self):
         self.parser = PipelineParser()
         self.rules = load_rules()  # Load all vulnerability rules
-        print(f"Loaded {len(self.rules)} rules")  # Debug log
+        print(f"Loaded {len(self.rules)} vulnerability rules")  # Debug log
         for rule in self.rules:
             print(f" - {rule.__class__.__name__}")  # Debug log
     
