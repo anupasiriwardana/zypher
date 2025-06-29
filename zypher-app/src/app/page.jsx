@@ -7,7 +7,7 @@ export default function Home() {
         color: 'var(--foreground)',
       }}
     >
-      <h1 className="text-4xl font-bold">Welcome to Zypher!</h1>
+      <h1 className="text-4xl font-bold">Welcome to Zypher!!</h1>
     </div>
   );
 }
