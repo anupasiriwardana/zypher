@@ -1,8 +1,6 @@
 import '../globals.css';
 import { Lexend } from 'next/font/google';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -20,7 +18,6 @@ export default function MainLayout({ children }) {
       <body className={`${lexend.variable}`}>
         <Navbar />
         <main>{children}</main>
-        <Footer />
       </body>
     </html>
   );

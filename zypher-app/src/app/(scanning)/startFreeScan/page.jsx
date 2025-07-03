@@ -28,17 +28,21 @@ export default function StartFreeScan() {
           </p>
       
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-6 sm:space-y-0 sm:space-x-8 mt-10">
-            <button className="inline-flex items-center gap-2 border-2 border-[var(--brand-yellow)] text-[var(--brand-yellow)] font-bold px-8 py-4 rounded-full hover:bg-[var(--brand-yellow)] hover:text-[var(--background)] transition">
-              Upload config files
-              <ArrowRight size={25} /> 
-            </button>
+            <Link href="/uploadConfigFiles">
+              <button className="inline-flex items-center gap-2 border-2 border-[var(--brand-yellow)] text-[var(--brand-yellow)] font-bold px-8 py-4 rounded-full hover:bg-[var(--brand-yellow)] hover:text-[var(--background)] transition">
+                Upload config files
+                <ArrowRight size={25} />
+              </button>
+            </Link>
 
             <span className="text-text-secondary text-lg text-[var(--brand-yellow)]">or</span>
 
-            <button className="inline-flex items-center gap-2 border-2 border-[var(--brand-yellow)] text-[var(--brand-yellow)] font-bold px-8 py-4 rounded-full hover:bg-[var(--brand-yellow)] hover:text-[var(--background)] transition">
-              Paste URL
-              <ArrowRight size={25} /> 
-            </button>
+            <Link href="/pasteURL">
+              <button className="inline-flex items-center gap-2 border-2 border-[var(--brand-yellow)] text-[var(--brand-yellow)] font-bold px-8 py-4 rounded-full hover:bg-[var(--brand-yellow)] hover:text-[var(--background)] transition">
+                Paste URL
+                <ArrowRight size={25} />
+              </button>
+            </Link>
           </div>
         </section>
       </main>
