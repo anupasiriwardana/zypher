@@ -17,7 +17,7 @@ export const metadata = {
 export default function MainLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className={`${lexend.variable}`}>
         <Navbar />
         <main>{children}</main>
         <Footer />
