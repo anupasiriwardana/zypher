@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 class PipelineParser:
     def parse_content(self, content: str) -> Tuple[Dict, List[str]]:
         """Parse YAML content with line number awareness"""
+        
         try:
             lines = content.splitlines(keepends=True)
             data = yaml.safe_load(content) or {}
