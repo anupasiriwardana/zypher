@@ -1,10 +1,10 @@
 from database import bestPractice_rule_file_collection
 
 document = {
-    "rule_name": "credential_hygiene",
+    "rule_name": "Secrets_check",
     "status": "active",
-    "file_content": "hello",  # Replace with full code if needed
-    "rule_id": "CICD-BSTP-001"
+    "file_content": """""",  # Replace with full code if needed
+    "rule_id": "CICD-BSTP-010"
 }
 
 # Insert the document and get the inserted ID
