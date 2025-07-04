@@ -23,7 +23,7 @@ const Todos = () => {
                 setData(result);
             } catch (err) {
                 console.error('Error fetching scan data:', err);
-                setError('Failed to fetch scan data');
+                setError('Failed to fetch data');
             }
         };
         
