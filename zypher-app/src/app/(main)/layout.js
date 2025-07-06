@@ -1,4 +1,4 @@
-import './globals.css';
+import '../globals.css';
 import { Lexend } from 'next/font/google';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 
 const lexend = Lexend({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'], // choose weights you need
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata = {
@@ -14,13 +14,13 @@ export const metadata = {
   description: 'Your app description here',
 };
 
-export default function RootLayout({ children }) {
+export default function MainLayout({ children }) {
   return (
     <html lang="en">
-      <body className={lexend.className}>
-      <Navbar />
-        {children}
-      <Footer />
+      <body className={`${lexend.variable}`}>
+        <Navbar />
+        <main>{children}</main>
+        <Footer />
       </body>
     </html>
   );
