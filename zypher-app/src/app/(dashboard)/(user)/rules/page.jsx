@@ -5,20 +5,20 @@ import { useState } from 'react';
 import { Lexend } from 'next/font/google';
 import clsx from 'clsx';
 import {
-  Send, // For submit button
-  Loader2, // For loading state
-  CheckCircle, // For success feedback
-  XCircle, // For error feedback
-  FlaskConical, // For "being-tested" status
-  Code, // For "being-developed" status
-  Hourglass, // For "pending-review" status
-  BookOpen, // For "published" status
-  Hash, // For Rule Name icon
-  AlignLeft, // For Description icon
-  ServerCog, // For example code icon
-  SlidersHorizontal, // For severity icon
-  FileType, // For target file types icon
-  CalendarDays, // For submitted date icon
+  Send, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  FlaskConical, 
+  Code, 
+  Hourglass, 
+  BookOpen, 
+  Hash, 
+  AlignLeft, 
+  ServerCog, 
+  SlidersHorizontal, 
+  FileType, 
+  CalendarDays, 
 } from 'lucide-react';
 
 const lexend = Lexend({
@@ -26,7 +26,7 @@ const lexend = Lexend({
   weight: ['400', '500', '600', '700'],
 });
 
-// --- Dummy Data for Requested Rules (Right Panel) ---
+
 const dummyRequestedRules = [
   {
     id: "cr-001",
@@ -72,7 +72,7 @@ const dummyRequestedRules = [
   },
 ];
 
-// --- Status Mapping for display ---
+
 const statusMap = {
   'pending-review': { label: 'Pending Review', color: 'text-blue-400', bg: 'bg-blue-600/20', icon: Hourglass },
   'being-developed': { label: 'Being Developed', color: 'text-purple-400', bg: 'bg-purple-600/20', icon: Code },
@@ -81,14 +81,14 @@ const statusMap = {
 };
 
 export default function RulesPage() {
-  // State for the Custom Rule Submission Form
+
   const [ruleName, setRuleName] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState('medium');
   const [targetFileTypes, setTargetFileTypes] = useState('');
   const [exampleCode, setExampleCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionFeedback, setSubmissionFeedback] = useState(null); // {type: 'success'|'error', message: string}
+  const [submissionFeedback, setSubmissionFeedback] = useState(null); 
 
   const handleSubmitRule = async (e) => {
     e.preventDefault();
@@ -144,7 +144,7 @@ export default function RulesPage() {
           <form onSubmit={handleSubmitRule} className="space-y-6">
             {/* Rule Name */}
             <div>
-              <label htmlFor="ruleName" className="block text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+              <label htmlFor="ruleName" className=" text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
                 <Hash size={16} /> Rule Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -161,7 +161,7 @@ export default function RulesPage() {
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+              <label htmlFor="description" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
                 <AlignLeft size={16} /> Detailed Description <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -180,7 +180,7 @@ export default function RulesPage() {
             <div className="flex flex-col sm:flex-row gap-6">
               {/* Severity */}
               <div className="w-full sm:w-1/2">
-                <label htmlFor="severity" className="block text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+                <label htmlFor="severity" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
                   <SlidersHorizontal size={16} /> Suggested Severity
                 </label>
                 <div className="relative">
@@ -205,7 +205,7 @@ export default function RulesPage() {
 
               {/* Target File Types */}
               <div className="w-full sm:w-1/2">
-                <label htmlFor="fileTypes" className="block text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+                <label htmlFor="fileTypes" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
                   <FileType size={16} /> Target File Types
                 </label>
                 <input
@@ -223,7 +223,7 @@ export default function RulesPage() {
 
             {/* Example Code */}
             <div>
-              <label htmlFor="exampleCode" className="block text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+              <label htmlFor="exampleCode" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
                 <ServerCog size={16} /> Example Code (Optional)
               </label>
               <textarea
