@@ -3,14 +3,14 @@ import inspect
 import pkgutil
 import os
 import types
-from config.database import vulnerability_rule_file_collection
+from config.database import bestPractice_rule_file_collection
 from models.vulnerability import Finding
-from .rules.base_rule import BaseRule
+from .baseRule_class import BaseRule
 
 def load_rules() -> list:
     """Load vulnerability rules from MongoDB and instantiate them dynamically."""
     rules = []
-    active_rules = vulnerability_rule_file_collection.find({"status": "active"})
+    active_rules = bestPractice_rule_file_collection.find({"status": "active"})
     for rule_doc in active_rules:
         try:
             # Create a new module in memory

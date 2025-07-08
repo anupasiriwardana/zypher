@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.scan_input import RepoRequest
-from scanner.bpEngine import ScannerEngine
+from bp_scanner.bpEngine import ScannerEngine
 import httpx
 import os
 import asyncio
