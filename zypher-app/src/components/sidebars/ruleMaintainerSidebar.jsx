@@ -4,10 +4,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FileScan,
-  ListChecks,
-  ShieldCheck,
-  BookText,
+  FileText,
+  ListTodo,
   Settings,
 
 } from "lucide-react";
@@ -20,14 +18,12 @@ const formatPageName = (id) => {
 };
 
 const userNav = [
-  { id: "start-a-scan", icon: FileScan, href: "/start-a-scan" },
-  { id: "scan-results", icon: ListChecks, href: "/scan-results" },
-  { id: "rules", icon: ShieldCheck, href: "/rules" },
-  { id: "knowledge-base", icon: BookText, href: "/knowledge-base" },
+  { id: "view-requests", icon: FileText, href: "/view-requests" },
+  { id: "assigned-rules", icon: ListTodo, href: "/assigned-rules" },
   { id: "settings", icon: Settings, href: "/settings" },
 ];
 
-export default function UserSidebar() {
+export default function RuleMaintainerSidebar() {
   const pathname = usePathname();
 
   return (
@@ -92,9 +88,9 @@ export default function UserSidebar() {
         }
       `}</style>
 
-      <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-8 fixed left-0 top-0 z-50 transition-all duration-300">
+      <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
 
-        <Link href="/start-a-scan" className="flex items-center justify-center w-16 h-16 rounded-xl mb-14 group relative overflow-hidden">
+        <Link href="/view-requests" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
             <div/>
             
             <Image
