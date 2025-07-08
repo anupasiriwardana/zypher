@@ -5,7 +5,7 @@ import os
 import types
 from config.database import vulnerability_rule_file_collection
 from models.vulnerability import Finding
-from .rules.base_rule import BaseRule
+from vuln_scanner.baseRule_class import BaseRule
 
 def load_rules() -> list:
     """Load vulnerability rules from MongoDB and instantiate them dynamically."""

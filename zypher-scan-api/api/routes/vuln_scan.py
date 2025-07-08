@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.scan_input import RepoRequest
-from scanner.engine import ScannerEngine
+from vuln_scanner.engine import ScannerEngine
 import httpx
 import os
 import asyncio
@@ -9,8 +9,8 @@ from models.vulnerability import Finding
 from typing import List
 
 router = APIRouter(
-    prefix='/scan',
-    tags=['scan']
+    prefix='/vulnerability-scan',
+    tags=['scan for vulnerabilities']
 )
 
 # Initialize scanner once
