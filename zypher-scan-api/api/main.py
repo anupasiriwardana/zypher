@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.route import router
 from routes.bpScan import router as bpScan_router
+from routes.vuln_scan import router as vuln_scan_router
 from dotenv import load_dotenv
 import os
 
@@ -20,3 +21,4 @@ app.add_middleware(
 
 app.include_router(router)
 app.include_router(bpScan_router)
+app.include_router(vuln_scan_router)
