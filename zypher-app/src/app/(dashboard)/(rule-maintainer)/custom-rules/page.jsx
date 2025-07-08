@@ -8,143 +8,76 @@ import {
   Hourglass, Code, FlaskConical, CheckCircle, XCircle, BookOpen,
 } from 'lucide-react';
 
-import RuleRequestDetailModal from '@/components/RuleRequestDetailModal';
+import RuleDetailModal from '@/components/RuleDetailModal';
 
 const lexend = Lexend({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
 });
 
-
-const initialRuleRequests = [
+const initialApprovedRules = [
   {
-    id: "req-001",
-    ruleName: "No Hardcoded API Keys in YAML",
-    description: "Detects API keys or sensitive strings directly embedded in YAML configuration files, which can lead to security breaches.",
+    id: "RULE-001",
+    ruleName: "No Hardcoded API Keys (YAML)",
+    description: "Detects API keys or sensitive strings directly embedded in YAML config files.",
     severity: "critical",
     targetFileTypes: ".yml, .yaml",
     exampleCode: `apiVersion: v1\nkind: ConfigMap\ndata:\n  apiKey: "your_hardcoded_api_key_123"\n`,
-    status: "yet-to-review", // 'yet-to-review', 'being-developed', 'being-tested', 'to-be-approved', 'discarded', 'approved'
-    submittedDate: "2025-07-08T10:00:00Z",
-    requesterId: "user-alpha",
-    developerNotes: null,
-    testerNotes: null,
-    discardReason: null,
+    status: "approved",
+    submittedDate: "2025-06-01T09:00:00Z", // Assuming this is the approval date for this context
+    developedCode: `// Rule logic for YAML parsing\nfunction detectHardcodedApiKey(fileContent) {\n  // Regex to find common API key patterns in YAML\n  const regex = /(apiKey|secret|token):\\s*['"]?[a-zA-Z0-9_-]{16,64}['"]?/g;\n  return fileContent.match(regex);\n}\n`,
+    testDetails: "Passed 100+ positive and negative test cases. No false positives observed. Performance: ~50ms/file.",
   },
   {
-    id: "req-002",
-    ruleName: "Force HTTPS in Ingress Resources",
-    description: "Ensures all Kubernetes Ingress resources use HTTPS and redirect HTTP traffic, preventing insecure communication.",
+    id: "RULE-002",
+    ruleName: "Force HTTPS in Ingress",
+    description: "Ensures all Kubernetes Ingress resources use HTTPS and redirect HTTP traffic.",
     severity: "high",
     targetFileTypes: ".yml, .yaml",
     exampleCode: `apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  annotations:\n    nginx.ingress.kubernetes.io/ssl-redirect: "false"\nspec:\n  rules:\n    - host: example.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: my-service\n                port:\n                  number: 80\n`,
-    status: "being-developed",
-    submittedDate: "2025-07-05T14:30:00Z",
-    requesterId: "user-beta",
-    developerNotes: "Initial regex patterns created. Need to test against various ingress versions.",
-    testerNotes: null,
-    discardReason: null,
+    status: "approved",
+    submittedDate: "2025-05-20T14:30:00Z",
+    developedCode: `// Logic for Kubernetes Ingress parsing\nfunction enforceHttps(ingressConfig) {\n  // Check for 'nginx.ingress.kubernetes.io/ssl-redirect: "true"'\n  // And ensure no direct HTTP endpoints without redirect\n  return config.annotations['nginx.ingress.kubernetes.io/ssl-redirect'] !== 'true';\n}\n`,
+    testDetails: "Comprehensive tests against various ingress versions (nginx, traefik). All expected insecure configurations caught. Test coverage: 92%.",
   },
   {
-    id: "req-003",
+    id: "RULE-003",
     ruleName: "Restrict Root User in Dockerfile",
-    description: "Flags Dockerfiles that do not explicitly set a non-root user for running processes, improving container security.",
+    description: "Flags Dockerfiles that do not explicitly set a non-root user.",
     severity: "medium",
     targetFileTypes: "Dockerfile",
     exampleCode: `FROM alpine\nRUN apk add curl\nUSER root\nCMD ["curl", "example.com"]\n`,
-    status: "being-tested",
-    submittedDate: "2025-07-01T09:15:00Z",
-    requesterId: "user-gamma",
-    developerNotes: "Rule implemented using AST parsing for USER command.",
-    testerNotes: "Passed basic test cases. Testing edge cases now, especially multi-stage builds.",
-    discardReason: null,
+    status: "approved",
+    submittedDate: "2025-04-15T11:00:00Z",
+    developedCode: `// Dockerfile AST analysis\nfunction checkRootUser(dockerfileAST) {\n  const userCommands = dockerfileAST.filter(node => node.command === 'USER');\n  if (userCommands.length === 0 || userCommands[userCommands.length - 1].value === 'root') {\n    return true; // Root user not restricted\n  }\n  return false;\n}\n`,
+    testDetails: "Tested on single-stage, multi-stage builds, and different base images. Minor false positive with specific build-time user changes, documented.",
   },
   {
-    id: "req-004",
-    ruleName: "No Public S3 Buckets in Terraform",
-    description: "Identifies Terraform configurations that provision publicly accessible S3 buckets, preventing data exposure.",
+    id: "RULE-004",
+    ruleName: "No Public S3 Buckets (Terraform)",
+    description: "Identifies Terraform configurations that provision publicly accessible S3 buckets.",
     severity: "critical",
     targetFileTypes: ".tf",
     exampleCode: `resource "aws_s3_bucket" "b" {\n  bucket = "my-public-bucket"\n  acl    = "public-read"\n}\n`,
-    status: "to-be-approved",
-    submittedDate: "2025-06-25T11:00:00Z",
-    requesterId: "user-delta",
-    developerNotes: "Rule uses Terraform HCL parsing to check 'acl' and 'public_access_block' settings. Ready for internal testing.",
-    testerNotes: null, // Still waiting for tester notes
-    discardReason: null,
-  },
- 
-  {
-    id: "req-006",
-    ruleName: "Ensure Strong Password Policies",
-    description: "A general best practice. Not directly scannable through files but could be a meta-rule.",
-    severity: "informational",
-    targetFileTypes: "N/A",
-    exampleCode: ``,
-    status: "discarded",
-    submittedDate: "2025-06-10T08:00:00Z",
-    requesterId: "user-zeta",
-    developerNotes: null,
-    testerNotes: null,
-    discardReason: "Too broad, not directly scannable from config files. Better suited for policy documentation.",
+    status: "approved",
+    submittedDate: "2025-03-10T16:00:00Z",
+    developedCode: `// Terraform HCL parser logic\nfunction detectPublicS3(tfConfig) {\n  const s3Buckets = tfConfig.resources.filter(r => r.type === 'aws_s3_bucket');\n  for (const bucket of s3Buckets) {\n    if (bucket.attributes.acl === 'public-read' || bucket.attributes.acl === 'public-read-write') {\n      return true;\n    }\n    if (bucket.attributes.public_access_block && !bucket.attributes.public_access_block.block_public_acls) {\n      return true;\n    }\n  }\n  return false;\n}\n`,
+    testDetails: "Successfully caught all known public S3 bucket configurations. Includes checks for ACLs and public access blocks. Highly reliable.",
   },
   {
-    id: "req-007",
-    ruleName: "Detect Public SSH Keys in Repos",
-    description: "Identifies exposed SSH private keys within source code repositories, a critical security vulnerability.",
-    severity: "critical",
-    targetFileTypes: ".pem, .key, .pub",
-    exampleCode: `-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----\n`,
-    status: "yet-to-review",
-    submittedDate: "2025-07-07T11:45:00Z",
-    requesterId: "user-eta",
-    developerNotes: null,
-    testerNotes: null,
-    discardReason: null,
-  },
-  {
-    id: "req-008",
-    ruleName: "Verify Helm Chart Integrity",
-    description: "A rule to ensure Helm charts are signed and verified before deployment, preventing tampering.",
-    severity: "high",
-    targetFileTypes: ".tgz, Chart.yaml",
-    exampleCode: `apiVersion: v2\nname: my-chart\nversion: 0.1.0\n`,
-    status: "yet-to-review",
-    submittedDate: "2025-07-06T13:00:00Z",
-    requesterId: "user-theta",
-    developerNotes: null,
-    testerNotes: null,
-    discardReason: null,
-  },
-  {
-    id: "req-009",
-    ruleName: "Avoid Outdated Base Images in Docker",
-    description: "Flags Dockerfiles that use base images older than 6 months or with known critical vulnerabilities.",
-    severity: "medium",
-    targetFileTypes: "Dockerfile",
-    exampleCode: `FROM ubuntu:18.04\nRUN apt-get update\n`,
-    status: "being-developed",
-    submittedDate: "2025-07-03T10:00:00Z",
-    requesterId: "user-iota",
-    developerNotes: "Researching vulnerability databases integration. Initial parsing logic for FROM statement is complete.",
-    testerNotes: null,
-    discardReason: null,
-  },
-  {
-    id: "req-010",
-    ruleName: "SQL Injection Prevention Check",
-    description: "A rule to find common patterns indicative of potential SQL injection vulnerabilities in code.",
+    id: "RULE-005",
+    ruleName: "SQL Injection Prevention",
+    description: "Finds common patterns indicative of potential SQL injection vulnerabilities.",
     severity: "critical",
     targetFileTypes: ".py, .js, .php",
     exampleCode: `query = "SELECT * FROM users WHERE name = '" + user_input + "'";`,
-    status: "to-be-approved",
-    submittedDate: "2025-06-20T09:00:00Z",
-    requesterId: "user-kappa",
-    developerNotes: "Implemented AST traversal for string concatenations in SQL queries. Needs extensive test data.",
-    testerNotes: "Passed 95% of test cases including complex nested queries. Found one false positive with a specific ORM usage.",
-    discardReason: null,
+    status: "approved",
+    submittedDate: "2025-02-28T10:00:00Z",
+    developedCode: `// AST traversal for vulnerable SQL query construction\nfunction detectSqlInjection(ast) {\n  // Placeholder for complex AST analysis logic\n  return ast.some(node => node.type === 'StringLiteral' && node.value.includes('SELECT') && node.parent.type === 'BinaryExpression' && node.parent.operator === '+');\n}\n`,
+    testDetails: "Extensive test suite covering parameterized queries, ORM usage, and raw SQL. Minor false positives with very specific ORM patterns, which are being addressed in v1.1.",
   },
 ];
+
 
 const requestStatusMap = {
   'yet-to-review': { label: 'Yet to Review', color: 'text-blue-400', bg: 'bg-blue-600/20', icon: Hourglass },
@@ -155,6 +88,7 @@ const requestStatusMap = {
   'approved': { label: 'Approved', color: 'text-emerald-400', bg: 'bg-emerald-600/20', icon: BookOpen },
 };
 
+
 const severityMap = {
   'critical': { label: 'Critical', color: 'text-red-500', bg: 'bg-red-500/20' },
   'high': { label: 'High', color: 'text-orange-500', bg: 'bg-orange-500/20' },
@@ -163,7 +97,7 @@ const severityMap = {
   'informational': { label: 'Informational', color: 'text-gray-400', bg: 'bg-gray-400/20' },
 };
 
-// --- Reusable Table Component ---
+
 const RuleRequestsTable = ({
   title,
   requests,
@@ -176,8 +110,8 @@ const RuleRequestsTable = ({
   sortOrder,
   setSortOrder,
   onRowClick,
-  showStatusFilter = true, // Option to hide status filter for "yet-to-review" table
-  availableStatuses, // For status filter options specific to this table
+  showStatusFilter = true,
+  availableStatuses,
 }) => {
   const filteredAndSortedRequests = useMemo(() => {
     let filtered = requests.filter(request => {
@@ -293,27 +227,27 @@ const RuleRequestsTable = ({
                   Status
                 </th>
                 <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                  Submitted Date
+                  Approved Date
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-input)]">
-              {filteredAndSortedRequests.map((request) => {
-                const statusData = requestStatusMap[request.status] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-600/20', icon: null };
-                const severityData = severityMap[request.severity] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-600/20' };
+              {filteredAndSortedRequests.map((rule) => {
+                const statusData = requestStatusMap[rule.status] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-600/20', icon: null };
+                const severityData = severityMap[rule.severity] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-600/20' };
                 const StatusIcon = statusData.icon;
 
                 return (
                   <tr
-                    key={request.id}
-                    onClick={() => onRowClick(request)}
+                    key={rule.id}
+                    onClick={() => onRowClick(rule)}
                     className="hover:bg-[var(--hover-bg)] transition-colors duration-200 cursor-pointer"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)] group-hover:text-[var(--foreground)]">
-                      {request.id}
+                      {rule.id}
                     </td>
                     <td className="px-6 py-4 max-w-xs truncate text-sm text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]">
-                      {request.ruleName}
+                      {rule.ruleName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", severityData.bg, severityData.color)}>
@@ -321,7 +255,7 @@ const RuleRequestsTable = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
-                      {request.targetFileTypes || 'N/A'}
+                      {rule.targetFileTypes || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full items-center gap-1", statusData.bg, statusData.color)}>
@@ -329,7 +263,7 @@ const RuleRequestsTable = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
-                      {new Date(request.submittedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(rule.submittedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
                   </tr>
                 );
@@ -344,85 +278,60 @@ const RuleRequestsTable = ({
 
 
 // --- Main Page Component ---
-export default function ViewRequestsPage() {
-  const [ruleRequests, setRuleRequests] = useState(initialRuleRequests);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+export default function CustomRulesPage() {
+  const [approvedRules, setApprovedRules] = useState(initialApprovedRules);
+  const [selectedRule, setSelectedRule] = useState(null);
 
-  // States for 'Yet to Review' table
-  const [yrSearchTerm, setYrSearchTerm] = useState('');
-  const [yrFilterSeverity, setYrFilterSeverity] = useState('all');
-  const [yrSortOrder, setYrSortOrder] = useState('desc');
+  const [crSearchTerm, setCrSearchTerm] = useState('');
+  const [crFilterSeverity, setCrFilterSeverity] = useState('all');
+  const [crSortOrder, setCrSortOrder] = useState('desc'); 
 
-  // States for 'Complete List' table
-  const [clSearchTerm, setClSearchTerm] = useState('');
-  const [clFilterStatus, setClFilterStatus] = useState('all');
-  const [clFilterSeverity, setClFilterSeverity] = useState('all');
-  const [clSortOrder, setClSortOrder] = useState('desc');
-
-  const yetToReviewRequests = useMemo(() => {
-    return ruleRequests.filter(req => req.status === 'yet-to-review');
-  }, [ruleRequests]);
-
-  const handleUpdateRuleStatus = useCallback((id, newStatus, additionalNotes = {}) => {
-    setRuleRequests(prevRequests =>
-      prevRequests.map(req =>
-        req.id === id
-          ? { ...req, status: newStatus, ...additionalNotes }
-          : req
-      )
-    );
+  const handleRemoveRule = useCallback((ruleIdToRemove) => {
+    setApprovedRules(prevRules => prevRules.filter(rule => rule.id !== ruleIdToRemove));
+    console.log(`Rule ${ruleIdToRemove} removed.`);
+    // In a real app, call API to remove
   }, []);
 
-  const openModal = (request) => {
-    setSelectedRequest(request);
+  const handleUpgradeRule = useCallback((ruleIdToUpgrade) => {
+    console.log(`Initiating upgrade for Rule ${ruleIdToUpgrade}.`);
+    // Example: change status to 'being-developed' to simulate re-work
+    // setApprovedRules(prevRules => prevRules.map(rule =>
+    //   rule.id === ruleIdToUpgrade ? { ...rule, status: 'being-developed' } : rule
+    // ));
+  }, []);
+
+  const openModal = (rule) => {
+    setSelectedRule(rule);
   };
 
   const closeModal = () => {
-    setSelectedRequest(null);
+    setSelectedRule(null);
   };
 
   return (
     <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp min-h-screen`}>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Active custom rules in the system</h1>
 
-      {/* Custom Rules to be Forwarded to the Developer Table */}
+      {/* Custom Rules Table */}
       <RuleRequestsTable
-        title="Custom Rules to be Forwarded to the Developer"
-        requests={yetToReviewRequests}
-        searchTerm={yrSearchTerm}
-        setSearchTerm={setYrSearchTerm}
-        filterSeverity={yrFilterSeverity}
-        setFilterSeverity={setYrFilterSeverity}
-        sortOrder={yrSortOrder}
-        setSortOrder={yrSortOrder} 
+        requests={approvedRules}
+        searchTerm={crSearchTerm}
+        setSearchTerm={setCrSearchTerm}
+        filterSeverity={crFilterSeverity}
+        setFilterSeverity={setCrFilterSeverity}
+        sortOrder={crSortOrder}
+        setSortOrder={setCrSortOrder}
         onRowClick={openModal}
-        showStatusFilter={false}
-        availableStatuses={['yet-to-review']} 
+        showStatusFilter={false} 
+        availableStatuses={['approved']}
       />
 
-      <div className="my-10 border-t border-[var(--border-input)]"></div> 
-
-      {/* Complete List of Rule Requests Table */}
-      <RuleRequestsTable
-        title="Complete List of Rule Requests"
-        requests={ruleRequests}
-        searchTerm={clSearchTerm}
-        setSearchTerm={setClSearchTerm}
-        filterStatus={clFilterStatus}
-        setFilterStatus={setClFilterStatus}
-        filterSeverity={clFilterSeverity}
-        setFilterSeverity={setClFilterSeverity}
-        sortOrder={clSortOrder}
-        setSortOrder={setClSortOrder}
-        onRowClick={openModal}
-        showStatusFilter={true}
-        availableStatuses={Object.keys(requestStatusMap)}
-      />
-
-      {/* Rule Request Detail Modal */}
-      <RuleRequestDetailModal
-        request={selectedRequest}
+      {/* Rule Detail Modal for Approved Rules */}
+      <RuleDetailModal
+        rule={selectedRule}
         onClose={closeModal}
-        onUpdateStatus={handleUpdateRuleStatus}
+        onRemove={handleRemoveRule}
+        onUpgrade={handleUpgradeRule}
       />
     </div>
   );

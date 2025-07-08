@@ -19,7 +19,7 @@ const formatPageName = (id) => {
 
 const userNav = [
   { id: "view-requests", icon: FileText, href: "/view-requests" },
-  { id: "assigned-rules", icon: ListTodo, href: "/assigned-rules" },
+  { id: "custom-rules", icon: ListTodo, href: "/custom-rules" },
   { id: "settings", icon: Settings, href: "/settings" },
 ];
 

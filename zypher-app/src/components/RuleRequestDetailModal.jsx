@@ -1,4 +1,4 @@
-// src/components/RuleRequestDetailModal.jsx
+// the popup of the rows of the table in the rule maintainer view request page
 import React, { useCallback } from 'react';
 import clsx from 'clsx';
 import {
@@ -11,7 +11,6 @@ const requestStatusMap = {
   'being-tested': { label: 'Being Tested', color: 'text-orange-400', bg: 'bg-orange-600/20', icon: FlaskConical },
   'to-be-approved': { label: 'To Be Approved', color: 'text-green-400', bg: 'bg-green-600/20', icon: CheckCircle },
   'discarded': { label: 'Discarded', color: 'text-red-400', bg: 'bg-red-600/20', icon: XCircle },
-  'approved': { label: 'Approved', color: 'text-emerald-400', bg: 'bg-emerald-600/20', icon: BookOpen },
 };
 
 const severityMap = {
