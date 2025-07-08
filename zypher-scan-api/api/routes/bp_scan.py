@@ -9,8 +9,8 @@ from models.vulnerability import Finding
 from typing import List
 
 router = APIRouter(
-    prefix='/BPscan',
-    tags=['BPscan']
+    prefix='/best-practices-scan',
+    tags=['scan for best practices'],
 )
 
 # Initialize scanner once
