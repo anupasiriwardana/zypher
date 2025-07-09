@@ -17,7 +17,7 @@ export default function HeroSection() {
         Secure Your{" "}
         <span className="inline-block relative">
           <span className="bg-[var(--brand-yellow)] text-[var(--background)] rounded-4xl px-6 py-2 relative z-10">
-            CI/CD
+            CI//CD
           </span>
           <span
             className="absolute inset-0 rounded-xl blur-lg opacity-50"
