@@ -1,0 +1,55 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install frontend dependencies
+        working-directory: ./zypher-app
+        run: npm install
+        
+      - name: Build frontend
+        working-directory: ./zypher-app
+        run: npm run build
+        
+      - name: Deploy to Render (Frontend)
+        uses: render-actions/deploy@v1
+        with:
+          render-token: ${{ secrets.RENDER_TOKEN }}
+          service-id: ${{ secrets.FRONTEND_SERVICE_ID }}
+          directory: ./zypher-app
+
+  deploy-backend:
+    needs: deploy-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install backend dependencies
+        working-directory: ./zypher-scan-api
+        run: pip install -r requirements.txt
+        
+      - name: Deploy to Render (Backend)
+        uses: render-actions/deploy@v1
+        with:
+          render-token: ${{ secrets.RENDER_TOKEN }}
+          service-id: ${{ secrets.BACKEND_SERVICE_ID }}
+          directory: ./zypher-scan-api
