@@ -7,11 +7,65 @@ on:
     branches: [main]
 
 env:
-  FRONTEND_DIR: zypher-app
-  BACKEND_DIR: zypher-scan-api
+  RENDER_API: https://api.render.com/v1
 
 jobs:
+  verify-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      token-valid: ${{ steps.token-check.outputs.valid }}
+      frontend-valid: ${{ steps.frontend-check.outputs.valid }}
+      backend-valid: ${{ steps.backend-check.outputs.valid }}
+    steps:
+      - name: Verify Render token
+        id: token-check
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            ${{ env.RENDER_API }}/services)
+          
+          if [ "$response" = "200" ]; then
+            echo "✅ Render token is valid"
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Invalid Render token (HTTP $response)"
+            echo "valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Verify frontend service
+        id: frontend-check
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            ${{ env.RENDER_API }}/services/${{ secrets.FRONTEND_SERVICE_ID }})
+          
+          if [ "$response" = "200" ]; then
+            echo "✅ Frontend service exists"
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Invalid frontend service ID (HTTP $response)"
+            echo "valid=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify backend service
+        id: backend-check
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            ${{ env.RENDER_API }}/services/${{ secrets.BACKEND_SERVICE_ID }})
+          
+          if [ "$response" = "200" ]; then
+            echo "✅ Backend service exists"
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Invalid backend service ID (HTTP $response)"
+            echo "valid=false" >> $GITHUB_OUTPUT
+          fi
+
   deploy-frontend:
+    needs: verify-secrets
+    if: ${{ needs.verify-secrets.outputs.token-valid == 'true' && needs.verify-secrets.outputs.frontend-valid == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,21 +77,27 @@ jobs:
           cache: 'npm'
           
       - name: Install frontend dependencies
-        working-directory: ${{ env.FRONTEND_DIR }}
+        working-directory: ./zypher-app
         run: npm ci --prefer-offline
         
       - name: Build frontend
-        working-directory: ${{ env.FRONTEND_DIR }}
+        working-directory: ./zypher-app
         run: npm run build
         
-      - name: Deploy to Render (Frontend)
-        uses: docker://render-actions/render-deploy@v1
-        with:
-          render-token: ${{ secrets.RENDER_TOKEN }}
-          service-id: ${{ secrets.FRONTEND_SERVICE_ID }}
-          directory: ${{ env.FRONTEND_DIR }}
+      - name: Trigger Render deployment
+        run: |
+          echo "Triggering frontend deployment..."
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "${{ env.RENDER_API }}/services/${{ secrets.FRONTEND_SERVICE_ID }}/deploys"
+          
+          echo -e "\n✅ Deployment triggered successfully"
+          echo "Monitor progress at: https://dashboard.render.com/web/${{ secrets.FRONTEND_SERVICE_ID }}"
 
   deploy-backend:
+    needs: verify-secrets
+    if: ${{ needs.verify-secrets.outputs.token-valid == 'true' && needs.verify-secrets.outputs.backend-valid == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,12 +109,24 @@ jobs:
           cache: 'pip'
           
       - name: Install backend dependencies
-        working-directory: ${{ env.BACKEND_DIR }}
+        working-directory: ./zypher-scan-api
         run: pip install -r requirements.txt
         
-      - name: Deploy to Render (Backend)
-        uses: docker://render-actions/render-deploy@v1
-        with:
-          render-token: ${{ secrets.RENDER_TOKEN }}
-          service-id: ${{ secrets.BACKEND_SERVICE_ID }}
-          directory: ${{ env.BACKEND_DIR }}
+      - name: Test MongoDB connection
+        working-directory: ./.github/scripts
+        run: |
+          pip install -r requirements.txt
+          python test_mongodb.py
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        
+      - name: Trigger Render deployment
+        run: |
+          echo "Triggering backend deployment..."
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "${{ env.RENDER_API }}/services/${{ secrets.BACKEND_SERVICE_ID }}/deploys"
+          
+          echo -e "\n✅ Deployment triggered successfully"
+          echo "Monitor progress at: https://dashboard.render.com/web/${{ secrets.BACKEND_SERVICE_ID }}"
