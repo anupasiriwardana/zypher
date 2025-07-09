@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  FRONTEND_DIR: zypher-app
-  BACKEND_DIR: zypher-scan-api
-
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -21,21 +17,28 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'zypher-app/package-lock.json'  # Explicit lockfile path
           
       - name: Install frontend dependencies
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm ci --prefer-offline
-        
+        working-directory: ./zypher-app
+        run: |
+          # Create lockfile if missing
+          if [ ! -f package-lock.json ]; then
+            npm i --package-lock-only
+          fi
+          npm ci --prefer-offline
+          
       - name: Build frontend
-        working-directory: ${{ env.FRONTEND_DIR }}
+        working-directory: ./zypher-app
         run: npm run build
         
-      - name: Deploy to Render (Frontend)
-        uses: docker://render-actions/render-deploy@v1
-        with:
-          render-token: ${{ secrets.RENDER_TOKEN }}
-          service-id: ${{ secrets.FRONTEND_SERVICE_ID }}
-          directory: ${{ env.FRONTEND_DIR }}
+      - name: Trigger Render deployment
+        run: |
+          curl -sSf -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.FRONTEND_SERVICE_ID }}/deploys"
+          echo "Frontend deployment triggered successfully"
 
   deploy-backend:
     runs-on: ubuntu-latest
@@ -47,14 +50,30 @@ jobs:
         with:
           python-version: '3.10'
           cache: 'pip'
+          cache-dependency-path: 'zypher-scan-api/requirements.txt'  # Explicit dependency file
           
       - name: Install backend dependencies
-        working-directory: ${{ env.BACKEND_DIR }}
-        run: pip install -r requirements.txt
+        working-directory: ./zypher-scan-api
+        run: |
+          # Ensure requirements.txt exists
+          if [ ! -f requirements.txt ]; then
+            echo "Creating requirements.txt"
+            pip freeze > requirements.txt
+          fi
+          pip install -r requirements.txt
+          
+      - name: Test MongoDB connection
+        working-directory: ./.github/scripts
+        run: |
+          pip install -r requirements.txt
+          python test_mongodb.py
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
         
-      - name: Deploy to Render (Backend)
-        uses: docker://render-actions/render-deploy@v1
-        with:
-          render-token: ${{ secrets.RENDER_TOKEN }}
-          service-id: ${{ secrets.BACKEND_SERVICE_ID }}
-          directory: ${{ env.BACKEND_DIR }}
+      - name: Trigger Render deployment
+        run: |
+          curl -sSf -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.BACKEND_SERVICE_ID }}/deploys"
+          echo "Backend deployment triggered successfully"
