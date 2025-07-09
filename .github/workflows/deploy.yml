@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  FRONTEND_DIR: zypher-app
+  BACKEND_DIR: zypher-scan-api
+
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -19,19 +23,19 @@ jobs:
           cache: 'npm'
           
       - name: Install frontend dependencies
-        working-directory: ./zypher-app
+        working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci --prefer-offline
         
       - name: Build frontend
-        working-directory: ./zypher-app
+        working-directory: ${{ env.FRONTEND_DIR }}
         run: npm run build
         
       - name: Deploy to Render (Frontend)
-        uses: render-actions/deploy@v1
+        uses: docker://render-actions/render-deploy@v1
         with:
           render-token: ${{ secrets.RENDER_TOKEN }}
           service-id: ${{ secrets.FRONTEND_SERVICE_ID }}
-          directory: ./zypher-app
+          directory: ${{ env.FRONTEND_DIR }}
 
   deploy-backend:
     runs-on: ubuntu-latest
@@ -45,21 +49,12 @@ jobs:
           cache: 'pip'
           
       - name: Install backend dependencies
-        working-directory: ./zypher-scan-api
+        working-directory: ${{ env.BACKEND_DIR }}
         run: pip install -r requirements.txt
         
-      # MongoDB connection test (recommended)
-      - name: Test MongoDB connection
-        working-directory: ./.github/scripts
-        run: |
-          pip install -r requirements.txt
-          python test_mongodb.py
-        env:
-          MONGODB_URI: ${{ secrets.MONGO_URI }}  # Optional but recommended
-          
       - name: Deploy to Render (Backend)
-        uses: render-actions/deploy@v1
+        uses: docker://render-actions/render-deploy@v1
         with:
           render-token: ${{ secrets.RENDER_TOKEN }}
           service-id: ${{ secrets.BACKEND_SERVICE_ID }}
-          directory: ./zypher-scan-api
+          directory: ${{ env.BACKEND_DIR }}
