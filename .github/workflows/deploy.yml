@@ -7,8 +7,26 @@ on:
     branches: [main]
 
 jobs:
-  deploy-frontend:
+  test-db-connection:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python for DB Test
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Test MongoDB Connection
+        run: |
+          pip install -r .github/scripts/requirements.txt
+          python .github/scripts/test_mongodb.py
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+  deploy-zypher-app:
+    runs-on: ubuntu-latest
+    needs: test-db-connection  # Wait for DB test to complete
     steps:
       - uses: actions/checkout@v4
       
@@ -22,7 +40,6 @@ jobs:
       - name: Install & Build Frontend
         working-directory: ./zypher-app
         run: |
-          # Create lockfile if missing
           [ -f package-lock.json ] || npm i --package-lock-only
           npm ci --prefer-offline
           npm run build
@@ -31,12 +48,12 @@ jobs:
         run: |
           curl -sSf -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
-            -H "Content-Type: application/json" \
             "https://api.render.com/v1/services/${{ secrets.FRONTEND_SERVICE_ID }}/deploys"
           echo "Frontend deployment initiated"
 
-  deploy-backend:
+  deploy-zypher-scan-api:
     runs-on: ubuntu-latest
+    needs: test-db-connection  # Wait for DB test to complete
     steps:
       - uses: actions/checkout@v4
       
@@ -50,20 +67,12 @@ jobs:
       - name: Install Dependencies
         working-directory: ./zypher-scan-api
         run: |
-          # Create requirements if missing
           [ -f requirements.txt ] || pip freeze > requirements.txt
           pip install -r requirements.txt
-          
-      - name: Test MongoDB Connection
-        run: |
-          python .github/scripts/test_mongodb.py
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
         
       - name: Trigger Render Deployment
         run: |
           curl -sSf -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_TOKEN }}" \
-            -H "Content-Type: application/json" \
             "https://api.render.com/v1/services/${{ secrets.BACKEND_SERVICE_ID }}/deploys"
           echo "Backend deployment initiated"
