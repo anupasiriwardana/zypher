@@ -11,3 +11,6 @@ client = MongoClient(MONGO_URI)
 
 db = client.zypher_db
 collection_name = db["zypher_collection"]
+
+vulnerability_rule_file_collection = db["vulnerability_rule_files"]
+bestPractice_rule_file_collection = db["BestPractice_rule_files"]
