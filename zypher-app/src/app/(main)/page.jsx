@@ -32,9 +32,9 @@ export default function HeroSection() {
         and continuous insights to ship code fearlessly.
       </p>
 
-      <Link href="/startFreeScan">
-        <button className="mt-10 inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-8 py-4 rounded-full hover:brightness-110 transition">
-          Start free scan
+      <Link href="/see-how-it-works" className="mt-8">
+        <button className="mt-10 inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] text-lg font-bold px-8 py-4 rounded-full hover:brightness-110 transition">
+          See how it works
           <ArrowRight size={25} />
         </button>
       </Link>
