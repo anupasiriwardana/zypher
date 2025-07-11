@@ -15,27 +15,27 @@ export default function TestimonialsSection() {
     {
       name: "Alex, Senior DevOps Engineer",
       quote: "We tried 4 other scanners before Zypher. They either flooded us with false positives or ignored real risks. Zypher finally got the balance right.",
-      image: "/api/placeholder/60/60"
+      image: "/images/profile.png"
     },
     {
       name: "Liam, DevSecOps Lead",
       quote: "Zypher helped us shift left without the chaos. Our security reviews now happen in minutes, not days. Total game-changer for our release cycle.",
-      image: "/api/placeholder/60/60"
+      image: "/images/profile.png"
     },
     {
       name: "Emma, Security Engineer",
       quote: "Zypher's insights are spot on. It catches issues before they hit production, and the team loves the clear explanations.",
-      image: "/api/placeholder/60/60"
+      image: "/images/profile.png"
     },
     {
       name: "Sarah, VP of Engineering",
       quote: "The support? Zypher knows what they're doing. Our team can wait, and we love that.",
-      image: "/api/placeholder/60/60"
+      image: "/images/profile.png"
     },
     {
       name: "Jane, Senior DevOps Engineer",
       quote: "I've tried other scanners before Zypher. This either floods the CI with false positives or ignores real risks. Zypher just nails it. Fast. Precise.",
-      image: "/api/placeholder/60/60"
+      image: "/images/profile.png"
     },
   ];
 
@@ -107,11 +107,13 @@ export default function TestimonialsSection() {
               >
                 <div className="relative bg-[#0F0F0F] border border-[#333] rounded-3xl w-[682px] h-[230px] flex items-center px-8 py-6 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
                   {/* Left: Avatar */}
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-[100px] h-[100px] rounded-full bg-zinc-700 object-cover mr-6"
-                  />
+                  <div className="w-[100px] h-[100px] rounded-full overflow-hidden flex-shrink-0 border-2 border-[var(--brand-yellow)] shadow-md bg-zinc-800">
+                    <img
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
                   {/* Right: Content */}
                   <div className="flex flex-col justify-between h-full py-8 w-full px-8 text-[16px]" >

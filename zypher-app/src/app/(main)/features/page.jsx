@@ -1,7 +1,7 @@
 "use client"; 
 
 import React, { use, useState } from 'react';
-import { ChevronRight, Shield, Search, BookOpen, FileText, Zap, Users, CheckCircle, ArrowRight, Github, Upload, BarChart3, Settings, Eye, Download } from 'lucide-react';
+import { ChevronRight, Shield, Search, BookOpen, Zap, FileText, CheckCircle,Check, ArrowRight, Github, Upload, BarChart3, Settings, Download, Plus } from 'lucide-react';
 import Link from "next/link";
 import { Lexend } from 'next/font/google';
 
@@ -154,9 +154,9 @@ const FeaturesPage = () => {
       description: 'Professional scan summaries and compliance documentation'
     },
     {
-      icon: <Users className="w-5 h-5" />,
-      title: 'Role-Based Access',
-      description: 'Granular permissions for different user types and responsibilities'
+      icon: <FileText className="w-5 h-5" />,
+      title: 'Detailed Issue Reports',
+      description: 'Each scan result includes a breakdown of risks, file context, and step-by-step remediation guidance.'
     },
     {
       icon: <Settings className="w-5 h-5" />,
@@ -210,7 +210,7 @@ const FeaturesPage = () => {
                               <ul className="space-y-2">
                                 {feature.details.capabilities.map((capability, idx) => (
                                   <li key={idx} className="flex items-start space-x-3">
-                                    <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                                    <Check className="w-5 h-5 mt-0.5 flex-shrink-0" />
                                     <span className="text-[#CCCCCC]">{capability}</span>
                                   </li>
                                 ))}
@@ -234,7 +234,7 @@ const FeaturesPage = () => {
                               <ul className="space-y-2">
                                 {feature.details.useCases.map((useCase, idx) => (
                                   <li key={idx} className="flex items-start space-x-3">
-                                    <Eye className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                                    <Plus className="w-5 h-5 mt-0.5 flex-shrink-0" />
                                     <span className="text-[#CCCCCC]">{useCase}</span>
                                   </li>
                                 ))}
