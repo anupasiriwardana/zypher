@@ -1,13 +1,12 @@
-// src/app/dashboard/RuleImplementorSidebar.js
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FlaskConical, // For "Rules to Test" - implies testing/lab work
-  Beaker,       // For "Testing Workspace" - implies experimentation/testing environment
-  Settings,     // For settings
-  LogOut,       // Optional: For logout
+  FlaskConical, 
+  Beaker,  
+  Settings, 
+  LogOut,  
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -17,11 +16,10 @@ const formatPageName = (id) => {
   return id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
-// Navigation items specific to the Rule Implementor role
 const ruleImplementorNav = [
   { id: "rules-to-test", icon: FlaskConical, href: "/rules-to-test" },
   { id: "testing-workspace", icon: Beaker, href: "/testing-workspace" },
-  { id: "rule-implementor-settings", icon: Settings, href: "/rule-implementorsettings" },
+  { id: "rule-implementor-settings", icon: Settings, href: "/rule-implementor-settings" },
 ];
 
 export default function RuleImplementorSidebar() {
@@ -29,20 +27,10 @@ export default function RuleImplementorSidebar() {
 
   return (
     <>
-      {/* Embedded Styles for Sidebar - Ensure these are consistent with your global styles */}
-      {/* If these are already in your globals.css :root, you don't need them here. */}
       <style>{`
         /* Sidebar Specific Animations */
 
-        /* Logo Pulse Glow */
-        @keyframes logo-glow-pulse {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.1; transform: scale(1.05); }
-        }
-        .animate-logo-glow-pulse {
-          animation: logo-glow-pulse 4s ease-in-out infinite alternate;
-        }
-
+  
         /* Active Indicator Line Animation */
         @keyframes active-indicator {
           0% { transform: translateY(-50%) scaleY(0); }
@@ -91,14 +79,10 @@ export default function RuleImplementorSidebar() {
 
       <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
 
-        {/* Logo at the top */}
-        {/* Adjusted href for the logo to point to the main rules to test page for implementors */}
-        <Link href="/dashboard/(rule-implementor)/rules-to-test" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
-            {/* Pulsing glow effect, similar to other sidebars */}
-            <div className="absolute inset-0 bg-[var(--brand-yellow)] rounded-xl animate-logo-glow-pulse"></div>
+        <Link href="/rules-to-test" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
             
             <Image
-              src="/Images/zypher.png" // Ensure this path is correct for your project
+              src="/Images/zypher.png" 
               alt="Zypher Logo"
               width={36}
               height={36}
@@ -109,7 +93,6 @@ export default function RuleImplementorSidebar() {
         {/* Navigation icons */}
         <div className="flex flex-col gap-3">
           {ruleImplementorNav.map(({ id, icon: Icon, href }) => {
-            // Check if the current pathname exactly matches the href or starts with it for nested routes
             const isActive = pathname === href || pathname.startsWith(`${href}/`); 
 
             return (
@@ -119,7 +102,7 @@ export default function RuleImplementorSidebar() {
                 className={clsx(
                   "relative flex items-center justify-center h-16 w-16 transition-all duration-300 group",
                   {
-                    "is-active": isActive, // This class triggers the outline animation
+                    "is-active": isActive, 
                     "hover:rounded-xl hover:bg-[var(--hover-bg)]": true,
                   }
                 )}
@@ -134,7 +117,6 @@ export default function RuleImplementorSidebar() {
                   )}
                 />
 
-                {/* Tooltip for navigation item */}
                 <div className="absolute left-[calc(100%+16px)] px-4 py-2 bg-[var(--input-bg)] text-[var(--foreground)] text-sm rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none shadow-lg border border-[var(--border-input)]">
                   {formatPageName(id)}
                 </div>
@@ -142,14 +124,6 @@ export default function RuleImplementorSidebar() {
             );
           })}
         </div>
-
-        {/* Optional: Logout icon - pushed to bottom with mt-auto */}
-        {/* <Link
-          href="/logout"
-          className="flex items-center justify-center h-16 w-16 rounded-full hover:rounded-xl hover:bg-[var(--hover-bg)] transition-all duration-300 mt-auto"
-        >
-          <LogOut size={30} className="text-[var(--foreground)] hover:text-red-500 transition-colors duration-300" />
-        </Link> */}
 
       </aside>
     </>
