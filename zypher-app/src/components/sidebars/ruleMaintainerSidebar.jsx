@@ -20,7 +20,7 @@ const formatPageName = (id) => {
 const userNav = [
   { id: "view-requests", icon: FileText, href: "/view-requests" },
   { id: "custom-rules", icon: ListTodo, href: "/custom-rules" },
-  { id: "settings", icon: Settings, href: "/settings" },
+  { id: "rule-maintainer-settings", icon: Settings, href: "/rule-maintainer-settings" },
 ];
 
 export default function RuleMaintainerSidebar() {
