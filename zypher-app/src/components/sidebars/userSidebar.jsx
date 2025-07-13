@@ -24,7 +24,7 @@ const userNav = [
   { id: "scan-results", icon: ListChecks, href: "/scan-results" },
   { id: "rules", icon: ShieldCheck, href: "/rules" },
   { id: "knowledge-base", icon: BookText, href: "/knowledge-base" },
-  { id: "settings", icon: Settings, href: "/settings" },
+  { id: "user-settings", icon: Settings, href: "/user-settings" },
 ];
 
 export default function UserSidebar() {
