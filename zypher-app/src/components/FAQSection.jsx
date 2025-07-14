@@ -19,7 +19,7 @@ export default function FAQSection() {
     },
     {
       q: "Which CI/CD platforms are supported?",
-      a: "GitHub Actions, GitLab CI, CircleCI, Jenkins, Bitbucket, etc.",
+      a: "Zypher supports scanning YAML-based pipeline definitions from any CI/CD platform, including GitHub Actions, GitLab CI, and CircleCI. Automated fetching is currently available for GitHub repositories, while other platforms require manual upload. Platform-specific patterns are detected automatically.",
     },
     {
       q: "How fast is a scan?",
