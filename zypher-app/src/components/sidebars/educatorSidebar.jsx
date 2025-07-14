@@ -19,8 +19,8 @@ const formatPageName = (id) => {
 
 const userNav = [
   { id: "add-knowledge", icon: Plus, href: "/add-knowledge" },
-  { id: "view-requests", icon: FileText, href: "/view-requests" },
-  { id: "settings", icon: Settings, href: "/settings" },
+  { id: "view-requests", icon: FileText, href: "/educator-requests" },
+  { id: "settings", icon: Settings, href: "/educator-settings" },
 ];
 
 export default function RuleMaintainerSidebar() {
