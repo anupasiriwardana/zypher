@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Link2, ArrowRight, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import clsx from 'clsx';
 
 
 export default function PasteUrlPageContent() { 
@@ -22,11 +23,23 @@ export default function PasteUrlPageContent() {
     setIsLoading(true);
 
     try {
-      console.log('Initiating scan for URL:', url);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const res = await fetch('/api/scan-tool', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ repoUrl: url }),
+      })
 
-      if (url.includes('bad') || url.includes('error')) {
-        throw new Error('Simulated scan failure: Malicious content detected or invalid URL.');
+      if (!res.ok) {
+        throw new Error('Failed to initiate scan. Please check the URL and try again.');
+      }
+
+      const data = await res.json();
+      console.log('Scan results:', data);
+
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       setFeedback({ type: 'success', message: 'Scan initiated successfully! Results will appear in "Scan Results".' });
