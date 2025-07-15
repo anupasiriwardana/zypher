@@ -2,7 +2,7 @@
 
 import '@/app/globals.css';
 import { Lexend } from 'next/font/google';
-import RuleMaintainerSidebar from '@/components/sidebars/ruleMaintainerSidebar';
+import RuleImplementorSidebar from '@/components/sidebars/ruleImplementorSidebar';
 import { Bell, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }) {
   return (
       <div className={lexend.className}>
         <div className="flex">
-          <RuleMaintainerSidebar />
+          <RuleImplementorSidebar />
 
           <div className="ml-28 flex flex-col flex-1 min-h-screen bg-[var(--background)] text-[var(--foreground)]">
 

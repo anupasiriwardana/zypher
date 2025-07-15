@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FileText,
-  ListTodo,
+  Plus,
   Settings,
 
 } from "lucide-react";
@@ -18,9 +18,9 @@ const formatPageName = (id) => {
 };
 
 const userNav = [
-  { id: "view-requests", icon: FileText, href: "/view-requests" },
-  { id: "custom-rules", icon: ListTodo, href: "/custom-rules" },
-  { id: "rule-maintainer-settings", icon: Settings, href: "/rule-maintainer-settings" },
+  { id: "add-knowledge", icon: Plus, href: "/add-knowledge" },
+  { id: "view-requests", icon: FileText, href: "/educator-requests" },
+  { id: "settings", icon: Settings, href: "/educator-settings" },
 ];
 
 export default function RuleMaintainerSidebar() {
@@ -90,7 +90,7 @@ export default function RuleMaintainerSidebar() {
 
       <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
 
-        <Link href="/view-requests" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
+        <Link href="/educator-requests" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
             <div/>
             
             <Image

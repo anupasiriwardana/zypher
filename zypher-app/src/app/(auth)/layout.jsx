@@ -8,8 +8,8 @@ const lexend = Lexend({
 
 export default function AuthLayout({ children }) {
   return (
-    <div className={lexend.className}>
-      <main>{children}</main>
-    </div>
+      <div className={lexend.className}>
+        <main>{children}</main>
+      </div>
   );
 }
