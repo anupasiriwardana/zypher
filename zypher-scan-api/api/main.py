@@ -4,6 +4,7 @@ from routes.route import router
 from routes.bp_scan import router as bpScan_router
 from routes.vuln_scan import router as vuln_scan_router
 from routes.vuln_scan_individual_file import router as vuln_scan_individual_file_router
+from routes.bp_scan_individual_file import router as bp_scan_individual_file_router
 from dotenv import load_dotenv
 import os
 
@@ -24,3 +25,4 @@ app.include_router(router)
 app.include_router(bpScan_router)
 app.include_router(vuln_scan_router)
 app.include_router(vuln_scan_individual_file_router)
+app.include_router(bp_scan_individual_file_router)

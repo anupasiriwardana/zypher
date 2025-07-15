@@ -4,7 +4,22 @@ export async function POST(request) {
   const { filename, content } = await request.json();
 
   try {
-    const fastApiResponse = await fetch(`${process.env.FASTAPI_URL}/vulnerability-scan-single-file`, {
+    const vulnerabilitiesResponse = await fetch(`${process.env.FASTAPI_URL}/vulnerability-scan-single-file`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Include auth header if needed
+        // 'Authorization': `Bearer ${process.env.INTERNAL_API_KEY}`
+      },
+      body: JSON.stringify(
+        { 
+          filename: filename,
+          content: content
+        }
+      ),
+    });
+
+    const bpSuggestionsResponse = await fetch(`${process.env.FASTAPI_URL}/bp-scan-single-file`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,20 +34,35 @@ export async function POST(request) {
       ),
     });
     
-    const responseData = await fastApiResponse.json();
+    const vulnerabilitiesData = await vulnerabilitiesResponse.json();
+    const bpSuggestionsData = await bpSuggestionsResponse.json();
 
-    if (!fastApiResponse.ok) {
+    if (!vulnerabilitiesResponse.ok) {
       return NextResponse.json(
         {
-          error: responseData.detail || 'FastAPI returned an error',
-          status: fastApiResponse.status
+          error: vulnerabilitiesData.detail || 'FastAPI returned an error',
+          status: vulnerabilitiesResponse.status
         },
-        { status: fastApiResponse.status }
+        { status: vulnerabilitiesResponse.status }
       );
     }
+    if (!bpSuggestionsResponse.ok) {
+      return NextResponse.json(
+        {
+          error: bpSuggestionsData.detail || 'FastAPI returned an error',
+          status: bpSuggestionsResponse.status
+        },
+        { status: bpSuggestionsResponse.status }
+      )
+    }
 
+    //combined scan results
+    const combinedScanResults = {
+      vulnerabilities: vulnerabilitiesData,
+      bestPractices: bpSuggestionsData,
+    }
 
-    return NextResponse.json(responseData, { status: 200 });
+    return NextResponse.json(combinedScanResults, { status: 200 });
 
   } catch (error) {
     return NextResponse.json(
