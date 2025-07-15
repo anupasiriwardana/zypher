@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const { data: session, status } = useSession();
-  console.log('Session:', session, 'Status:', status);
+  // console.log('Session:', session, 'Status:', status);
 
 
   const hasNotifications = true;
