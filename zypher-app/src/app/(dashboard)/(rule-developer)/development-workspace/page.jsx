@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 
 import {
   Code, Folder, FolderOpen, Search, PlusCircle, FileCode, CheckCircle, Save,
-  FileText, FileJson, FileType, FilePython, FileCode2,
+  FileText, FileJson, FileType, FileCode2,
   AlertTriangle, Info, Loader2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
@@ -29,7 +29,7 @@ const getFileIcon = (fileName) => {
     case 'tsx':
       return <FileCode size={20} />;
     case 'py':
-      return <FilePython size={20} />;
+      return <FileCode2 size={20} />;
     case 'json':
       return <FileJson size={20} />;
     case 'yml':
