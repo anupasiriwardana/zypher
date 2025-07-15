@@ -2,7 +2,7 @@
 
 import '@/app/globals.css';
 import { Lexend } from 'next/font/google';
-import RuleImplementorSidebar from '@/components/sidebars/RuleImplementorSidebar';
+import RuleImplementorSidebar from '@/components/sidebars/ruleImplementorSidebar';
 import { Bell, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 
