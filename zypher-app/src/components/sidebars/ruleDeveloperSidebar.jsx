@@ -1,13 +1,12 @@
-// src/app/dashboard/UserSidebar.js
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FileText,
   ListTodo,
+  Code,
   Settings,
-
+  LogOut,
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -17,18 +16,17 @@ const formatPageName = (id) => {
   return id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
-const userNav = [
-  { id: "view-requests", icon: FileText, href: "/view-requests" },
-  { id: "custom-rules", icon: ListTodo, href: "/custom-rules" },
-  { id: "rule-maintainer-settings", icon: Settings, href: "/rule-maintainer-settings" },
+const ruleDeveloperNav = [
+  { id: "assigned-rules", icon: ListTodo, href: "/assigned-rules" },
+  { id: "development-workspace", icon: Code, href: "/development-workspace" },
+  { id: "rule-developer-settings", icon: Settings, href: "/rule-developer-settings" },
 ];
 
-export default function RuleMaintainerSidebar() {
+export default function RuleDeveloperSidebar() {
   const pathname = usePathname();
 
   return (
     <>
-      {/* Embedded Styles for Sidebar - Only for component-specific animations/styles */}
       <style>{`
         /* Sidebar Specific Animations */
 
@@ -79,19 +77,20 @@ export default function RuleMaintainerSidebar() {
         :root {
           --background: #0D0D0D;
           --foreground: #F0F0F0;
-          --text-secondary: #A0A0A0; /* Less used directly on icons now */
+          --text-secondary: #A0A0A0;
           --border-input: #2C2C2C;
           --brand-yellow: #FCE803;
           --input-bg: #1A1A1A;
           --button-bg: #2C2C2C;
-          --hover-bg: #1F1F1F; /* A slightly lighter dark for hover states */
+          --hover-bg: #1F1F1F;
         }
       `}</style>
 
       <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
 
-        <Link href="/view-requests" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
-            <div/>
+
+        <Link href="/assigned-rules" className="flex items-center justify-center w-16 h-16 rounded-xl mb-16 group relative overflow-hidden">
+            <div className="absolute inset-0 rounded-xl animate-logo-glow-pulse"></div>
             
             <Image
               src="/Images/zypher.png"
@@ -104,8 +103,9 @@ export default function RuleMaintainerSidebar() {
         
         {/* Navigation icons */}
         <div className="flex flex-col gap-3">
-          {userNav.map(({ id, icon: Icon, href }) => {
-            const isActive = pathname === href;
+          {ruleDeveloperNav.map(({ id, icon: Icon, href }) => {
+
+            const isActive = pathname === href || pathname.startsWith(`${href}/`); 
 
             return (
               <Link
@@ -119,18 +119,17 @@ export default function RuleMaintainerSidebar() {
                   }
                 )}
               >
-               
-
                 <Icon
-                  size={30} 
+                  size={30}
                   className={clsx(
                     "transition-colors duration-300 relative z-10",
                     isActive
-                      ? "text-[var(--brand-yellow)]" 
-                      : "text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]" 
+                      ? "text-[var(--brand-yellow)]"
+                      : "text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]"
                   )}
                 />
 
+                {/* Tooltip for navigation item */}
                 <div className="absolute left-[calc(100%+16px)] px-4 py-2 bg-[var(--input-bg)] text-[var(--foreground)] text-sm rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none shadow-lg border border-[var(--border-input)]">
                   {formatPageName(id)}
                 </div>
