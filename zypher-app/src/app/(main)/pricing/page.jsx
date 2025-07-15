@@ -28,7 +28,7 @@ export default function PricingPage() {
             <ul className="text-left space-y-3 flex-1">
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[var(--brand-yellow)]" />
-                Up to 5 scans per day
+                Up to 2 scans per day
               </li>
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[var(--brand-yellow)]" />
@@ -53,7 +53,7 @@ export default function PricingPage() {
               <Zap className="text-[var(--brand-yellow)] w-6 h-6" />
             </div>
             <p className="text-sm text-[var(--text-secondary)] mb-6">For teams who scan regularly.</p>
-            <div className="text-4xl font-bold mb-6">$29<span className="text-base font-normal">/mo</span></div>
+            <div className="text-4xl font-bold mb-6">$19<span className="text-base font-normal">/mo</span></div>
             <ul className="text-left space-y-3 flex-1">
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[var(--brand-yellow)]" />
@@ -79,7 +79,7 @@ export default function PricingPage() {
           <div className="bg-[var(--input-bg)] border border-[var(--border-input)] rounded-2xl p-8 flex flex-col hover:border-[var(--brand-yellow)] hover:shadow-yellow-200/10 transition">
             <h2 className="text-2xl font-semibold mb-4">Yearly</h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">Best value for long-term teams.</p>
-            <div className="text-4xl font-bold mb-6">$299<span className="text-base font-normal">/yr</span></div>
+            <div className="text-4xl font-bold mb-6">$169<span className="text-base font-normal">/yr</span></div>
             <ul className="text-left space-y-3 flex-1">
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[var(--brand-yellow)]" />
