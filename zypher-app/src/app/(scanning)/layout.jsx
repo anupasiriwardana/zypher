@@ -14,11 +14,9 @@ export const metadata = {
 
 export default function MainLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${lexend.variable}`}>
+      <div className={`${lexend.variable}`}>
         <Navbar />
         <main>{children}</main>
-      </body>
-    </html>
+      </div>
   );
 }

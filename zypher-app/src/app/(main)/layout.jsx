@@ -9,19 +9,12 @@ const lexend = Lexend({
   weight: ['400', '500', '600', '700'],
 });
 
-export const metadata = {
-  title: 'Zypher App',
-  description: 'Your app description here',
-};
-
 export default function MainLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${lexend.variable}`}>
+      <div className={`${lexend.variable}`}>
         <Navbar />
         <main>{children}</main>
         <Footer />
-      </body>
-    </html>
+      </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import '@/app/globals.css';
 import { Lexend } from 'next/font/google';
-import EducatorSidebar from '@/components/sidebars/educatorSidebar';
+import UserSidebar from '@/components/sidebars/userSidebar';
 import { Bell, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,10 +26,9 @@ export default function DashboardLayout({ children }) {
   });
 
   return (
-    <html lang="en">
-      <body className={lexend.className}>
+      <div className={lexend.className}>
         <div className="flex">
-          <EducatorSidebar />
+          <UserSidebar />
 
           <div className="ml-28 flex flex-col flex-1 min-h-screen bg-[var(--background)] text-[var(--foreground)]">
 
@@ -58,8 +57,9 @@ export default function DashboardLayout({ children }) {
                     <div className="absolute right-0 mt-3 w-84 bg-[var(--input-bg)] text-md rounded-xl shadow-lg p-8 z-50">
                       <p className="text-[var(--text-secondary)] font-semibold mb-2">Notifications</p>
                       <ul className="space-y-2">
-                        <li>You have 3 new requests from Rule Maintainer.</li>
-                        <li>New rule added to knowledge hub</li>
+                        <li>You have 3 new scan reports.</li>
+                        <li>New rules assigned to you.</li>
+                        <li>Security alert on Repo-X.</li>
                       </ul>
                     </div>
                   )}
@@ -79,7 +79,7 @@ export default function DashboardLayout({ children }) {
                   {showProfile && (
                     <div className="absolute right-0 mt-3 w-64 bg-[var(--input-bg)] text-md rounded-xl shadow-lg p-8 z-50">
                       <p className="font-semibold mb-2">Signed in as</p>
-                      <p className="text-[var(--text-secondary)] mb-4">educator@example.com</p>
+                      <p className="text-[var(--text-secondary)] mb-4">user@example.com</p>
                       <button className="w-full text-left hover:text-[var(--brand-yellow)] transition">
                         Sign out
                       </button>
@@ -92,7 +92,6 @@ export default function DashboardLayout({ children }) {
             <main className="p-4 flex-1">{children}</main>
           </div>
         </div>
-      </body>
-    </html>
+      </div>
   );
 }
