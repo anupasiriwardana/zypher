@@ -11,10 +11,10 @@ const lexend = Lexend({
 
 export default function MainLayout({ children }) {
   return (
-      <div className={`${lexend.variable}`}>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-      </div>
+    <div className={`${lexend.variable}`}>
+      <Navbar />
+      <main>{children}</main>
+      <Footer />
+    </div>
   );
 }
