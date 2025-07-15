@@ -1,17 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Loader2, FileText, CheckCircle, XCircle } from "lucide-react";
+import { 
+  Upload, Loader2, FileText, CheckCircle, XCircle,
+  BarChart2, Bug, Code, TerminalSquare, ChevronDown, ChevronUp 
+} from "lucide-react";
 import clsx from "clsx";
 import * as yaml from 'yaml';
+
+const SeverityBadge = ({ severity }) => {
+  const normalizedSeverity = severity?.toUpperCase();
+  const badgeClasses = {
+    'CRITICAL': 'bg-red-600/20 text-red-400',
+    'HIGH': 'bg-orange-600/20 text-orange-400',
+    'MEDIUM': 'bg-yellow-600/20 text-yellow-400',
+    'LOW': 'bg-green-600/20 text-green-400',
+    'POSITIVE': 'bg-green-500/20 text-green-300',
+    'INFORMATIONAL': 'bg-blue-600/20 text-blue-400',
+    'DEFAULT': 'bg-gray-600/20 text-gray-400', 
+  };
+  return (
+    <span className={clsx(
+      "px-3 py-1 rounded-full text-xs font-semibold shrink-0",
+      badgeClasses[normalizedSeverity] || badgeClasses['DEFAULT']
+    )}>
+      {normalizedSeverity}
+    </span>
+  );
+};
 
 export default function UploadConfigPageContent() {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState(null);
+  const [scanResult, setScanResult] = useState(null); 
   const [parseError, setParseError] = useState(null);
-  const [scanResults, setScanResults] = useState(null); // To store API response
+  const [scanResults, setScanResults] = useState(null); 
+  const [activeTab, setActiveTab] = useState('vulnerabilities'); 
+  const [expandedRules, setExpandedRules] = useState(new Set()); 
 
   const handleFileChange = (e) => {
     const newFile = e.target.files[0];
@@ -27,9 +53,7 @@ export default function UploadConfigPageContent() {
       try {
         if (newFile.name.endsWith('.yaml') || newFile.name.endsWith('.yml')) {
           parsedContent = yaml.parse(fileContent);
-        } else if (newFile.name.endsWith('.json')) {
-          parsedContent = JSON.parse(fileContent);
-        }
+        } 
       } catch (e) {
         error = `Failed to parse ${newFile.name}: ${e.message}`;
         console.error(error);
@@ -49,6 +73,12 @@ export default function UploadConfigPageContent() {
         parsedContent,
         error
       });
+
+      setScanResult(null);
+      setParseError(null);
+      setScanResults(null);
+      setExpandedRules(new Set()); 
+      setActiveTab('vulnerabilities'); 
     };
 
     reader.onerror = () => {
@@ -58,7 +88,6 @@ export default function UploadConfigPageContent() {
     };
 
     if (newFile.type.includes("text") || 
-        newFile.name.endsWith(".json") || 
         newFile.name.endsWith(".yaml") || 
         newFile.name.endsWith(".yml")) {
       reader.readAsText(newFile);
@@ -76,6 +105,8 @@ export default function UploadConfigPageContent() {
     setScanResult(null);
     setParseError(null);
     setScanResults(null);
+    setExpandedRules(new Set());
+    setActiveTab('vulnerabilities'); 
 
     try {
       const response = await fetch('/api/scan-individual-file', {
@@ -97,18 +128,19 @@ export default function UploadConfigPageContent() {
       if(data.error) {
         throw new Error(data.error);
       }
-      setScanResults(data);
-      if(data.bestPractices.status === 'success' && data.vulnerabilities.status === 'success') {
+      setScanResults(data); 
+
+      if(data.bestPractices?.status === 'success' && data.vulnerabilities?.status === 'success') {
         setScanResult('success');
-      }else{
-        setScanResult('failure');
+      } else {
+        setScanResult('failure'); 
       }
       console.log('Scan results:', data);
 
     } catch (error) {
       console.error('Scan error:', error.message);
       setScanResult('failure');
-      setParseError(error.message);
+      setParseError(error.message); 
     } finally {
       setScanning(false);
     }
@@ -119,6 +151,132 @@ export default function UploadConfigPageContent() {
     setScanResult(null);
     setParseError(null);
     setScanResults(null);
+    setExpandedRules(new Set());
+    
+  };
+
+  // Function to toggle individual rule expansion
+  const toggleRuleExpansion = (ruleId) => {
+    setExpandedRules(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(ruleId)) {
+        newSet.delete(ruleId);
+      } else {
+        newSet.add(ruleId);
+      }
+      return newSet;
+    });
+  };
+
+  // function to render a single scan type's results (Vulnerability or Best Practice)
+  const renderScanTypeResults = (scanTypeData) => {
+    if (!scanTypeData || !scanTypeData.findings) {
+      return <p className="text-[var(--text-secondary)] text-center py-8">No results available for this scan type.</p>;
+    }
+
+    const { stats, findings, filename } = scanTypeData;
+
+    return (
+      <div className="mt-8 text-left animate-fadeIn">
+        {/* Summary Section */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
+              <p className="text-sm text-[var(--text-secondary)]">Scanned File</p>
+              <p className="text-xl font-bold text-[var(--foreground)] truncate">{filename || 'N/A'}</p>
+            </div>
+            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
+              <p className="text-sm text-[var(--text-secondary)]">Total Findings</p>
+              <p className="text-3xl font-bold text-red-400">{stats.total_findings || 0}</p>
+            </div>
+            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
+              <p className="text-sm text-[var(--text-secondary)]">Critical / High</p>
+              <p className="text-3xl font-bold text-orange-400">{stats.critical || 0} / {stats.high || 0}</p>
+            </div>
+            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
+              <p className="text-sm text-[var(--text-secondary)]">Medium / Low</p>
+              <p className="text-3xl font-bold text-yellow-400">{stats.medium || 0} / {stats.low || 0}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Findings Section */}
+        {findings && findings.length > 0 ? (
+          <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md custom-scrollbar">
+            <h3 className="text-2xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2">
+              <Bug size={24} className="text-red-400" />
+              Detailed Findings
+            </h3>
+            <div className="space-y-8">
+                {/* Group findings by rule_id */}
+                {Object.entries(findings.reduce((acc, finding) => {
+                    if (!acc[finding.rule_id]) {
+                        acc[finding.rule_id] = [];
+                    }
+                    acc[finding.rule_id].push(finding);
+                    return acc;
+                }, {})).map(([ruleId, findingsForRule], ruleIndex) => {
+                    const isRuleExpanded = expandedRules.has(ruleId);
+                    return (
+                        <div key={ruleIndex} className="bg-[var(--input-bg)] p-6 rounded-lg border border-[var(--border-input)] shadow-inner">
+                            <button
+                                className="w-full text-left flex items-center justify-between gap-x-2 flex-wrap min-w-0 cursor-pointer"
+                                onClick={() => toggleRuleExpansion(ruleId)}
+                            >
+                                <h4 className="text-xl font-semibold text-[var(--brand-yellow)] flex items-center gap-x-2 flex-wrap min-w-0">
+                                    <Code size={20} /> Rule: <span className="break-words">{ruleId}</span>
+                                    {findingsForRule.length > 0 && (
+                                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300">
+                                            {findingsForRule.length} occurrence{findingsForRule.length > 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                </h4>
+                                {/* Display severity badge of the first finding for the rule */}
+                                {findingsForRule[0]?.severity && (
+                                  <SeverityBadge severity={findingsForRule[0].severity} />
+                                )}
+                                <span className="ml-auto shrink-0 text-[var(--text-secondary)]">
+                                    {isRuleExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </span>
+                            </button>
+
+                            {/* Conditionally render details based on expansion state */}
+                            {isRuleExpanded && (
+                                <div className="mt-4 space-y-4 animate-fadeIn">
+                                    {findingsForRule.map((occurrence, occIndex) => (
+                                        <div key={occIndex} className="p-3 bg-[var(--background)] rounded-md border border-[var(--border-input)]">
+                                            <p className="text-[var(--text-secondary)] text-xs mb-1">Line: <span className="text-[var(--foreground)] font-mono">{occurrence.line_number}</span></p>
+                                            
+                                            <p className="text-[var(--text-secondary)] text-sm mb-1 break-words">{occurrence.description}</p>
+                                            
+                                            {occurrence.recommendation && (
+                                                <div className="mt-3 p-2 rounded-md bg-[var(--input-bg)] border border-[var(--border-input)] text-xs text-[var(--text-secondary)] break-words">
+                                                    <strong className="text-[var(--brand-yellow)]">Recommendation: </strong> {occurrence.recommendation}
+                                                </div>
+                                            )}
+                                            
+                                            {occurrence.snippet && occurrence.snippet.trim() !== "" && (
+                                                <pre className="bg-[var(--background)] p-2 rounded text-xs overflow-x-auto custom-scrollbar whitespace-pre-wrap font-mono mt-2">
+                                                    <code>{occurrence.snippet}</code>
+                                                </pre>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md text-center text-[var(--text-secondary)]">
+            <p className="text-xl font-semibold mb-2">No findings for this scan type!</p>
+            <p>This file appears clean based on our current rules.</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -140,15 +298,18 @@ export default function UploadConfigPageContent() {
                   <button
                     onClick={() => {
                       setSelectedFile(file);
-                      setScanResult(null);
-                      setParseError(null);
+                      setScanResult(null); 
+                      setParseError(null); 
+                      setScanResults(null); 
+                      setExpandedRules(new Set()); 
+                      setActiveTab('vulnerabilities'); 
                     }}
                     className={`relative w-full text-left px-4 py-3 rounded-md transition-all duration-200 ease-in-out
-                                flex items-center justify-between group
-                                ${selectedFile?.fileObject?.name === file.fileObject.name
-                        ? "bg-[var(--brand-yellow)] text-[var(--background)] font-medium shadow-md"
-                        : "bg-[var(--button-bg)] border border-[var(--border-input)] hover:border-[var(--brand-yellow)] hover:text-[var(--brand-yellow)] text-[var(--foreground)]"
-                      }`}
+                              flex items-center justify-between group
+                              ${selectedFile?.fileObject?.name === file.fileObject.name
+                                ? "bg-[var(--brand-yellow)] text-[var(--background)] font-medium shadow-md"
+                                : "bg-[var(--button-bg)] border border-[var(--border-input)] hover:border-[var(--brand-yellow)] hover:text-[var(--brand-yellow)] text-[var(--foreground)]"
+                              }`}
                   >
                     <span className="flex items-center gap-3">
                       <FileText size={20} className={selectedFile?.fileObject?.name === file.fileObject.name ? "text-[var(--background)]" : "text-[var(--text-secondary)] group-hover:text-[var(--brand-yellow)]"} />
@@ -215,76 +376,59 @@ export default function UploadConfigPageContent() {
                     <CheckCircle size={80} className="mx-auto mb-6 text-green-500 drop-shadow-lg" />
                     <h3 className="text-3xl font-bold mb-3">Scan Complete!</h3>
                     
-                    {/* {scanResults?.findings?.length > 0 ? (
-                      <div className="text-left">
-                        <div className="mb-6 p-4 bg-green-600/10 rounded-lg">
-                          <p className="text-lg">
-                            Found {scanResults.findings.length} issue{scanResults.findings.length !== 1 ? 's' : ''} in{' '}
-                            <span className="font-semibold">{selectedFile.fileObject.name}</span>
-                          </p>
-                          <div className="flex gap-4 mt-2 justify-center">
-                            {scanResults.stats.critical > 0 && (
-                              <span className="bg-red-500/20 text-red-500 px-3 py-1 rounded-full text-sm">
-                                {scanResults.stats.critical} Critical
-                              </span>
+                    {/* Tabs for Vulnerabilities and Best Practices */}
+                    {scanResults && (
+                      <div className="mt-8">
+                        <div className="flex border-b border-[var(--border-input)] mb-6 justify-center overflow-x-auto custom-scrollbar">
+                          <button
+                            onClick={() => setActiveTab('vulnerabilities')}
+                            className={clsx(
+                              "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                              activeTab === 'vulnerabilities' 
+                                ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]" 
+                                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
                             )}
-                            {scanResults.stats.high > 0 && (
-                              <span className="bg-orange-500/20 text-orange-500 px-3 py-1 rounded-full text-sm">
-                                {scanResults.stats.high} High
-                              </span>
+                          >
+                            Vulnerabilities
+                            {scanResults.vulnerabilities?.stats?.total_findings > 0 && (
+                                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600/20 text-red-400">
+                                    {scanResults.vulnerabilities.stats.total_findings}
+                                </span>
                             )}
-                            {scanResults.stats.medium > 0 && (
-                              <span className="bg-yellow-500/20 text-yellow-500 px-3 py-1 rounded-full text-sm">
-                                {scanResults.stats.medium} Medium
-                              </span>
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('best-practices')}
+                            className={clsx(
+                              "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                              activeTab === 'best-practices' 
+                                ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]" 
+                                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
                             )}
-                            {scanResults.stats.low > 0 && (
-                              <span className="bg-blue-500/20 text-blue-500 px-3 py-1 rounded-full text-sm">
-                                {scanResults.stats.low} Low
-                              </span>
+                          >
+                            Best Practices
+                            {scanResults.bestPractices?.stats?.total_findings > 0 && (
+                                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-600/20 text-blue-400">
+                                    {scanResults.bestPractices.stats.total_findings}
+                                </span>
                             )}
-                          </div>
+                          </button>
                         </div>
 
-                        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                          {scanResults.findings.map((finding, i) => (
-                            <div key={i} className={`p-4 rounded-lg ${
-                              finding.severity === 'CRITICAL' ? 'bg-red-500/10' :
-                              finding.severity === 'HIGH' ? 'bg-orange-500/10' :
-                              finding.severity === 'MEDIUM' ? 'bg-yellow-500/10' :
-                              'bg-blue-500/10'
-                            }`}>
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-bold">
-                                    {finding.rule_id}: {finding.description}
-                                  </p>
-                                  <p className="text-sm opacity-80">Line {finding.line_number}</p>
-                                </div>
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  finding.severity === 'CRITICAL' ? 'bg-red-500 text-white' :
-                                  finding.severity === 'HIGH' ? 'bg-orange-500 text-white' :
-                                  finding.severity === 'MEDIUM' ? 'bg-yellow-500 text-black' :
-                                  'bg-blue-500 text-white'
-                                }`}>
-                                  {finding.severity}
-                                </span>
-                              </div>
-                              {finding.mitigation && (
-                                <div className="mt-2 p-2 bg-white/20 rounded">
-                                  <p className="text-sm font-semibold">Recommendation:</p>
-                                  <p className="text-sm">{finding.mitigation}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                        {activeTab === 'vulnerabilities' && renderScanTypeResults(scanResults.vulnerabilities)}
+                        {activeTab === 'best-practices' && renderScanTypeResults(scanResults.bestPractices)}
+
+                        {/* Optional: Raw Data Display, similar to PasteUrlPageContent */}
+                        {/*<div className="mt-12 text-left">
+                            <h3 className="text-xl font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                                <FileText size={20} className="text-[var(--text-secondary)]" />
+                                Complete Raw Scan Data
+                            </h3>
+                            <pre className="bg-[var(--background)] p-6 rounded-lg border border-[var(--border-input)] text-[var(--text-secondary)] overflow-x-auto text-sm">
+                                {JSON.stringify(scanResults, null, 2)}
+                            </pre>
+                        </div>*/}
                       </div>
-                    ) : (
-                      <p className="text-lg text-[var(--text-secondary)] mb-6">
-                        No issues found in <span className="font-semibold text-[var(--foreground)]">{selectedFile.fileObject.name}</span>
-                      </p>
-                    )} */}
+                    )}
 
                     <button
                       onClick={clearSelectedFile}
@@ -334,5 +478,5 @@ export default function UploadConfigPageContent() {
         )}
       </div>
     </div>
-  );
+  ); 
 }
