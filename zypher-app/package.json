@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "npm rebuild lightningcss && node node_modules/lightningcss/install.js"
+    "lint": "next lint"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

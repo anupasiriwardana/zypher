@@ -40,7 +40,9 @@ jobs:
         run: |
           [ -f package-lock.json ] || npm i --package-lock-only
           npm ci --prefer-offline
+          npm rebuild lightningcss
           npm run build
+
         
       - name: Trigger Render Deployment
         run: |
