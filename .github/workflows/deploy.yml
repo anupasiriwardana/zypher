@@ -39,7 +39,6 @@ jobs:
         working-directory: ./zypher-app
         run: |
           npm install
-          npm rebuild lightningcss
           npm run build
 
       - name: Trigger Render Deployment
