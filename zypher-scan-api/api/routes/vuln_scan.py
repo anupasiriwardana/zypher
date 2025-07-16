@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from models.scan_input import RepoRequest
 from vuln_scanner.engine import ScannerEngine
+from vuln_scanner.scoreCalculator import PipelineScoreCalculator
 import httpx
 import os
 import asyncio
@@ -15,6 +16,8 @@ router = APIRouter(
 
 # Initialize scanner once
 scanner = ScannerEngine()
+scoreCalculator = PipelineScoreCalculator()
+
 
 # Thread pool for scanning
 executor = ThreadPoolExecutor(max_workers=4)
@@ -136,6 +139,7 @@ async def scan_repo(repo_request: RepoRequest):
             
             # Calculate overall statistics
             total_findings = sum(len(file["findings"]) for file in results)
+            score = scoreCalculator.calculate([Finding(**finding) for file in results for finding in file["findings"]])
             severity_counts = {
                 "CRITICAL": 0,
                 "HIGH": 0,
@@ -159,7 +163,10 @@ async def scan_repo(repo_request: RepoRequest):
                     "critical": severity_counts["CRITICAL"],
                     "high": severity_counts["HIGH"],
                     "medium": severity_counts["MEDIUM"],
-                    "low": severity_counts["LOW"]
+                    "low": severity_counts["LOW"],
+                    "vuln score": score["final_score"],
+                    "vuln per_severity": score["per_severity"],
+                    "risk_factor": score["risk_factor"]
                 }
             }
         
