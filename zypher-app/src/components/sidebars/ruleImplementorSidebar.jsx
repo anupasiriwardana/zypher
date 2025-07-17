@@ -1,13 +1,12 @@
-// src/app/dashboard/UserSidebar.js
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FileText,
-  ListTodo,
-  Settings,
-
+  FlaskConical, 
+  Beaker,  
+  Settings, 
+  LogOut,  
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -17,30 +16,21 @@ const formatPageName = (id) => {
   return id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
-const userNav = [
-  { id: "view-requests", icon: FileText, href: "/view-requests" },
-  { id: "custom-rules", icon: ListTodo, href: "/custom-rules" },
-  { id: "rule-maintainer-settings", icon: Settings, href: "/rule-maintainer-settings" },
+const ruleImplementorNav = [
+  { id: "rules-to-test", icon: FlaskConical, href: "/rules-to-test" },
+  { id: "testing-workspace", icon: Beaker, href: "/testing-workspace" },
+  { id: "rule-implementor-settings", icon: Settings, href: "/rule-implementor-settings" },
 ];
 
-export default function RuleMaintainerSidebar() {
+export default function RuleImplementorSidebar() {
   const pathname = usePathname();
 
   return (
     <>
-      {/* Embedded Styles for Sidebar - Only for component-specific animations/styles */}
       <style>{`
         /* Sidebar Specific Animations */
 
-        /* Logo Pulse Glow */
-        @keyframes logo-glow-pulse {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.1; transform: scale(1.05); }
-        }
-        .animate-logo-glow-pulse {
-          animation: logo-glow-pulse 4s ease-in-out infinite alternate;
-        }
-
+  
         /* Active Indicator Line Animation */
         @keyframes active-indicator {
           0% { transform: translateY(-50%) scaleY(0); }
@@ -75,26 +65,24 @@ export default function RuleMaintainerSidebar() {
         }
 
         /* Define custom CSS variables for colors if not already in your :root */
-        /* If these are already in your globals.css :root, you don't need them here. */
         :root {
           --background: #0D0D0D;
           --foreground: #F0F0F0;
-          --text-secondary: #A0A0A0; /* Less used directly on icons now */
+          --text-secondary: #A0A0A0;
           --border-input: #2C2C2C;
           --brand-yellow: #FCE803;
           --input-bg: #1A1A1A;
           --button-bg: #2C2C2C;
-          --hover-bg: #1F1F1F; /* A slightly lighter dark for hover states */
+          --hover-bg: #1F1F1F;
         }
       `}</style>
 
       <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
 
-        <Link href="/view-requests" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
-            <div/>
+        <Link href="/rules-to-test" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
             
             <Image
-              src="/Images/zypher.png"
+              src="/Images/zypher.png" 
               alt="Zypher Logo"
               width={36}
               height={36}
@@ -104,8 +92,8 @@ export default function RuleMaintainerSidebar() {
         
         {/* Navigation icons */}
         <div className="flex flex-col gap-3">
-          {userNav.map(({ id, icon: Icon, href }) => {
-            const isActive = pathname === href;
+          {ruleImplementorNav.map(({ id, icon: Icon, href }) => {
+            const isActive = pathname === href || pathname.startsWith(`${href}/`); 
 
             return (
               <Link
@@ -119,15 +107,13 @@ export default function RuleMaintainerSidebar() {
                   }
                 )}
               >
-               
-
                 <Icon
-                  size={30} 
+                  size={30}
                   className={clsx(
                     "transition-colors duration-300 relative z-10",
                     isActive
-                      ? "text-[var(--brand-yellow)]" 
-                      : "text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]" 
+                      ? "text-[var(--brand-yellow)]"
+                      : "text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]"
                   )}
                 />
 

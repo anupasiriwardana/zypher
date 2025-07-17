@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Python for DB Test
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          
+
       - name: Test MongoDB Connection
         run: |
           pip install -r .github/scripts/requirements.txt
@@ -24,24 +24,23 @@ jobs:
 
   deploy-zypher-app:
     runs-on: ubuntu-latest
-    needs: test-db-connection  # Wait for DB test to complete
+    needs: test-db-connection
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: 'zypher-app/package-lock.json'
-          
+
       - name: Install & Build Frontend
         working-directory: ./zypher-app
         run: |
-          [ -f package-lock.json ] || npm i --package-lock-only
-          npm ci --prefer-offline
+          npm install
           npm run build
-        
+
       - name: Trigger Render Deployment
         run: |
           curl -sSf -X POST \
@@ -51,23 +50,23 @@ jobs:
 
   deploy-zypher-scan-api:
     runs-on: ubuntu-latest
-    needs: test-db-connection  # Wait for DB test to complete
+    needs: test-db-connection
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           cache: 'pip'
           cache-dependency-path: 'zypher-scan-api/requirements.txt'
-          
+
       - name: Install Dependencies
         working-directory: ./zypher-scan-api
         run: |
           [ -f requirements.txt ] || pip freeze > requirements.txt
           pip install -r requirements.txt
-        
+
       - name: Trigger Render Deployment
         run: |
           curl -sSf -X POST \
