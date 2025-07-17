@@ -75,7 +75,7 @@ export default function AdminSidebar() {
 
       <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-8 fixed left-0 top-0 z-50 transition-all duration-300">
         <Link
-          href="/admin/dashboard"
+          href="/user-management"
           className="flex items-center justify-center w-16 h-16 rounded-xl mb-14 group relative overflow-hidden"
         >
           <div />

@@ -97,7 +97,7 @@ export default function EducatorSettingsPage() {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "/Images/placeholder-avatar.png";
+                  e.target.src = "/Images/avatar.jpg";
                 }}
               />
               <label
