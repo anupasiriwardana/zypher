@@ -14,3 +14,4 @@ collection_name = db["zypher_collection"]
 
 vulnerability_rule_file_collection = db["vulnerability_rule_files"]
 bestPractice_rule_file_collection = db["BestPractice_rule_files"]
+bp_rule_metadata = db["bestPractices_rule_metadata"]

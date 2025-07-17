@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.route import router
+# from routes.route import router
 from routes.bp_scan import router as bpScan_router
 from routes.vuln_scan import router as vuln_scan_router
 from routes.vuln_scan_individual_file import router as vuln_scan_individual_file_router
@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-app.include_router(router)
+# app.include_router(router)
 app.include_router(bpScan_router)
 app.include_router(vuln_scan_router)
 app.include_router(vuln_scan_individual_file_router)
