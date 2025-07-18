@@ -7,9 +7,7 @@ import Link from "next/link";
 import { ArrowRight, UploadCloud, Link as LinkIcon, ArrowLeft } from "lucide-react";
 import { Lexend } from 'next/font/google';
 
-
-import UploadConfigPageContent from './upload-config-files/page';
-import PasteUrlPageContent from './paste-url/page'; 
+import { useRouter } from 'next/navigation';
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -50,16 +48,11 @@ const dummyScans = [
 ];
 
 export default function StartScanPage() {
-  // State to manage which content to display: 'default', 'upload', 'paste-url'
-  const [currentView, setCurrentView] = useState('default');
+  const router = useRouter();
 
-  const handleBack = () => {
-    setCurrentView('default');
-  };
 
   return (
     <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} min-h-screen`}> 
-      {currentView === 'default' && (
         <div className="animate-fadeInUp"> 
         
           <div className="text-center bg-[var(--input-bg)] p-8 md:p-12 rounded-3xl mb-12 shadow-xl border border-[var(--border-input)]">
@@ -73,13 +66,13 @@ export default function StartScanPage() {
             <div className="flex justify-center gap-6 flex-wrap">
 
               <button
-                onClick={() => setCurrentView('upload')}
+                onClick={() => router.push('/start-a-scan/upload-config-files')}
                 className="inline-flex items-center gap-3 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-8 py-4 rounded-full hover:brightness-110 transition-all duration-300 shadow-lg text-lg transform hover:-translate-y-1"
               >
-                Upload Config Files <UploadCloud size={20} />
+                Upload Configuration Files <UploadCloud size={20} />
               </button>
               <button
-                onClick={() => setCurrentView('paste-url')}
+                onClick={() => router.push('/start-a-scan/paste-url')}
                 className="inline-flex items-center gap-3 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-8 py-4 rounded-full hover:brightness-110 transition-all duration-300 shadow-lg text-lg transform hover:-translate-y-1"
               >
                 Paste Repository URL <LinkIcon size={20} />
@@ -98,33 +91,6 @@ export default function StartScanPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Render UploadConfigPageContent when currentView is 'upload' */}
-      {currentView === 'upload' && (
-        <div className="animate-fadeInUp"> 
-          <button
-            onClick={handleBack}
-            className="mb-6 inline-flex items-center gap-2 text-[var(--text-primary)] hover:text-[var(--foreground)] transition-colors"
-          >
-            <ArrowLeft size={20} /> Back to Scan Options
-          </button>
-          <UploadConfigPageContent />
-        </div>
-      )}
-
-      {/* Render PasteUrlPageContent when currentView is 'paste-url' */}
-      {currentView === 'paste-url' && (
-        <div className="animate-fadeInUp">
-          <button
-            onClick={handleBack}
-            className="mb-6 inline-flex items-center gap-2 text-[var(--text-primary)] hover:text-[var(--foreground)] transition-colors"
-          >
-            <ArrowLeft size={20} /> Back to Scan Options
-          </button>
-          <PasteUrlPageContent />
-        </div>
-      )}
     </div>
   );
 }
