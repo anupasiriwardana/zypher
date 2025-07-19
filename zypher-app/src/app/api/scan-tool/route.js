@@ -1,10 +1,31 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
+  const userId = request.headers.get("x-user-id");
+  const role = request.headers.get("x-user-role");
+
+  //check if user is authenticated
+  if (!userId || !role) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  //check role-based access
+  const allowedRoles = ['primary-user'];
+  if (!allowedRoles.includes(role)) {
+    return NextResponse.json(
+      { error: "Forbidden" },
+      { status: 403 }
+    );
+  }
+
+  // handle the request
   const { repoUrl } = await request.json();
 
   try {
-    const fastApiResponse = await fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
+    const vulnScanResponse = await fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -14,7 +35,7 @@ export async function POST(request) {
       body: JSON.stringify({ repo_url: repoUrl }),
     });
 
-    const fastApiResponse2 = await fetch(`${process.env.FASTAPI_URL}/best-practices-scan`, {
+    const bpScanResponse = await fetch(`${process.env.FASTAPI_URL}/best-practices-scan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,33 +45,33 @@ export async function POST(request) {
       body: JSON.stringify({ repo_url: repoUrl }),
     });
     
-    const responseData = await fastApiResponse.json();
-    const responseData2 = await fastApiResponse2.json();
+    const vulnScanFindings = await vulnScanResponse.json();
+    const bpScanFindings = await bpScanResponse.json();
 
-    if (!fastApiResponse.ok) {
+    if (!vulnScanResponse.ok) {
       return NextResponse.json(
         {
-          error: responseData.detail || 'FastAPI returned an error',
-          status: fastApiResponse.status
+          error: vulnScanFindings.detail || 'FastAPI returned an error',
+          status: vulnScanResponse.status
         },
-        { status: fastApiResponse.status }
+        { status: vulnScanResponse.status }
       );
     }
-    if (!fastApiResponse2.ok) {
+    if (!bpScanResponse.ok) {
       return NextResponse.json(
         {
-          error: responseData2.detail || 'FastAPI returned an error',
-          status: fastApiResponse2.status
+          error: bpScanFindings.detail || 'FastAPI returned an error',
+          status: bpScanResponse.status
         },
-        { status: fastApiResponse2.status
+        { status: bpScanResponse.status
         }
       )
     }
 
     // Combine results from both scans
     const combinedResults = {
-      vulnerabilityScanResults: responseData,
-      bestPracticesScanResults: responseData2,
+      vulnerabilityScanResults: vulnScanFindings,
+      bestPracticesScanResults: bpScanFindings,
     };
 
     return NextResponse.json(combinedResults, { status: 200 });
