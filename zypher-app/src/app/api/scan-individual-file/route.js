@@ -1,92 +1,83 @@
 import { NextResponse } from "next/server";
+import FileScanResult from "@/models/FileScanResult";
+import connectDB from "@/utils/db";
 
 export async function POST(request) {
+  await connectDB();
+
   const userId = request.headers.get("x-user-id");
   const role = request.headers.get("x-user-role");
 
-  //check if user is authenticated
   if (!userId || !role) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  //check role-based access
   const allowedRoles = ['primary-user'];
   if (!allowedRoles.includes(role)) {
-    return NextResponse.json(
-      { error: "Forbidden" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { filename, content } = await request.json();
 
   try {
-    const vulnerabilitiesResponse = await fetch(`${process.env.FASTAPI_URL}/vulnerability-scan-single-file`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include auth header if needed
-        // 'Authorization': `Bearer ${process.env.INTERNAL_API_KEY}`
-      },
-      body: JSON.stringify(
-        {
-          filename: filename,
-          content: content
-        }
-      ),
-    });
+    const [vulnRes, bpRes] = await Promise.all([
+      fetch(`${process.env.FASTAPI_URL}/vulnerability-scan-single-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content }),
+      }),
+      fetch(`${process.env.FASTAPI_URL}/bp-scan-single-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content }),
+      }),
+    ]);
 
-    const bpSuggestionsResponse = await fetch(`${process.env.FASTAPI_URL}/bp-scan-single-file`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include auth header if needed
-        // 'Authorization': `Bearer ${process.env.INTERNAL_API_KEY}`
-      },
-      body: JSON.stringify(
-        {
-          filename: filename,
-          content: content
-        }
-      ),
-    });
+    const vulnerabilities = await vulnRes.json();
+    const bestPractices = await bpRes.json();
 
-    const vulnerabilitiesData = await vulnerabilitiesResponse.json();
-    const bpSuggestionsData = await bpSuggestionsResponse.json();
-
-    if (!vulnerabilitiesResponse.ok) {
+    if (!vulnRes.ok) {
       return NextResponse.json(
-        {
-          error: vulnerabilitiesData.detail || 'FastAPI returned an error',
-          status: vulnerabilitiesResponse.status
-        },
-        { status: vulnerabilitiesResponse.status }
+        { error: vulnerabilities.detail || 'Vulnerability scan failed' },
+        { status: vulnRes.status }
       );
     }
-    if (!bpSuggestionsResponse.ok) {
+
+    if (!bpRes.ok) {
       return NextResponse.json(
-        {
-          error: bpSuggestionsData.detail || 'FastAPI returned an error',
-          status: bpSuggestionsResponse.status
-        },
-        { status: bpSuggestionsResponse.status }
-      )
+        { error: bestPractices.detail || 'Best practices scan failed' },
+        { status: bpRes.status }
+      );
     }
 
-    //combined scan results
-    const combinedScanResults = {
-      vulnerabilities: vulnerabilitiesData,
-      bestPractices: bpSuggestionsData,
+    const scanResultDoc = new FileScanResult({
+      user_id: userId,
+      filename,
+      vulnerabilityScan: vulnerabilities,
+      bestPracticesScan: bestPractices
+    });
+
+    try {
+      await scanResultDoc.save();
+    } catch (saveErr) {
+      console.error("Error saving scan result:", saveErr);
+      return NextResponse.json(
+        { error: "Failed to save scan result", details: saveErr.message },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(combinedScanResults, { status: 200 });
-
-  } catch (error) {
     return NextResponse.json(
-      { error: error.message || 'Failed to scan repository' },
+      {
+        vulnerabilities,
+        bestPractices
+      },
+      { status: 200 }
+    );
+
+  } catch (err) {
+    return NextResponse.json(
+      { error: err.message || 'Failed to scan the file' },
       { status: 500 }
     );
   }

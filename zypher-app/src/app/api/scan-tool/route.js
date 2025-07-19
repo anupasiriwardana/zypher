@@ -1,84 +1,112 @@
 import { NextResponse } from "next/server";
+import RepoScanResult from "@/models/RepoScanResult";
+import connectDB from "@/utils/db";
 
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   const role = request.headers.get("x-user-role");
+  await connectDB();
 
-  //check if user is authenticated
   if (!userId || !role) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  //check role-based access
-  const allowedRoles = ['primary-user'];
+  const allowedRoles = ["primary-user"];
   if (!allowedRoles.includes(role)) {
-    return NextResponse.json(
-      { error: "Forbidden" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // handle the request
   const { repoUrl } = await request.json();
 
   try {
-    const vulnScanResponse = await fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include auth header if needed
-        // 'Authorization': `Bearer ${process.env.INTERNAL_API_KEY}`
-      },
-      body: JSON.stringify({ repo_url: repoUrl }),
-    });
+    //fetching vulnScan results and bpScan results in parallel
+    const [vulnScanRes, bpScanRes] = await Promise.all([
+      fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl }),
+      }),
+      fetch(`${process.env.FASTAPI_URL}/best-practices-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl }),
+      }),
+    ]);
 
-    const bpScanResponse = await fetch(`${process.env.FASTAPI_URL}/best-practices-scan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include auth header if needed
-        //'Authorization': `Bearer ${process.env.INTERNAL_API_KEY}`
-      },
-      body: JSON.stringify({ repo_url: repoUrl }),
-    });
-    
-    const vulnScanFindings = await vulnScanResponse.json();
-    const bpScanFindings = await bpScanResponse.json();
+    const vulnScanData = await vulnScanRes.json();
+    const bpScanData = await bpScanRes.json();
 
-    if (!vulnScanResponse.ok) {
+    if (!vulnScanRes.ok) {
       return NextResponse.json(
-        {
-          error: vulnScanFindings.detail || 'FastAPI returned an error',
-          status: vulnScanResponse.status
-        },
-        { status: vulnScanResponse.status }
+        { error: vulnScanData.detail || "Vulnerability scan failed" },
+        { status: vulnScanRes.status }
       );
     }
-    if (!bpScanResponse.ok) {
+
+    if (!bpScanRes.ok) {
       return NextResponse.json(
-        {
-          error: bpScanFindings.detail || 'FastAPI returned an error',
-          status: bpScanResponse.status
-        },
-        { status: bpScanResponse.status
-        }
-      )
+        { error: bpScanData.detail || "Best practices scan failed" },
+        { status: bpScanRes.status }
+      );
     }
 
-    // Combine results from both scans
+    try {
+      // saving scan result in MongoDB
+      const scanDoc = new RepoScanResult({
+        user_id : userId ,
+        repo_url: repoUrl,
+        bestPracticesScan: {
+          status: bpScanData.status,
+          results: bpScanData.results,
+          stats: {
+            scanned_files: bpScanData.stats.scanned_files,
+            total_findings: bpScanData.stats.total_findings,
+            critical: bpScanData.stats.critical,
+            high: bpScanData.stats.high,
+            medium: bpScanData.stats.medium,
+            low: bpScanData.stats.low,
+            bp_score: bpScanData.stats["bp score"],
+            bp_per_severity: bpScanData.stats["bp per_severity"],
+          },
+        },
+        vulnerabilityScan: {
+          status: vulnScanData.status,
+          results: vulnScanData.results,
+          stats: {
+            scanned_files: vulnScanData.stats.scanned_files,
+            total_findings: vulnScanData.stats.total_findings,
+            critical: vulnScanData.stats.critical,
+            high: vulnScanData.stats.high,
+            medium: vulnScanData.stats.medium,
+            low: vulnScanData.stats.low,
+            vuln_score: vulnScanData.stats["vuln score"],
+            vuln_per_severity: vulnScanData.stats["vuln per_severity"],
+            risk_factor: vulnScanData.stats["risk_factor"],
+          },
+        },
+      });
+
+      await scanDoc.save();
+    } catch (saveError) {
+      console.error(saveError)
+      // if (saveError.name === "ValidationError") {
+      //   console.error("Mongoose Validation Error:", saveError.errors);
+      // } else {
+      //   console.error("Save Error:", saveError);
+      // }
+    }
+
+
     const combinedResults = {
-      vulnerabilityScanResults: vulnScanFindings,
-      bestPracticesScanResults: bpScanFindings,
+      vulnerabilityScanResults: vulnScanData,
+      bestPracticesScanResults: bpScanData,
     };
 
     return NextResponse.json(combinedResults, { status: 200 });
 
   } catch (error) {
     return NextResponse.json(
-      { error: error.message || 'Failed to scan repository' },
+      { error: error.message || "Failed to save scan results" },
       { status: 500 }
     );
   }
