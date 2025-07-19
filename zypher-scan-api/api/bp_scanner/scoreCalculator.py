@@ -1,99 +1,65 @@
 from typing import List, Dict
 from models.bestPractices import Finding
-from config.database import bp_rule_metadata
 from collections import defaultdict
 
 class PipelineScoreCalculator:
     def __init__(self):
-        metadata = bp_rule_metadata.find({})
-
-    # Count rules by severity
-        severity_counts = {
-            "CRITICAL": 0,
-            "HIGH": 0,
-            "MEDIUM": 0,
-            "LOW": 0,
-            "INFO": 0
-        }
-        for data in metadata:
-            severity = data.get("severity", "").upper()
-            if severity:
-                severity_counts[severity] += 1
-
-        self.total_rules = {
-            "CRITICAL": severity_counts['CRITICAL'],
-            "HIGH": severity_counts['HIGH'],
-            "MEDIUM": severity_counts['MEDIUM'],
-            "LOW": severity_counts['LOW'],
-            "INFO": severity_counts['INFO']
-        }
-
-        # Weights for computing final score
+        # Weight of each severity in final score
         self.severity_weights = {
-            "CRITICAL": round(10 / 24, 4),
-            "HIGH":     round(7 / 24, 4), 
-            "MEDIUM":   round(4 / 24, 4), 
-            "LOW":      round(2 / 24, 4), 
-            "INFO":     round(1 / 24, 4)  
+            "CRITICAL": 100,
+            "HIGH": 50,
+            "MEDIUM": 25,
+            "LOW": 15,
+            "INFO": 5
         }
 
-        self.supported_severities = list(self.total_rules.keys())
+        self.supported_severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
 
-    def calculate_per_severity_scores(self, severity_counts, results) -> Dict[str, float]:
+    def calculate_per_severity_scores(self, failed_findings: List[Finding]) -> Dict[str, float]:
         failed_counts = {sev: 0 for sev in self.supported_severities}
-        # seen_rule_ids = set()
 
-        # # Filter out passed findings and deduplicate by rule_id
-        # # for sev in severity_counts:
-        # #     # rule_id = getattr(finding, "rule_id", None)
-        # #     # if rule_id is None or rule_id in seen_rule_ids:
-        # #     #     continue
-
-        # #     # seen_rule_ids.add(rule_id)
-        # #     if sev in failed_counts:
-        # #         failed_counts[sev] += 1
-        for sev, count in severity_counts.items():
-            sev = sev.upper()
+        for finding in failed_findings:
+            sev = finding.severity.upper()
             if sev in failed_counts:
-                failed_counts[sev] += count
-        for sev in self.total_rules:
-            self.total_rules[sev] = self.total_rules.get(sev, 0) * results
+                failed_counts[sev] += 1
 
-
+        
         severity_scores = {}
-        for sev in self.supported_severities:
-            total = self.total_rules[sev]
-            if total == 0:
-                severity_scores[sev] = 100.0
-                continue
+        for sev in failed_counts:
             failed = failed_counts[sev]
-            passed = total - failed
-            if passed != 0:
-                score = (passed / total) * 100 if total > 0 else 100
-            else:
-                score = 0.0
+            score = failed * self.severity_weights.get(sev, 100) 
             severity_scores[sev] = round(score, 2)
 
         return severity_scores
 
-
     def compute_weighted_pipeline_score(self, severity_scores: Dict[str, float]) -> float:
         final_score = 0.0
-        for sev, weight in self.severity_weights.items():
-            final_score += severity_scores.get(sev, 100) * weight
-            
-        # Ensure final score is within 0-100 range
-        if final_score > 100:
-            final_score = 100
-        elif final_score < 0:
-            final_score = 0
-        
-        return round(final_score, 2)
+        for sev in severity_scores:
+            final_score += severity_scores.get(sev, 100) 
+        return final_score
+    
+    def compute_risk_factor(self, severity_scores: Dict[str, float]) -> str:
+        risk = ''
+        if(severity_scores["CRITICAL"] > 0):
+            risk = "CRITICAL"
+        elif(severity_scores["HIGH"] > 0):
+            risk = "HIGH"
+        elif(severity_scores["MEDIUM"] > 0):
+            risk = "MEDIUM"
+        elif(severity_scores["LOW"] > 0):
+            risk = "LOW"
+        elif(severity_scores["INFO"] > 0):
+            risk = "INFO"
+        else:
+            risk = "NONE"
+        return risk
 
-    def calculate(self, severity_counts: Dict[str, any],results) -> Dict[str, any]:
-        severity_scores = self.calculate_per_severity_scores(severity_counts,results)
+    def calculate(self, failed_findings: List[Finding]) -> Dict[str, any]:
+        severity_scores = self.calculate_per_severity_scores(failed_findings)
         final_score = self.compute_weighted_pipeline_score(severity_scores)
+        risk_factor = self.compute_risk_factor(severity_scores)
         return {
             "per_severity": severity_scores,
-            "final_score": final_score
+            "final_score": final_score,
+            "risk_factor": risk_factor
         }

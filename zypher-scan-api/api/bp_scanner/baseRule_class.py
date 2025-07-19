@@ -1,6 +1,6 @@
 from typing import Dict, List, Any
 from models.rule_metadata import RuleFileMetadata
-from models.vulnerability import Finding
+from models.bestPractices import Finding
 
 class BaseRule:
     METADATA: RuleFileMetadata
