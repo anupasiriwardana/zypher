@@ -119,26 +119,30 @@ async def scan_repo(repo_request: RepoRequest):
                                 content, 
                                 item_path
                             )
+                            filtered_findings = [f.dict() for f in findings if f.action.lower() != "pass"]
                             
                             # Maintain existing fields + add findings
                             yaml_files.append({
                                 "path": item_path,
                                 "download_url": item.get("download_url"),
                                 "html_url": item.get("html_url"),
-                                "findings": [f.dict() for f in findings]
+                                "findings": filtered_findings
                             })
                     elif item_type == "dir":
                         sub_files = await fetch_and_scan_files(item_path)
                         yaml_files.extend(sub_files)
-
-            
+                
                 return yaml_files
 
             # Start scanning from root directory
             results = await fetch_and_scan_files()
             
             # Calculate overall statistics
+            # Filter out findings with action == "pass"
+
             total_findings = sum(len(file["findings"]) for file in results)
+           
+            score = scoreCalculator.calculate([Finding(**finding) for file in results for finding in file["findings"]])
             severity_counts = {
                 "CRITICAL": 0,
                 "HIGH": 0,
@@ -151,8 +155,7 @@ async def scan_repo(repo_request: RepoRequest):
                     severity = finding["severity"]
                     if severity in severity_counts:
                         severity_counts[severity] += 1
-
-            score = scoreCalculator.calculate(severity_counts,len(results))
+            
             return {
                 "status": "success",
                 "repo_url": repo_url,
@@ -164,8 +167,9 @@ async def scan_repo(repo_request: RepoRequest):
                     "high": severity_counts["HIGH"],
                     "medium": severity_counts["MEDIUM"],
                     "low": severity_counts["LOW"],
-                    "bp score": score["final_score"],
-                    "bp per_severity": score["per_severity"]
+                    "BSTP score": score["final_score"],
+                    "BSTP per_severity": score["per_severity"],
+                    "risk_factor": score["risk_factor"]
                 }
             }
         

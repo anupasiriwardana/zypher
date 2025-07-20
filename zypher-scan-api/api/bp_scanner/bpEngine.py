@@ -1,6 +1,6 @@
 from .parser import PipelineParser
 from .bestPractice_loader import load_rules
-from models.vulnerability import Finding
+from models.bestPractices import Finding
 from typing import List
 
 class ScannerEngine:
