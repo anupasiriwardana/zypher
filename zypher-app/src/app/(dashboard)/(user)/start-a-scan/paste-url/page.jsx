@@ -15,7 +15,7 @@ const SeverityBadge = ({ severity }) => {
     'HIGH': 'bg-orange-600/20 text-orange-400',
     'MEDIUM': 'bg-yellow-600/20 text-yellow-400',
     'LOW': 'bg-green-600/20 text-green-400',
-    'POSITIVE': 'bg-green-500/20 text-green-300',
+    'POSITIVE': 'bg-green-500/20 text-green-300', 
     'INFORMATIONAL': 'bg-blue-600/20 text-blue-400',
     'DEFAULT': 'bg-gray-600/20 text-gray-400',
   };
@@ -29,6 +29,106 @@ const SeverityBadge = ({ severity }) => {
   );
 };
 
+// Circular Progress Bar function
+const CircularProgressBar = ({ score, maxScore, label = "Score", riskFactor }) => {
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+
+  // Ensure maxScore is a positive number to avoid division by zero or negative
+  const safeMaxScore = (maxScore && maxScore > 0) ? maxScore : 1;
+  const displayProgress = score;
+
+  const progressRatio = Math.max(0, Math.min(1, displayProgress / safeMaxScore));
+  const strokeDashoffset = circumference - progressRatio * circumference;
+
+  let textColor = "text-gray-400";
+  let strokeColor = "stroke-gray-500";
+
+  if (riskFactor) {
+    switch (riskFactor?.toUpperCase()) {
+      case 'CRITICAL':
+        textColor = "text-red-400";
+        strokeColor = "stroke-red-500";
+        break;
+      case 'HIGH':
+        textColor = "text-orange-400";
+        strokeColor = "stroke-orange-500";
+        break;
+      case 'MEDIUM':
+        textColor = "text-yellow-400";
+        strokeColor = "stroke-yellow-500";
+        break;
+      case 'LOW':
+        textColor = "text-green-400";
+        strokeColor = "stroke-green-500";
+        break;
+      case 'POSITIVE': 
+        textColor = "text-green-300";
+        strokeColor = "stroke-green-400";
+        break;
+      case 'INFORMATIONAL':
+        textColor = "text-blue-400";
+        strokeColor = "stroke-blue-500";
+        break;
+      default:
+        textColor = "text-gray-400";
+        strokeColor = "stroke-gray-500";
+    }
+  } else {
+    // Logic for Best Practices Score (assuming maxScore is 100)
+    if (safeMaxScore === 100) {
+      if (score >= 90) {
+        textColor = "text-green-400";
+        strokeColor = "stroke-green-500";
+      } else if (score >= 70) {
+        textColor = "text-yellow-400";
+        strokeColor = "stroke-yellow-500";
+      } else if (score >= 50) {
+        textColor = "text-orange-400";
+        strokeColor = "stroke-orange-500";
+      } else {
+        textColor = "text-red-400";
+        strokeColor = "stroke-red-500";
+      }
+    } else {
+      textColor = "text-gray-400";
+      strokeColor = "stroke-gray-500";
+    }
+  }
+
+  return (
+    <div className="relative w-40 h-40 flex items-center justify-center">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+        <circle
+          className="text-gray-700"
+          strokeWidth="10"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx="60"
+          cy="60"
+        />
+        <circle
+          className={clsx("transition-all duration-500 ease-out", strokeColor)}
+          strokeWidth="10"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx="60"
+          cy="60"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center">
+        <span className={clsx("text-3xl font-bold", textColor)}>{score}</span>
+        <span className="text-sm text-[var(--text-secondary)]">{label}</span>
+      </div>
+    </div>
+  );
+};
+
 export default function PasteUrlPageContent() {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,14 +136,25 @@ export default function PasteUrlPageContent() {
   const [scanResults, setScanResults] = useState(null);
   const [activeTab, setActiveTab] = useState('vulnerabilities');
   const [expandedFiles, setExpandedFiles] = useState(new Set());
+  const [initialVulnMaxScores, setInitialVulnMaxScores] = useState({}); //state for storing initial vulnerability max scores per URL in localStorage
 
   const [vulnRuleMetadata, setVulnRuleMetadata] = useState([]);
   const [bpRuleMetadata, setBpRuleMetadata] = useState([]);
 
   const router = useRouter();
 
-
+  // Load initialVulnMaxScores from localStorage and fetch rule metadata on component mount
   useEffect(() => {
+    try {
+      const storedScores = localStorage.getItem('initialVulnMaxScores');
+      if (storedScores) {
+        setInitialVulnMaxScores(JSON.parse(storedScores));
+      }
+    } catch (error) {
+      console.error("Failed to load initialVulnMaxScores from localStorage", error);
+    }
+
+    // Fetch rule metadata
     const fetchRuleMetadata = async () => {
       try {
         const res = await fetch('/api/rule-metadata', {
@@ -65,7 +176,7 @@ export default function PasteUrlPageContent() {
 
         setVulnRuleMetadata(data.vuln_rule_metadata || []);
         setBpRuleMetadata(data.bp_rule_metadata || []);
-        console.log("fetched rule metadata:", data);
+        // console.log("fetched rule metadata:", data);
 
       } catch (error) {
         console.error(error);
@@ -73,7 +184,7 @@ export default function PasteUrlPageContent() {
     }
     fetchRuleMetadata();
   }, []);
-
+  //get rule names from metadata
   const getRuleName = (ruleId, scanType) => {
     if (scanType === 'vulnerabilities') {
       const rule = vulnRuleMetadata.find(r => r.rule_id === ruleId);
@@ -85,8 +196,31 @@ export default function PasteUrlPageContent() {
     return ruleId;
   };
 
+  // Function to determine the highest severity for a file from its findings
+  const getFileHighestSeverity = (findings) => {
+    if (!findings || findings.length === 0) {
+      return 'DEFAULT';
+    }
 
-  // Function to toggle file expansion
+    // Define the order of severity from highest to lowest
+    const severitiesOrder = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL', 'POSITIVE'];
+    let highestSeverity = 'DEFAULT';
+    let highestSeverityIndex = severitiesOrder.length; 
+
+    for (const finding of findings) {
+      const currentSeverity = finding.severity?.toUpperCase();
+      const currentSeverityIndex = severitiesOrder.indexOf(currentSeverity);
+
+      // If current severity is found in the order and is higher (lower index) than the current highest
+      if (currentSeverityIndex !== -1 && currentSeverityIndex < highestSeverityIndex) {
+        highestSeverity = currentSeverity;
+        highestSeverityIndex = currentSeverityIndex;
+      }
+    }
+    return highestSeverity;
+  };
+
+  // Function to toggle file expansion in the detailed findings section
   const toggleFileExpansion = (filePath) => {
     setExpandedFiles(prev => {
       const newSet = new Set(prev);
@@ -103,10 +237,12 @@ export default function PasteUrlPageContent() {
     e.preventDefault();
     setFeedback(null);
     setScanResults(null);
-    setActiveTab('vulnerabilities');
-    setExpandedFiles(new Set());
+    setActiveTab('vulnerabilities'); 
+    setExpandedFiles(new Set()); 
 
-    if (!url.trim()) {
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl) {
       setFeedback({ type: 'error', message: 'Please enter a URL to scan.' });
       return;
     }
@@ -119,7 +255,7 @@ export default function PasteUrlPageContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ repoUrl: url }),
+        body: JSON.stringify({ repoUrl: trimmedUrl }), // Use trimmedUrl here
       })
 
       if (!res.ok) {
@@ -128,12 +264,30 @@ export default function PasteUrlPageContent() {
       }
 
       const data = await res.json();
-      console.log('Scan results:', data);
 
       if (data.vulnerabilityScanResults || data.bestPracticesScanResults) {
         setScanResults(data);
         setFeedback({ type: 'success', message: 'Scan initiated successfully! Results displayed below.' });
-        setUrl('');
+        setUrl(''); 
+
+        // Logic to store initial vulnerability max score
+        if (data.vulnerabilityScanResults?.stats?.['vuln score'] !== undefined) {
+          setInitialVulnMaxScores(prevScores => {
+            const currentInitialScore = prevScores[trimmedUrl];
+            let newScores = { ...prevScores };
+
+            // Only set the initial max score if it hasn't been set before for this URL.
+            // This ensures it represents the FIRST scan's score for that URL.
+            if (currentInitialScore === undefined) {
+              newScores[trimmedUrl] = data.vulnerabilityScanResults.stats['vuln score'];
+              // Save to localStorage immediately after updating state
+              localStorage.setItem('initialVulnMaxScores', JSON.stringify(newScores));
+            }
+            // If currentInitialScore is already defined, it remains the initial score.
+            return newScores;
+          });
+        }
+
       } else {
         throw new Error('Scan response missing expected results.');
       }
@@ -146,35 +300,101 @@ export default function PasteUrlPageContent() {
     }
   };
 
-  // function to render a single scan type's results (Vulnerability or Best Practice)
-  const renderScanTypeResults = (scanTypeData, scanType) => {
+
+  const renderScanTypeResults = (scanTypeData, scanType, repoUrl) => {
     if (!scanTypeData) {
       return <p className="text-[var(--text-secondary)] text-center py-8">No results available for this scan type.</p>;
     }
 
-    const { stats, results, status, repo_url } = scanTypeData;
+    const { stats, results } = scanTypeData; // Destructure relevant data
+
+    // Determine the max score for vulnerability progress bar
+    const vulnMaxScoreForProgressBar = (scanType === 'vulnerabilities' && initialVulnMaxScores[repoUrl] !== undefined)
+      ? initialVulnMaxScores[repoUrl]
+      : (stats?.['vuln score'] !== undefined && stats['vuln score'] > 0 ? stats['vuln score'] : 5000); 
 
     return (
       <div className="mt-8 text-left animate-fadeIn">
         {/* Summary Section */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
-              <p className="text-sm text-[var(--text-secondary)]">Scanned Files</p>
-              <p className="text-3xl font-bold text-[var(--foreground)]">{stats.scanned_files || 0}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 mb-8 items-stretch">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow">
+                {/* Scanned Files */}
+                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                  <p className="text-sm text-[var(--text-secondary)]">Scanned Files</p>
+                  <p className="text-4xl font-bold text-[var(--foreground)]">{stats.scanned_files || 0}</p>
+                </div>
+                {/* Total Findings */}
+                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                  <p className="text-sm text-[var(--text-secondary)]">Total Findings</p>
+                  <p className="text-4xl font-bold text-red-400">{stats.total_findings || 0}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-grow">
+                {/* Critical Findings */}
+                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                  <p className="text-sm text-[var(--text-secondary)]">Critical Findings</p>
+                  <p className="text-4xl font-bold text-red-400">{stats.critical || 0}</p>
+                </div>
+                {/* High Findings */}
+                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                  <p className="text-sm text-[var(--text-secondary)]">High Findings</p>
+                  <p className="text-4xl font-bold text-orange-400">{stats.high || 0}</p>
+                </div>
+                {/* Medium Findings */}
+                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                  <p className="text-sm text-[var(--text-secondary)]">Medium Findings</p>
+                  <p className="text-4xl font-bold text-yellow-400">{stats.medium || 0}</p>
+                </div>
+                {/* Low Findings */}
+                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                  <p className="text-sm text-[var(--text-secondary)]">Low Findings</p>
+                  <p className="text-4xl font-bold text-green-400">{stats.low || 0}</p>
+                </div>
+              </div>
             </div>
-            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
-              <p className="text-sm text-[var(--text-secondary)]">Total Findings</p>
-              <p className="text-3xl font-bold text-red-400">{stats.total_findings || 0}</p>
-            </div>
-            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
-              <p className="text-sm text-[var(--text-secondary)]">Critical / High</p>
-              <p className="text-3xl font-bold text-orange-400">{stats.critical || 0} / {stats.high || 0}</p>
-            </div>
-            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md min-w-[150px]">
-              <p className="text-sm text-[var(--text-secondary)]">Medium / Low</p>
-              <p className="text-3xl font-bold text-yellow-400">{stats.medium || 0} / {stats.low || 0}</p>
-            </div>
+
+            {/* Progress Bar */}
+            {scanType === 'vulnerabilities' && stats['vuln score'] !== undefined && (
+              <div className="bg-[var(--background)] p-6 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col items-center justify-center space-y-4 h-full">
+                <h4 className="text-md font-semibold text-[var(--text-secondary)]">Vulnerability Score</h4>
+                <CircularProgressBar
+                  score={stats['vuln score']}
+                  label="Score"
+                  maxScore={vulnMaxScoreForProgressBar} 
+                  riskFactor={stats.risk_factor}
+                />
+                {stats.risk_factor && (
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm text-[var(--text-secondary)]">Overall Risk Factor</p>
+                    <SeverityBadge severity={stats.risk_factor} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {scanType === 'best-practices' && stats['bp score'] !== undefined && (
+              <div className="bg-[var(--background)] p-6 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col items-center justify-center space-y-4 h-full">
+                <h4 className="text-md font-semibold text-[var(--text-secondary)]">Best Practices Score</h4>
+                <CircularProgressBar
+                  score={stats['bp score']}
+                  label="Score"
+                  maxScore={100} // BP score is always out of 100
+    
+                />
+                {stats['bp score'] !== undefined && (
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm text-[var(--text-secondary)]">Overall Best Practices Rating</p>
+                    {stats['bp score'] >= 90 && <span className="text-green-400 font-semibold">Excellent</span>}
+                    {stats['bp score'] < 90 && stats['bp score'] >= 70 && <span className="text-yellow-400 font-semibold">Good</span>}
+                    {stats['bp score'] < 70 && stats['bp score'] >= 50 && <span className="text-orange-400 font-semibold">Needs Improvement</span>}
+                    {stats['bp score'] < 50 && <span className="text-red-400 font-semibold">Poor</span>}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -198,6 +418,7 @@ export default function PasteUrlPageContent() {
                 }, {});
 
                 const isFileExpanded = expandedFiles.has(fileResult.path);
+                const fileHighestSeverity = getFileHighestSeverity(fileResult.findings); // Get highest severity for the file
 
                 return (
                   <div key={fileIndex} className="bg-[var(--input-bg)] p-6 rounded-lg border border-[var(--border-input)] shadow-inner">
@@ -209,9 +430,12 @@ export default function PasteUrlPageContent() {
                         <FolderOpen size={20} /> File: <span className="break-words">{fileResult.path}</span>
 
                         {fileResult.findings?.length > 0 && (
-                          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300">
-                            {fileResult.findings.length} findings
-                          </span>
+                          <>
+                            <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300">
+                              {fileResult.findings.length} findings
+                            </span>
+                            <SeverityBadge severity={fileHighestSeverity} />
+                          </>
                         )}
                       </h4>
                       <span className="ml-auto shrink-0 text-[var(--text-secondary)]">
@@ -279,14 +503,14 @@ export default function PasteUrlPageContent() {
   };
 
   return (
-    <div className="animate-fadeInUp">
+    <div className="animate-fadeInUp max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <button
         onClick={() => router.push('/start-a-scan')}
         className="mb-6 inline-flex items-center gap-2 text-[var(--text-primary)] hover:text-[var(--foreground)] transition-colors"
       >
         <ArrowLeft size={20} /> Back to Scan Options
       </button>
-      <div className="text-center bg-[var(--input-bg)] p-8 md:p-12 rounded-3xl mb-12 shadow-xl border border-[var(--border-input)] max-w-screen-2xl mx-auto">
+      <div className="text-center bg-[var(--input-bg)] p-8 md:p-12 rounded-3xl mb-12 shadow-xl border border-[var(--border-input)]">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 leading-tight text-[var(--foreground)]">
           Scan Your Repository by URL
         </h1>
@@ -379,8 +603,12 @@ export default function PasteUrlPageContent() {
               </button>
             </div>
 
-            {activeTab === 'vulnerabilities' && renderScanTypeResults(scanResults.vulnerabilityScanResults, 'vulnerabilities')}
-            {activeTab === 'best-practices' && renderScanTypeResults(scanResults.bestPracticesScanResults, 'best-practices')}
+            {activeTab === 'vulnerabilities' && scanResults.vulnerabilityScanResults && (
+              renderScanTypeResults(scanResults.vulnerabilityScanResults, 'vulnerabilities', scanResults.repoUrl)
+            )}
+            {activeTab === 'best-practices' && scanResults.bestPracticesScanResults && (
+              renderScanTypeResults(scanResults.bestPracticesScanResults, 'best-practices', scanResults.repoUrl)
+            )}
 
             {/* Raw Data */}
             <div className="mt-12 text-left">
