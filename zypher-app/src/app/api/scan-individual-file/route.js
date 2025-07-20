@@ -53,8 +53,35 @@ export async function POST(request) {
     const scanResultDoc = new FileScanResult({
       user_id: userId,
       filename,
-      vulnerabilityScan: vulnerabilities,
-      bestPracticesScan: bestPractices
+      // vulnerabilityScan: vulnerabilities,
+      vulnerabilityScan: {
+        status: vulnerabilities.status,
+        findings: vulnerabilities.findings,
+        stats: {
+          total_findings: vulnerabilities.stats.total_findings,
+          critical: vulnerabilities.stats.critical,
+          high: vulnerabilities.stats.high,
+          medium: vulnerabilities.stats.medium,
+          low: vulnerabilities.stats.low,
+          score: vulnerabilities.stats.score,
+          per_severity: vulnerabilities.stats["per_severity"],
+          risk_factor: vulnerabilities.stats.risk_factor
+        }
+      },
+      bestPracticesScan: {
+        status: bestPractices.status,
+        findings: bestPractices.findings,
+        stats: {
+          total_findings: bestPractices.stats.total_findings,
+          critical: bestPractices.stats.critical,
+          high: bestPractices.stats.high,
+          medium: bestPractices.stats.medium,
+          low: bestPractices.stats.low,
+          score: bestPractices.stats["BSTP score"],
+          per_severity: bestPractices.stats["BSTP per_severity"],
+          risk_factor: bestPractices.stats.risk_factor
+        }
+      }
     });
 
     try {

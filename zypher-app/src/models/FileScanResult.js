@@ -17,6 +17,14 @@ const statsSchema = new mongoose.Schema({
     high: Number,
     medium: Number,
     low: Number,
+    score: Number,
+    per_severity: {
+        CRITICAL: Number,
+        HIGH: Number,
+        MEDIUM: Number,
+        LOW: Number,
+    },
+    risk_factor: String
 }, { _id: false });
 
 const scanSectionSchema = new mongoose.Schema({

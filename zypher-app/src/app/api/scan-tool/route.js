@@ -65,8 +65,9 @@ export async function POST(request) {
             high: bpScanData.stats.high,
             medium: bpScanData.stats.medium,
             low: bpScanData.stats.low,
-            bp_score: bpScanData.stats["bp score"],
-            bp_per_severity: bpScanData.stats["bp per_severity"],
+            bp_score: bpScanData.stats["BSTP score"],
+            bp_per_severity: bpScanData.stats["BSTP per_severity"],
+            risk_factor : bpScanData.stats.risk_factor,
           },
         },
         vulnerabilityScan: {

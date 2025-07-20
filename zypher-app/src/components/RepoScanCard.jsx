@@ -1,11 +1,21 @@
 "use client";
 
-import { FolderGit, ArrowRight } from "lucide-react";
+import { FolderGit, ArrowRight, CheckCircle, AlertTriangle, XCircle, FileText } from "lucide-react";
 import Link from "next/link";
+import clsx from "clsx";
 
-export default function RepoScanCard({ repoUrl, date, scanDataId, vulnerabilityFindings, bestPracticeFindings }) {
+export default function RepoScanCard({ repoUrl, date, scanDataId, vulnerabilityFindings, bestPracticeFindings, risk }) {
   const repoName = repoUrl.split('/').filter(Boolean).pop();
-  const href = `/scan-results/${scanDataId}`;
+  const href = `/scan-results/${scanDataId}?type=repo`;
+
+  const statusInfo = {
+    LOW: { icon: CheckCircle, color: "text-green-400", label: "Low" },
+    MEDIUM: { icon: AlertTriangle, color: "text-yellow-400", label: "Medium" },
+    CRITICAL: { icon: XCircle, color: "text-red-500", label: "Critical" },
+  };
+
+  const currentStatus = statusInfo[risk] || { icon: FileText, color: "text-[var(--text-secondary)]", label: risk };
+  const StatusIcon = currentStatus.icon;
 
   return (
     <Link href={href} className="block">
@@ -23,8 +33,14 @@ export default function RepoScanCard({ repoUrl, date, scanDataId, vulnerabilityF
             Vulnerabilities: <strong>{vulnerabilityFindings}</strong>, Best Practice Suggestions: <strong>{bestPracticeFindings}</strong>
           </p>
 
-          <div className="text-[var(--brand-yellow)] text-sm font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300">
-            View Results <ArrowRight size={16} />
+          <div className="flex justify-between items-end mt-auto">
+            <div className={clsx("flex items-center gap-2 text-sm font-medium", currentStatus.color)}>
+              <StatusIcon size={16} />
+              <span>{currentStatus.label}</span>
+            </div>
+            <span className="text-[var(--brand-yellow)] text-sm font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300">
+              View Results <ArrowRight size={16} />
+            </span>
           </div>
         </div>
       </div>

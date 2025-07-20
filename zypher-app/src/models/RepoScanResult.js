@@ -31,8 +31,8 @@ const bestPracticeStatsSchema = new mongoose.Schema({
         HIGH: Number,
         MEDIUM: Number,
         LOW: Number,
-        INFO: Number
-    }
+    },
+    risk_factor: String
 }, { _id: false });
 
 const vulnerabilityStatsSchema = new mongoose.Schema({
