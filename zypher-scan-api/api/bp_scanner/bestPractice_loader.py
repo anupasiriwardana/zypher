@@ -4,7 +4,7 @@ import pkgutil
 import os
 import types
 from config.database import bestPractice_rule_file_collection
-from models.vulnerability import Finding
+from models.bestPractices import Finding
 from .baseRule_class import BaseRule
 
 def load_rules() -> list:
