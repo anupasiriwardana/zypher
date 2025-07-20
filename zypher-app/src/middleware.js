@@ -65,6 +65,7 @@ export async function middleware(req) {
     '/api/scan-tool': ['primary-user'],
     '/api/scan-individual-file': ['primary-user'],
     '/api/rule-metadata': ['primary-user'],
+    '/api/scan-results': ['primary-user'],
   };
 
   // Find the most specific matching route
