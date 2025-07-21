@@ -3,7 +3,9 @@ import RepoScanResult from "@/models/RepoScanResult";
 import connectDB from "@/utils/db";
 import { NextResponse } from "next/server";
 
-export const GET = async (request, { params }) => {
+export const GET = async (request, context) => {
+    const params = await context.params;
+
     const userId = request.headers.get("x-user-id");
     const role = request.headers.get("x-user-role");
 
