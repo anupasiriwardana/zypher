@@ -34,15 +34,16 @@ export default function LoginPage() {
       setSuccessMsg("You are already logged in");
 
       // Redirect based on role for already authenticated users
-      redirectBasedOnRole(session.user.role);   
+      redirectBasedOnRole(session.user.role);
     }
   }, [session, status, loginSuccess]);
 
   // Handle redirection after successful login
   useEffect(() => {
     if (loginSuccess && status === "authenticated") {
-      // Redirect based on role after successful login
-      redirectBasedOnRole(session.user.role);
+
+      //redirect to login success page
+      router.push('/signup-success?loginType=login');
     }
   }, [loginSuccess, session, status]);
 
@@ -75,11 +76,13 @@ export default function LoginPage() {
         router.push("/view-requests");
         break;
       case 'rule-developer':
-        router.push("/developer-dashboard");
+        router.push("/assigned-rules");
         break;
-      case 'rule-tester':
-        router.push("/tester-dashboard");
+      case 'rule-implementer':
+        router.push("/rules-to-test");
         break;
+      case 'educator':
+        router.push("/educator-requests");
       default:
         router.push("/");
         break;
