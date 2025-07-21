@@ -375,22 +375,22 @@ export default function PasteUrlPageContent() {
               </div>
             )}
 
-            {scanType === 'best-practices' && stats['bp score'] !== undefined && (
+            {scanType === 'best-practices' && stats['BSTP score'] !== undefined && (
               <div className="bg-[var(--background)] p-6 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col items-center justify-center space-y-4 h-full">
                 <h4 className="text-md font-semibold text-[var(--text-secondary)]">Best Practices Score</h4>
                 <CircularProgressBar
-                  score={stats['bp score']}
+                  score={stats['BSTP score']}
                   label="Score"
                   maxScore={100} // BP score is always out of 100
     
                 />
-                {stats['bp score'] !== undefined && (
+                {stats['BSTP score'] !== undefined && (
                   <div className="flex flex-col items-center">
                     <p className="text-sm text-[var(--text-secondary)]">Overall Best Practices Rating</p>
-                    {stats['bp score'] >= 90 && <span className="text-green-400 font-semibold">Excellent</span>}
-                    {stats['bp score'] < 90 && stats['bp score'] >= 70 && <span className="text-yellow-400 font-semibold">Good</span>}
-                    {stats['bp score'] < 70 && stats['bp score'] >= 50 && <span className="text-orange-400 font-semibold">Needs Improvement</span>}
-                    {stats['bp score'] < 50 && <span className="text-red-400 font-semibold">Poor</span>}
+                    {stats['BSTP score'] >= 90 && <span className="text-green-400 font-semibold">Excellent</span>}
+                    {stats['BSTP score'] < 90 && stats['BSTP score'] >= 70 && <span className="text-yellow-400 font-semibold">Good</span>}
+                    {stats['BSTP score'] < 70 && stats['BSTP score'] >= 50 && <span className="text-orange-400 font-semibold">Needs Improvement</span>}
+                    {stats['BSTP score'] < 50 && <span className="text-red-400 font-semibold">Poor</span>}
                   </div>
                 )}
               </div>

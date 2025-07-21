@@ -80,7 +80,7 @@ export default function ScanResultsPage() {
   };
 
   return (
-    <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp`}>
+    <div className={`p-2 md:p-8 lg:p-4 ${lexend.className} animate-fadeInUp`}>
       <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Scan Results</h1>
 
       {/* Search + Filter Bar */}
