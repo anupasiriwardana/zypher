@@ -46,6 +46,7 @@ export default function SignupSuccess() {
                         break;
                     case 'educator' : 
                         router.push("/add-knowledge");
+                        break;
                     default:
                         router.push("/");
                         break;

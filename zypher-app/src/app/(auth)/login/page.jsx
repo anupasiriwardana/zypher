@@ -83,6 +83,7 @@ export default function LoginPage() {
         break;
       case 'educator':
         router.push("/add-knowledge");
+        break;
       default:
         router.push("/");
         break;
