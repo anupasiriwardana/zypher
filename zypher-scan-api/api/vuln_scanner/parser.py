@@ -2,11 +2,26 @@ import yaml
 from typing import Dict, List, Tuple
 
 class PipelineParser:
+    def _fix_on_key(self, data):
+        if isinstance(data, dict):
+            new_data = {}
+            for k, v in data.items():
+                if k is True:
+                    new_data['on'] = self._fix_on_key(v)
+                else:
+                    new_data[k] = self._fix_on_key(v)
+            return new_data
+        elif isinstance(data, list):
+            return [self._fix_on_key(item) for item in data]
+        else:
+            return data
+        
     def parse_content(self, content: str) -> Tuple[Dict, List[str]]:
         """Parse YAML content with line number awareness"""
         try:
             lines = content.splitlines(keepends=True)
             data = yaml.safe_load(content) or {}
+            data = self._fix_on_key(data)  # Fix 'on' key if needed
             print(f"Parsed YAML keys: {list(data.keys())}")  # Debug log
             return data, lines
         except yaml.YAMLError as e:
