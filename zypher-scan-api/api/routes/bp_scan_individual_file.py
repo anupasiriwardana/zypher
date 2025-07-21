@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from models.scan_input import FileScanRequest
 from bp_scanner.bpEngine import ScannerEngine
+from bp_scanner.scoreCalculator import PipelineScoreCalculator
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from models.vulnerability import Finding
+from models.bestPractices import Finding
 from typing import List, Optional
 
 router = APIRouter(
@@ -13,6 +14,7 @@ router = APIRouter(
 
 # Initialize scanner once
 scanner = ScannerEngine()
+scoreCalculator = PipelineScoreCalculator()
 
 # Thread pool for scanning
 executor = ThreadPoolExecutor(max_workers=4)
@@ -32,32 +34,39 @@ async def scan_file(file_request: FileScanRequest):
             file_request.filename
         )
         
-        # Calculate severity counts
+        filtered_findings = [f for f in findings if f.action.lower() != "pass"]
+        score = scoreCalculator.calculate(filtered_findings)
+
+        # Calculate severity counts based on filtered findings
         severity_counts = {
             "CRITICAL": 0,
             "HIGH": 0,
             "MEDIUM": 0,
             "LOW": 0
         }
-        
-        for finding in findings:
+
+        for finding in filtered_findings:
             severity = finding.severity
             if severity in severity_counts:
                 severity_counts[severity] += 1
-        
+
         return {
             "status": "success",
             "filename": file_request.filename,
-            "findings": [f.dict() for f in findings],
+            "findings": [f.dict() for f in filtered_findings],
             "stats": {
-                "total_findings": len(findings),
+                "total_findings": len(filtered_findings),
                 "critical": severity_counts["CRITICAL"],
                 "high": severity_counts["HIGH"],
                 "medium": severity_counts["MEDIUM"],
-                "low": severity_counts["LOW"]
+                "low": severity_counts["LOW"],
+                "BSTP score": score["final_score"],
+                "BSTP per_severity": score["per_severity"],
+                "risk_factor": score["risk_factor"]
+
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=500,

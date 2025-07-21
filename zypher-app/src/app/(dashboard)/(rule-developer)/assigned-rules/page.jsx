@@ -172,10 +172,10 @@ export default function AssignedRulesPage() {
   };
 
   const commonTableHeaders = [
-    { key: 'id', label: 'Rule ID' },
+    // { key: 'id', label: 'Rule ID' },
     { key: 'name', label: 'Rule Name' },
     { key: 'severity', label: 'Severity' },
-    { key: 'targetFileType', label: 'Target File Type' },
+    // { key: 'targetFileType', label: 'Target File Type' },
     { key: 'status', label: 'Status' },
     { key: 'submittedDate', label: 'Submitted Date' },
   ];
@@ -271,12 +271,12 @@ export default function AssignedRulesPage() {
                     onClick={() => handleRowClick(rule)}
                     className="hover:bg-[var(--hover-bg)] transition-colors duration-200 cursor-pointer group"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--foreground)]">{rule.id}</td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--foreground)]">{rule.id}</td> */}
                     <td className="px-6 py-4 text-sm text-[var(--foreground)] font-medium group-hover:text-[var(--brand-yellow)] transition-colors">{rule.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={getSeverityColor(rule.severity)}>{rule.severity}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx("px-3 py-1 rounded-full text-xs font-semibold", getStatusColor(rule.status))}>
                         {rule.status}

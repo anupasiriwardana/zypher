@@ -39,10 +39,13 @@ export default function SignupSuccess() {
                         router.push("/view-requests");
                         break;
                     case 'rule-developer':
-                        router.push("/developer-dashboard");
+                        router.push("/assigned-rules");
                         break;
-                    case 'rule-tester':
-                        router.push("/tester-dashboard");
+                    case 'rule-implementer':
+                        router.push("/rules-to-test");
+                        break;
+                    case 'educator' : 
+                        router.push("/add-knowledge");
                         break;
                     default:
                         router.push("/");
