@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from models.scan_input import FileScanRequest
 from vuln_scanner.engine import ScannerEngine
+from vuln_scanner.scoreCalculator import PipelineScoreCalculator
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from models.vulnerability import Finding
@@ -13,6 +14,7 @@ router = APIRouter(
 
 # Initialize scanner once
 scanner = ScannerEngine()
+scoreCalculator = PipelineScoreCalculator()
 
 # Thread pool for scanning
 executor = ThreadPoolExecutor(max_workers=4)
@@ -44,7 +46,7 @@ async def scan_file(file_request: FileScanRequest):
             severity = finding.severity
             if severity in severity_counts:
                 severity_counts[severity] += 1
-        
+        score = scoreCalculator.calculate(findings)
         return {
             "status": "success",
             "filename": file_request.filename,
@@ -54,7 +56,10 @@ async def scan_file(file_request: FileScanRequest):
                 "critical": severity_counts["CRITICAL"],
                 "high": severity_counts["HIGH"],
                 "medium": severity_counts["MEDIUM"],
-                "low": severity_counts["LOW"]
+                "low": severity_counts["LOW"],
+                "score": score["final_score"],
+                "per_severity": score["per_severity"],
+                "risk_factor": score["risk_factor"]
             }
         }
         

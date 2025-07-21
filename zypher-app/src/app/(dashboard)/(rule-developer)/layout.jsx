@@ -6,6 +6,8 @@ import RuleDeveloperSidebar from '@/components/sidebars/ruleDeveloperSidebar';
 import { Bell, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Suspense } from 'react';
+import { signOut, useSession } from 'next-auth/react';
+import Image from 'next/image';
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -15,7 +17,7 @@ const lexend = Lexend({
 export default function DashboardLayout({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-
+  const { data: session, status } = useSession();
 
   const hasNotifications = true;
 
@@ -25,6 +27,12 @@ export default function DashboardLayout({ children }) {
     month: 'long',
     year: 'numeric',
   });
+
+  const handleSignOut = () => {
+    signOut({
+      callbackUrl: '/login', // Redirect to login after signout
+    });
+  };
 
   return (
     <Suspense className={lexend.className} fallback={<div className={lexend.className}>Loading...</div>}>
@@ -74,14 +82,26 @@ export default function DashboardLayout({ children }) {
                   }}
                   className="hover:text-[var(--brand-yellow)] transition"
                 >
-                  <UserCircle size={36} />
+                  {session?.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt="Profile"
+                      width={36}
+                      height={36}
+                      className="rounded-full object-cover border border-[var(--border-input)]"
+                    />
+                  ) : (
+                    <UserCircle size={36} />
+                  )}
                 </button>
 
                 {showProfile && (
                   <div className="absolute right-0 mt-3 w-64 bg-[var(--input-bg)] text-md rounded-xl shadow-lg p-8 z-50">
                     <p className="font-semibold mb-2">Signed in as</p>
-                    <p className="text-[var(--text-secondary)] mb-4">user@example.com</p>
-                    <button className="w-full text-left hover:text-[var(--brand-yellow)] transition">
+                    <p className="text-[var(--text-secondary)] mb-4">{session.user.email}</p>
+                    <button
+                      onClick={handleSignOut} 
+                      className="w-full text-left hover:text-[var(--brand-yellow)] transition">
                       Sign out
                     </button>
                   </div>
