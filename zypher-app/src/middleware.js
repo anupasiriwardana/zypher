@@ -52,7 +52,7 @@ export async function middleware(req) {
     '/rule-developer-settings': ['rule-developer'],
 
     // Dashboard routes -> rule-implementor
-    '/rules-to-test': ['rule-implementor'],
+    '/rules-to-test': ['rule-implementer'],
 
     // Dashboard routes -> educator
     '/add-knowledge': ['educator'],
