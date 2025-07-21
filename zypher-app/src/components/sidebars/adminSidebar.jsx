@@ -22,7 +22,6 @@ const formatPageName = (id) => {
 
 const adminNav = [
   { id: "manage-users", icon: Users, href: "/user-management" },
-  { id: "activity-log", icon: Activity, href: "/activity-log" },
   { id: "analytics", icon: BarChart3, href: "/analytics" },
   { id: "settings", icon: Settings, href: "/admin-settings" },
 ];
