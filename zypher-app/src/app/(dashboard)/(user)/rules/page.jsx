@@ -136,7 +136,7 @@ export default function RulesPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Panel: Custom Rule Submission Form */}
         <div className="w-full lg:w-1/2 bg-[var(--input-bg)] p-8 rounded-2xl shadow-xl border border-[var(--border-input)]">
-          <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">Propose a New Rule or Best Practice</h2>
+          <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">Request a New Rule or Best Practice</h2>
           <p className="text-[var(--text-secondary)] mb-8">
             Got a specific vulnerability or best practice you'd like us to add? Describe it here and our rule developers will review your request.
           </p>
@@ -204,7 +204,7 @@ export default function RulesPage() {
               </div>
 
               {/* Target File Types */}
-              <div className="w-full sm:w-1/2">
+              {/* <div className="w-full sm:w-1/2">
                 <label htmlFor="fileTypes" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
                   <FileType size={16} /> Target File Types
                 </label>
@@ -217,7 +217,7 @@ export default function RulesPage() {
                   className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
                   disabled={isSubmitting}
                 />
-              </div>
+              </div> */}
             </div>
 
 
@@ -261,7 +261,7 @@ export default function RulesPage() {
                 </>
               ) : (
                 <>
-                  Publish to be Developed <Send size={20} />
+                  Submit <Send size={20} />
                 </>
               )}
             </button>

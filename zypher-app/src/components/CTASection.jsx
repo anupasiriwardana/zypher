@@ -15,7 +15,7 @@ export default function CTASection() {
           </div>
         </div>
 
-        <Link href="/startFreeScan">
+        <Link href="/see-how-it-works">
           <button className="mt-10 inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-8 py-4 rounded-full hover:brightness-110 transition">
             Start free scan
             <ArrowRight size={25} />

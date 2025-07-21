@@ -19,7 +19,7 @@ const features = [
   {
     title: "Targeted Static Analysis",
     description:
-      "Zypher scans only critical sections of the repo, helping you catch vulnerabilities without false alarms.",
+      "Zypher scans only YAML-based configs of the repo, helping you catch vulnerabilities without false alarms.",
     link: "/features/static-analysis",
   },
   {
