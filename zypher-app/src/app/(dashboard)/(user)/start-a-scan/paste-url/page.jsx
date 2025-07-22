@@ -137,6 +137,7 @@ export default function PasteUrlPageContent() {
   const [activeTab, setActiveTab] = useState('vulnerabilities');
   const [expandedFiles, setExpandedFiles] = useState(new Set());
   const [initialVulnMaxScores, setInitialVulnMaxScores] = useState({}); //state for storing initial vulnerability max scores per URL in localStorage
+  const [initialBpMaxScores, setInitialBpMaxScores] = useState({}); //state for storing initial vulnerability max scores per URL in localStorage
 
   const [vulnRuleMetadata, setVulnRuleMetadata] = useState([]);
   const [bpRuleMetadata, setBpRuleMetadata] = useState([]);
@@ -147,11 +148,15 @@ export default function PasteUrlPageContent() {
   useEffect(() => {
     try {
       const storedScores = localStorage.getItem('initialVulnMaxScores');
+      const storedBpScores = localStorage.getItem('initialBpMaxScores');
       if (storedScores) {
         setInitialVulnMaxScores(JSON.parse(storedScores));
       }
+      if (storedBpScores) {
+        setInitialBpMaxScores(JSON.parse(storedBpScores));
+      }
     } catch (error) {
-      console.error("Failed to load initialVulnMaxScores from localStorage", error);
+      console.error("Failed to load Max Scores from localStorage", error);
     }
 
     // Fetch rule metadata
@@ -283,6 +288,12 @@ export default function PasteUrlPageContent() {
               // Save to localStorage immediately after updating state
               localStorage.setItem('initialVulnMaxScores', JSON.stringify(newScores));
             }
+
+            if (currentInitialScore === undefined) {
+              newScores[trimmedUrl] = data.bestPracticesScanResults.stats['BSTP score'];
+              // Save to localStorage immediately after updating state
+              localStorage.setItem('initialBpMaxScores', JSON.stringify(newScores));
+            }
             // If currentInitialScore is already defined, it remains the initial score.
             return newScores;
           });
@@ -312,6 +323,10 @@ export default function PasteUrlPageContent() {
     const vulnMaxScoreForProgressBar = (scanType === 'vulnerabilities' && initialVulnMaxScores[repoUrl] !== undefined)
       ? initialVulnMaxScores[repoUrl]
       : (stats?.['vuln score'] !== undefined && stats['vuln score'] > 0 ? stats['vuln score'] : 5000); 
+
+     const BpMaxScoreForProgressBar = (scanType === 'best practices' && initialBpMaxScores[repoUrl] !== undefined)
+      ? initialVulnMaxScores[repoUrl]
+      : (stats?.['BSTP score'] !== undefined && stats['BSTP score'] > 0 ? stats['BSTP score'] : 5000); 
 
     return (
       <div className="mt-8 text-left animate-fadeIn">
@@ -381,16 +396,14 @@ export default function PasteUrlPageContent() {
                 <CircularProgressBar
                   score={stats['BSTP score']}
                   label="Score"
-                  maxScore={100} // BP score is always out of 100
+                  maxScore={BpMaxScoreForProgressBar} 
+                  riskFactor={stats.risk_factor}
     
                 />
-                {stats['BSTP score'] !== undefined && (
+                {stats.risk_factor && (
                   <div className="flex flex-col items-center">
-                    <p className="text-sm text-[var(--text-secondary)]">Overall Best Practices Rating</p>
-                    {stats['BSTP score'] >= 90 && <span className="text-green-400 font-semibold">Excellent</span>}
-                    {stats['BSTP score'] < 90 && stats['BSTP score'] >= 70 && <span className="text-yellow-400 font-semibold">Good</span>}
-                    {stats['BSTP score'] < 70 && stats['BSTP score'] >= 50 && <span className="text-orange-400 font-semibold">Needs Improvement</span>}
-                    {stats['BSTP score'] < 50 && <span className="text-red-400 font-semibold">Poor</span>}
+                    <p className="text-sm text-[var(--text-secondary)]">Overall Risk Factor</p>
+                    <SeverityBadge severity={stats.risk_factor} />
                   </div>
                 )}
               </div>
