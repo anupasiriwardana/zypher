@@ -18,20 +18,16 @@ const lexend = Lexend({
 const assignedRulesData = [
   {
     id: 'R001',
-    name: 'Insecure Password Policy',
-    severity: 'High',
+    name: 'No Hardcoded API Keys in YAML',
+    severity: 'Critical',
     targetFileType: 'Auth.py',
     status: 'To be developed',
     submittedDate: '2025-07-01',
-    description: 'The current authentication module accepts passwords shorter than 8 characters, making it vulnerable to brute-force attacks. A new rule is needed to enforce stronger password policies, including length and complexity requirements.',
-    exampleCode: `// Example vulnerable code snippet
-function login(user, pass) {
-    if (pass.length < 5) {
-        // Weak check
-        return false; 
-    }
-    // ...
-}`,
+    description: 'Detects API keys or sensitive strings directly embedded in YAML configuration files, which can lead to security breaches.',
+    exampleCode: `apiVersion: v1
+kind: ConfigMap
+data:
+  apiKey: "your_hardcoded_api_key_123"`,
   },
   {
     id: 'R005',
