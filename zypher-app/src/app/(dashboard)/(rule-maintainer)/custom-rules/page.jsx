@@ -310,7 +310,7 @@ export default function CustomRulesPage() {
 
   return (
     <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp min-h-screen`}>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Active custom rules in the system</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Active rules in the system</h1>
 
       {/* Custom Rules Table */}
       <RuleRequestsTable
