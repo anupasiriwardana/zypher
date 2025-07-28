@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Lexend } from "next/font/google";
+import Image from "next/image";
 import clsx from "clsx";
 import {
   User,
@@ -19,9 +20,9 @@ const lexend = Lexend({
   weight: ["400", "500", "600", "700"],
 });
 
-export default function EducatorSettingsPage() {
-  const [name, setName] = useState("Jane Educator");
-  const [email, setEmail] = useState("jane.educator@zypher.com");
+export default function AdminSettingsPage() {
+  const [name, setName] = useState("Admin");
+  const [email, setEmail] = useState("admin@zypher.com");
   const [profilePic, setProfilePic] = useState("/Images/avatar.jpg");
 
   const [isSaving, setIsSaving] = useState(false);
@@ -30,6 +31,8 @@ export default function EducatorSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+
 
   const handleProfileSave = async (e) => {
     e.preventDefault();
@@ -91,10 +94,12 @@ export default function EducatorSettingsPage() {
         <form onSubmit={handleProfileSave} className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-6 items-center">
             <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[var(--brand-yellow)]">
-              <img
+              <Image
                 src={profilePic}
                 alt="Educator Avatar"
                 className="w-full h-full object-cover"
+                width={100}
+                height={100}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "/Images/avatar.jpg";
@@ -239,6 +244,54 @@ export default function EducatorSettingsPage() {
           </div>
         </form>
       </div>
+        <form
+        onSubmit={(e) => {
+            e.preventDefault();
+            setFeedback(null);
+            setIsSaving(true);
+            // Simulate transfer logic
+            setTimeout(() => {
+            setFeedback({
+                type: "success",
+                message: `Admin privileges transferred to ${newAdminEmail}. You are no longer an admin.`,
+            });
+            setIsSaving(false);
+            setNewAdminEmail(""); // Optional reset
+            }, 1000);
+        }}
+        className="space-y-6 pt-10 border-t border-[var(--border-input)] mt-10"
+        >
+        <h2 className="text-xl font-bold text-red-500">Resign as Admin</h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+            To resign from your admin role, please provide the email of the user you want to transfer your privileges to.
+        </p>
+        <div>
+            <label className="block text-sm mb-1 text-[var(--text-secondary)]">
+            New Admin's Email Address
+            </label>
+            <input
+            type="email"
+            value={newAdminEmail}
+            onChange={(e) => setNewAdminEmail(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+            required
+            />
+        </div>
+        <div className="flex justify-end">
+            <button
+            type="submit"
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 bg-red-600 text-white font-bold px-6 py-3 rounded-full hover:brightness-110 transition-all duration-300 shadow-md text-base"
+            >
+            {isSaving ? (
+                <Loader2 size={20} className="animate-spin" />
+            ) : (
+                <Lock size={20} />
+            )}
+            Transfer & Resign
+            </button>
+        </div>
+        </form>
     </div>
   );
 }

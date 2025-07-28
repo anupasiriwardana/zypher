@@ -58,11 +58,11 @@ export default function FAQSection() {
                 <div className="w-96 text-zinc-100 text-base font-medium leading-normal text-[18px] text-left">
                   {faq.q}
                 </div>
-                <div className="w-6 h-6 relative overflow-hidden">
+                <div className="w-6 h-6 relative overflow-hidden ">
                   {expandedIndex === i ? (
-                    <Minus className="text-zinc-100 w-5 h-5" />
+                    <Minus className="text-zinc-100 w-5 h-5 hover:text-[var(--brand-yellow)]" />
                   ) : (
-                    <Plus className="text-zinc-100 w-5 h-5" />
+                    <Plus className="text-zinc-100 w-5 h-5 hover:text-[var(--brand-yellow)]" />
                   )}
                 </div>
               </button>
