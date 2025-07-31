@@ -293,10 +293,10 @@ export default function RulesToTestPage() {
             <table className="min-w-full divide-y divide-[var(--border-input)]">
               <thead className="bg-[var(--background)]">
                 <tr>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Rule ID</th>
+                  {/* <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Rule ID</th> */}
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Rule Name</th>
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Severity</th>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Target File Type</th>
+                  {/* <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Target File Type</th> */}
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Status</th>
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Date Added</th>
                 </tr>
@@ -308,7 +308,7 @@ export default function RulesToTestPage() {
                     onClick={() => handleAwaitingRuleClick(rule)}
                     className="cursor-pointer hover:bg-[var(--hover-bg)] transition-colors duration-200 group"
                   >
-                    <td className="py-5 px-6 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)]">{rule.id}</td>
+                    {/* <td className="py-5 px-6 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)]">{rule.id}</td> */}
                     <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--foreground)] font-semibold">{rule.name}</td>
                     <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--foreground)]">
                       <span className={clsx("px-3 py-1 rounded-full text-xs font-semibold", {
@@ -320,7 +320,7 @@ export default function RulesToTestPage() {
                         {rule.severity}
                       </span>
                     </td>
-                    <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td>
+                    {/* <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td> */}
                     <td className="py-5 px-6 whitespace-nowrap">
                       <StatusBadge status={rule.status} />
                     </td>
@@ -355,10 +355,10 @@ export default function RulesToTestPage() {
             <table className="min-w-full divide-y divide-[var(--border-input)]">
               <thead className="bg-[var(--background)]">
                 <tr>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Rule ID</th>
+                  {/* <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Rule ID</th> */}
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Rule Name</th>
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Severity</th>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Target File Type</th>
+                  {/* <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Target File Type</th> */}
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Status</th>
                   <th className="py-4 px-6 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Date Added</th>
                 </tr>
@@ -370,7 +370,7 @@ export default function RulesToTestPage() {
                     onClick={() => handlePastRuleClick(rule)}
                     className="cursor-pointer hover:bg-[var(--hover-bg)] transition-colors duration-200 group"
                   >
-                    <td className="py-5 px-6 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)]">{rule.id}</td>
+                    {/* <td className="py-5 px-6 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)]">{rule.id}</td> */}
                     <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--foreground)] font-semibold">{rule.name}</td>
                     <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--foreground)]">
                       <span className={clsx("px-3 py-1 rounded-full text-xs font-semibold", {
@@ -382,7 +382,7 @@ export default function RulesToTestPage() {
                         {rule.severity}
                       </span>
                     </td>
-                    <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td>
+                    {/* <td className="py-5 px-6 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td> */}
                     <td className="py-5 px-6 whitespace-nowrap">
                       <StatusBadge status={rule.status} />
                     </td>

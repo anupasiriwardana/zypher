@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Upload, Loader2, FileText, CheckCircle, XCircle,
-  BarChart2, Bug, Code, TerminalSquare, ChevronDown, ChevronUp , ArrowLeft
+  BarChart2, Bug, Code, TerminalSquare, ChevronDown, ChevronUp, ArrowLeft
 } from "lucide-react";
 import clsx from "clsx";
 import * as yaml from 'yaml';
@@ -39,6 +39,7 @@ export default function UploadConfigPageContent() {
   const [scanResults, setScanResults] = useState(null);
   const [activeTab, setActiveTab] = useState('vulnerabilities');
   const [expandedRules, setExpandedRules] = useState(new Set());
+  const [error, setError] = useState('');
 
   const [vulnRuleMetadata, setVulnRuleMetadata] = useState([]);
   const [bpRuleMetadata, setBpRuleMetadata] = useState([]);
@@ -148,6 +149,13 @@ export default function UploadConfigPageContent() {
 
   const handleScan = async () => {
     if (!selectedFile) return;
+
+    // Check file extension before scanning
+    const fileName = selectedFile.fileObject.name;
+    if (!fileName.endsWith('.yml') && !fileName.endsWith('.yaml')) {
+      setParseError('Only .yml or .yaml files are supported for scanning.');
+      return;
+    }
 
     setScanning(true);
     setScanResult(null);

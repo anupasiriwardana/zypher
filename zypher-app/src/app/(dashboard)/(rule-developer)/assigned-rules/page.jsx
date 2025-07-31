@@ -18,20 +18,16 @@ const lexend = Lexend({
 const assignedRulesData = [
   {
     id: 'R001',
-    name: 'Insecure Password Policy',
-    severity: 'High',
+    name: 'No Hardcoded API Keys in YAML',
+    severity: 'Critical',
     targetFileType: 'Auth.py',
     status: 'To be developed',
     submittedDate: '2025-07-01',
-    description: 'The current authentication module accepts passwords shorter than 8 characters, making it vulnerable to brute-force attacks. A new rule is needed to enforce stronger password policies, including length and complexity requirements.',
-    exampleCode: `// Example vulnerable code snippet
-function login(user, pass) {
-    if (pass.length < 5) {
-        // Weak check
-        return false; 
-    }
-    // ...
-}`,
+    description: 'Detects API keys or sensitive strings directly embedded in YAML configuration files, which can lead to security breaches.',
+    exampleCode: `apiVersion: v1
+kind: ConfigMap
+data:
+  apiKey: "your_hardcoded_api_key_123"`,
   },
   {
     id: 'R005',
@@ -172,10 +168,10 @@ export default function AssignedRulesPage() {
   };
 
   const commonTableHeaders = [
-    { key: 'id', label: 'Rule ID' },
+    // { key: 'id', label: 'Rule ID' },
     { key: 'name', label: 'Rule Name' },
     { key: 'severity', label: 'Severity' },
-    { key: 'targetFileType', label: 'Target File Type' },
+    // { key: 'targetFileType', label: 'Target File Type' },
     { key: 'status', label: 'Status' },
     { key: 'submittedDate', label: 'Submitted Date' },
   ];
@@ -271,12 +267,12 @@ export default function AssignedRulesPage() {
                     onClick={() => handleRowClick(rule)}
                     className="hover:bg-[var(--hover-bg)] transition-colors duration-200 cursor-pointer group"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--foreground)]">{rule.id}</td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--foreground)]">{rule.id}</td> */}
                     <td className="px-6 py-4 text-sm text-[var(--foreground)] font-medium group-hover:text-[var(--brand-yellow)] transition-colors">{rule.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={getSeverityColor(rule.severity)}>{rule.severity}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx("px-3 py-1 rounded-full text-xs font-semibold", getStatusColor(rule.status))}>
                         {rule.status}

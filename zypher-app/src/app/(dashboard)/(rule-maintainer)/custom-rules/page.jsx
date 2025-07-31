@@ -211,18 +211,18 @@ const RuleRequestsTable = ({
           <table className="min-w-full divide-y divide-[var(--border-input)]">
             <thead className="bg-[var(--hover-bg)]">
               <tr>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                   Rule ID
-                </th>
+                </th> */}
                 <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                   Rule Name
                 </th>
                 <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                   Severity
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                   Target File Types
-                </th>
+                </th> */}
                 <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                   Status
                 </th>
@@ -243,9 +243,9 @@ const RuleRequestsTable = ({
                     onClick={() => onRowClick(rule)}
                     className="hover:bg-[var(--hover-bg)] transition-colors duration-200 cursor-pointer"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)] group-hover:text-[var(--foreground)]">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--brand-yellow)] group-hover:text-[var(--foreground)]">
                       {rule.id}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 max-w-xs truncate text-sm text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]">
                       {rule.ruleName}
                     </td>
@@ -254,9 +254,9 @@ const RuleRequestsTable = ({
                         {severityData.label}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
                       {rule.targetFileTypes || 'N/A'}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full items-center gap-1", statusData.bg, statusData.color)}>
                         {StatusIcon && <StatusIcon size={14} />} {statusData.label}
@@ -310,7 +310,7 @@ export default function CustomRulesPage() {
 
   return (
     <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp min-h-screen`}>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Active custom rules in the system</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Active rules in the system</h1>
 
       {/* Custom Rules Table */}
       <RuleRequestsTable

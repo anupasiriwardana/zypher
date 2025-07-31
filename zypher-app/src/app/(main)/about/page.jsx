@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Lexend } from 'next/font/google';
 import { Shield, Mail, Phone, Globe } from 'lucide-react';
@@ -29,10 +30,12 @@ export default function AboutPage() {
           {/* About Image & Text */}
           <div className="flex flex-col lg:flex-row gap-16 items-center justify-between w-full">
             <div className="w-full lg:w-1/2">
-              <img
+              <Image
                 src="/images/scan.png" 
                 alt="Scan Results"
                 className="w-full max-w-md mx-auto rounded-2xl shadow-xl"
+                width={500}
+                height={300}
               />
             </div>
             <div className="w-full lg:w-1/2 text-left text-lg leading-relaxed space-y-6">

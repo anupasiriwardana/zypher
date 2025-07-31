@@ -19,7 +19,7 @@ const features = [
   {
     title: "Targeted Static Analysis",
     description:
-      "Zypher scans only critical sections of the repo, helping you catch vulnerabilities without false alarms.",
+      "Zypher scans only YAML-based configs of the repo, helping you catch vulnerabilities without false alarms.",
     link: "/features/static-analysis",
   },
   {
@@ -63,7 +63,7 @@ export default function FeaturesSection() {
             className="relative p-[1.5px] rounded-[42px] w-[444px] h-[388px] group"
           >
           
-            <div className="w-full h-full rounded-[42px] bg-[rgba(255,255,255,0.01)] border-[1.5px] border-[rgba(240,240,240,0.15)] p-8 flex flex-col justify-between transition-all duration-300">
+            <div className="w-full h-full rounded-[42px] bg-[rgba(255,255,255,0.01)] border-[1.5px] border-[rgba(240,240,240,0.15)] p-8 flex flex-col justify-between transition-all duration-300 hover:border-[var(--brand-yellow)]">
               <div>
                 <h3
                   className="text-[#F0F0F0] font-[Lexend] text-[32px] font-semibold leading-[130%] tracking-[-0.352px] mb-2"

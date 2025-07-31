@@ -4,6 +4,8 @@ import { MessageSquareMore } from 'lucide-react';
 import React, { useState, useRef } from 'react';
 import { FaLinkedinIn, FaFacebookF } from 'react-icons/fa';
 import { Lexend } from 'next/font/google';
+import Image from "next/image";
+import Link from "next/link";
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -105,13 +107,15 @@ export default function TestimonialsSection() {
                 className="w-full flex-shrink-0 px-4"
                 style={{ flex: "0 0 100%" }}
               >
-                <div className="relative bg-[#0F0F0F] border border-[#333] rounded-3xl w-[682px] h-[230px] flex items-center px-8 py-6 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+                <div className="relative bg-[#0F0F0F] border border-[#333] rounded-3xl w-[682px] h-[230px] flex items-center px-8 py-6 shadow-[0_0_0_1px_rgba(255,255,255,0.04)] hover:border-[var(--brand-yellow)] ">
                   {/* Left: Avatar */}
                   <div className="w-[100px] h-[100px] rounded-full overflow-hidden flex-shrink-0 border-2 border-[var(--brand-yellow)] shadow-md bg-zinc-800">
-                    <img
+                    <Image
                       src={testimonial.image}
                       alt={testimonial.name}
                       className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
                     />
                   </div>
 
