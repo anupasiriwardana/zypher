@@ -45,166 +45,166 @@ const toCamelCase = str => str.replace(/(?:^|\s|_|-)([a-zA-Z])/g, (m, c) => c ? 
 const initialTestYml = `# Example CI/CD pipeline config\nstages:\n  - build\n  - test\n  - deploy\njobs:\n  build-job:\n    stage: build\n    script:\n      - echo \\"Building...\\"\n  test-job:\n    stage: test\n    script:\n      - echo \\"Running tests...\\"\n  deploy-job:\n    stage: deploy\n    script:\n      - echo \\"Deploying...\\"\n`;
 
 const initialDevelopmentRules = [
-  {
-    id: 'R005',
-    name: 'Unencrypted DB Connections',
-    type: 'Vulnerability',
-    status: 'Under development',
-    files: [
-      {
-        name: toCamelCase('Unencrypted DB Connections') + '.py',
-        language: 'python',
-        content:
-`import re
-from typing import Dict, List, Any, Optional, Tuple
+//   {
+//     id: 'R005',
+//     name: 'Unencrypted DB Connections',
+//     type: 'Vulnerability',
+//     status: 'Under development',
+//     files: [
+//       {
+//         name: toCamelCase('Unencrypted DB Connections') + '.py',
+//         language: 'python',
+//         content:
+// `import re
+// from typing import Dict, List, Any, Optional, Tuple
 
-class UnencryptedDBConnections(BaseRule):
-    METADATA = {
-        "rule_id": "R005",
-        "rule_name": "Unencrypted DB Connections",
-        "severity": "Critical"
-    }
-    def __init__(self):
-        self.credential_patterns = [
-            r"password[\"\':\s]*=[\"'\s]*[a-zA-Z0-9_\-\+\.\@\#\$\%\^\&\*\(\)\[\]\{\}\<\>\~\`]{3,}",
-            r"pwd[\"\':\s]*=[\"'\s]*[a-zA-Z0-9_\-\+\.\@\#\$\%\^\&\*\(\)\[\]\{\}\<\>\~\`]{3,}"
-        ]
-        self.aws_key_pattern = r"(?:ACCESS|SECRET)_?KEY(?:_ID)?[\"\':\s]*=[\"'\s]*(?:AKIA)[a-zA-Z0-9]{16,}"
-        self.secret_patterns = [
-            r"-----BEGIN (RSA|OPENSSH|DSA|EC|PGP) PRIVATE KEY-----",
-            r"eyJhbGciOiJ[^"]{50,}",
-            r"ghp_[a-zA-Z0-9]{36}",
-            r"xoxb-[0-9]{11}-[0-9]{11}-[a-zA-Z0-9]{24}"
-        ]
-    def scan(self, pipeline_data: Dict[str, Any], file_lines: List[str], file_path: str) -> List[Finding]:
-        print(f"Starting scan on {file_path}")
-        findings = []
-        findings.extend(self._check_env_vars(pipeline_data, file_lines, file_path))
-        findings.extend(self._scan_lines(file_lines, file_path))
-        findings.extend(self._check_secret_exposure(pipeline_data, file_lines, file_path))
-        print(f"Found {len(findings)} credential hygiene issues")
-        return findings
-    # Enter your logics complying with the above format
-`
-      },
-      {
-        name: 'test.yml',
-        language: 'yaml',
-        content: initialTestYml
-      },
-      {
-        name: 'metadata.json',
-        language: 'json',
-        content: JSON.stringify({
-          rule_id: 'R005',
-          name: 'Unencrypted DB Connections',
-          description: 'Checks for DB connections without SSL/TLS encryption.',
-          severity: 'Critical',
-          status: 'Under development',
-          developer_note: '',
-          type: 'Vulnerability'
-        }, null, 2)
-      }
-    ]
-  },
-  {
-    id: 'R012',
-    name: 'Log Injection Prevention',
-    type: 'Best Practice',
-    status: 'Under development',
-    files: [
-      {
-        name: toCamelCase('Log Injection Prevention') + '.py',
-        language: 'python',
-        content:
-`import re
-from typing import Dict, List, Any, Optional, Tuple
+// class UnencryptedDBConnections(BaseRule):
+//     METADATA = {
+//         "rule_id": "R005",
+//         "rule_name": "Unencrypted DB Connections",
+//         "severity": "Critical"
+//     }
+//     def __init__(self):
+//         self.credential_patterns = [
+//             r"password[\"\':\s]*=[\"'\s]*[a-zA-Z0-9_\-\+\.\@\#\$\%\^\&\*\(\)\[\]\{\}\<\>\~\`]{3,}",
+//             r"pwd[\"\':\s]*=[\"'\s]*[a-zA-Z0-9_\-\+\.\@\#\$\%\^\&\*\(\)\[\]\{\}\<\>\~\`]{3,}"
+//         ]
+//         self.aws_key_pattern = r"(?:ACCESS|SECRET)_?KEY(?:_ID)?[\"\':\s]*=[\"'\s]*(?:AKIA)[a-zA-Z0-9]{16,}"
+//         self.secret_patterns = [
+//             r"-----BEGIN (RSA|OPENSSH|DSA|EC|PGP) PRIVATE KEY-----",
+//             r"eyJhbGciOiJ[^"]{50,}",
+//             r"ghp_[a-zA-Z0-9]{36}",
+//             r"xoxb-[0-9]{11}-[0-9]{11}-[a-zA-Z0-9]{24}"
+//         ]
+//     def scan(self, pipeline_data: Dict[str, Any], file_lines: List[str], file_path: str) -> List[Finding]:
+//         print(f"Starting scan on {file_path}")
+//         findings = []
+//         findings.extend(self._check_env_vars(pipeline_data, file_lines, file_path))
+//         findings.extend(self._scan_lines(file_lines, file_path))
+//         findings.extend(self._check_secret_exposure(pipeline_data, file_lines, file_path))
+//         print(f"Found {len(findings)} credential hygiene issues")
+//         return findings
+//     # Enter your logics complying with the above format
+// `
+//       },
+//       {
+//         name: 'test.yml',
+//         language: 'yaml',
+//         content: initialTestYml
+//       },
+//       {
+//         name: 'metadata.json',
+//         language: 'json',
+//         content: JSON.stringify({
+//           rule_id: 'R005',
+//           name: 'Unencrypted DB Connections',
+//           description: 'Checks for DB connections without SSL/TLS encryption.',
+//           severity: 'Critical',
+//           status: 'Under development',
+//           developer_note: '',
+//           type: 'Vulnerability'
+//         }, null, 2)
+//       }
+//     ]
+//   },
+//   {
+//     id: 'R012',
+//     name: 'Log Injection Prevention',
+//     type: 'Best Practice',
+//     status: 'Under development',
+//     files: [
+//       {
+//         name: toCamelCase('Log Injection Prevention') + '.py',
+//         language: 'python',
+//         content:
+// `import re
+// from typing import Dict, List, Any, Optional, Tuple
 
-class LogInjectionPrevention(BaseRule):
-    METADATA = {
-        "rule_id": "R012",
-        "rule_name": "Log Injection Prevention",
-        "severity": "High"
-    }
-    def __init__(self):
-        # Example logic for log injection prevention
-        pass
-    def scan(self, pipeline_data: Dict[str, Any], file_lines: List[str], file_path: str) -> List[Finding]:
-        print(f"Starting scan on {file_path}")
-        findings = []
-        # Add your scan logic here
-        return findings
-`
-      },
-      {
-        name: 'test.yml',
-        language: 'yaml',
-        content: initialTestYml
-      },
-      {
-        name: 'metadata.json',
-        language: 'json',
-        content: JSON.stringify({
-          rule_id: 'R012',
-          name: 'Log Injection Prevention',
-          description: 'Checks for log injection vulnerabilities.',
-          severity: 'High',
-          status: 'Under development',
-          developer_note: '',
-          type: 'Best Practice'
-        }, null, 2)
-      }
-    ]
-  },
-  {
-    id: 'R015',
-    name: 'CORS Configuration Check',
-    type: 'Best Practice',
-    status: 'To be developed',
-    files: [
-      {
-        name: toCamelCase('CORS Configuration Check') + '.py',
-        language: 'python',
-        content:
-`import re
-from typing import Dict, List, Any, Optional, Tuple
+// class LogInjectionPrevention(BaseRule):
+//     METADATA = {
+//         "rule_id": "R012",
+//         "rule_name": "Log Injection Prevention",
+//         "severity": "High"
+//     }
+//     def __init__(self):
+//         # Example logic for log injection prevention
+//         pass
+//     def scan(self, pipeline_data: Dict[str, Any], file_lines: List[str], file_path: str) -> List[Finding]:
+//         print(f"Starting scan on {file_path}")
+//         findings = []
+//         // Add your scan logic here
+//         return findings
+// `
+//       },
+//       {
+//         name: 'test.yml',
+//         language: 'yaml',
+//         content: initialTestYml
+//       },
+//       {
+//         name: 'metadata.json',
+//         language: 'json',
+//         content: JSON.stringify({
+//           rule_id: 'R012',
+//           name: 'Log Injection Prevention',
+//           description: 'Checks for log injection vulnerabilities.',
+//           severity: 'High',
+//           status: 'Under development',
+//           developer_note: '',
+//           type: 'Best Practice'
+//         }, null, 2)
+//       }
+//     ]
+//   },
+//   {
+//     id: 'R015',
+//     name: 'CORS Configuration Check',
+//     type: 'Best Practice',
+//     status: 'To be developed',
+//     files: [
+//       {
+//         name: toCamelCase('CORS Configuration Check') + '.py',
+//         language: 'python',
+//         content:
+// `import re
+// from typing import Dict, List, Any, Optional, Tuple
 
-class CORSConfigurationCheck(BaseRule):
-    METADATA = {
-        "rule_id": "R015",
-        "rule_name": "CORS Configuration Check",
-        "severity": "Medium"
-    }
-    def __init__(self):
-        # Example logic for CORS configuration
-        pass
-    def scan(self, pipeline_data: Dict[str, Any], file_lines: List[str], file_path: str) -> List[Finding]:
-        print(f"Starting scan on {file_path}")
-        findings = []
-        # Add your scan logic here
-        return findings
-`
-      },
-      {
-        name: 'test.yml',
-        language: 'yaml',
-        content: initialTestYml
-      },
-      {
-        name: 'metadata.json',
-        language: 'json',
-        content: JSON.stringify({
-          rule_id: 'R015',
-          name: 'CORS Configuration Check',
-          description: 'Checks for insecure CORS configurations.',
-          severity: 'Medium',
-          status: 'To be developed',
-          developer_note: '',
-          type: 'Best Practice'
-        }, null, 2)
-      }
-    ]
-  }
+// class CORSConfigurationCheck(BaseRule):
+//     METADATA = {
+//         "rule_id": "R015",
+//         "rule_name": "CORS Configuration Check",
+//         "severity": "Medium"
+//     }
+//     def __init__(self):
+//         # Example logic for CORS configuration
+//         pass
+//     def scan(self, pipeline_data: Dict[str, Any], file_lines: List[str], file_path: str) -> List[Finding]:
+//         print(f"Starting scan on {file_path}")
+//         findings = []
+//         // Add your scan logic here
+//         return findings
+// `
+//       },
+//       {
+//         name: 'test.yml',
+//         language: 'yaml',
+//         content: initialTestYml
+//       },
+//       {
+//         name: 'metadata.json',
+//         language: 'json',
+//         content: JSON.stringify({
+//           rule_id: 'R015',
+//           name: 'CORS Configuration Check',
+//           description: 'Checks for insecure CORS configurations.',
+//           severity: 'Medium',
+//           status: 'To be developed',
+//           developer_note: '',
+//           type: 'Best Practice'
+//         }, null, 2)
+//       }
+//     ]
+//   }
 ];
 
 // Helper to get default rule ID by type
@@ -295,7 +295,102 @@ export default function DevelopmentWorkspacePage() {
     }
   };
 
-  //saving the current file
+  // Replace with actual logged-in developer ID
+  // Example: get current developer ID from auth context
+  // Replace with your actual auth logic
+  // import { useAuth } from '../../path/to/authProvider';
+  // const { user } = useAuth();
+  // const RULE_DEVELOPER_ID = user?.id;
+
+  // For demo, fallback to default if not logged in
+  const [developerId, setDeveloperId] = useState('default_rule_developer_id');
+
+  // Example: get developer ID from localStorage/session/cookie
+  useEffect(() => {
+    // Replace with your actual logic to get logged-in user
+    const storedId = window.localStorage.getItem('rule_developer_id');
+    if (storedId) setDeveloperId(storedId);
+    // If using context, setDeveloperId(user.id);
+  }, []);
+
+  // Save metadata to Next.js API
+  const saveMetadataToDB = async (metadata) => {
+    // Validate required fields before sending
+    const requiredFields = ['rule_id', 'name', 'description', 'severity', 'status', 'type'];
+    for (const field of requiredFields) {
+      if (!metadata[field]) {
+        return { error: `Missing required field: ${field}` };
+      }
+    }
+    try {
+      // Ensure 'rule_name' is present for backend validation
+      const payload = { 
+        ...metadata, 
+        rule_developer_id: developerId,
+        rule_name: metadata.rule_name || metadata.name // Map 'name' to 'rule_name' if needed
+      };
+      const res = await fetch('/api/customRuleMetadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        // Log error for debugging
+        console.error('API Error:', result);
+      }
+      return result;
+    } catch (err) {
+      console.error('Fetch Error:', err);
+      return { error: err.message };
+    }
+  };
+
+  // Save file (rule_name.py or test.yml) to FastAPI backend
+  const saveFileToDB = async (file, rule) => {
+    try {
+      if (file.name === 'test.yml') {
+        // Update example_code in customRuleMetadata
+        const res = await fetch('/api/customRuleMetadata', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rule_id: rule.id,
+            example_code: file.content
+          })
+        });
+        return await res.json();
+      } else {
+        // Save other files to customRuleFile
+        const res = await fetch('/api/customRuleFile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rule_id: rule.id,
+            rule_name: rule.name,
+            status: rule.status || 'active',
+            file_content: file.content
+          })
+        });
+        return await res.json();
+      }
+    } catch (err) {
+      return { error: err.message };
+    }
+  };
+
+  // Fetch rules for current developer
+  const fetchRulesForDeveloper = async () => {
+    try {
+      const res = await fetch('/api/customRuleMetadata');
+      const allRules = await res.json();
+      return allRules.filter(r => r.rule_developer_id === developerId);
+    } catch (err) {
+      return [];
+    }
+  };
+
+  // --- Update handleSaveFile to save to DB ---
   const handleSaveFile = async (metadataFormData) => {
     if (!selectedFile || !selectedRuleId) {
       setSaveFeedback({ type: 'error', message: 'No file selected to save.' });
@@ -306,16 +401,21 @@ export default function DevelopmentWorkspacePage() {
     let updatedContent = selectedFile.content;
     // If saving metadata.json, update with form data
     if (selectedFile.name === 'metadata.json' && metadataFormData) {
-      // Update rule_id in metadataFormData according to type
       let newRuleId = metadataFormData.rule_id;
       if (metadataFormData.type) {
         newRuleId = getDefaultRuleId(metadataFormData.type);
       }
       updatedContent = JSON.stringify({ ...metadataFormData, rule_id: newRuleId }, null, 2);
+      // Save metadata to DB
+      await saveMetadataToDB({ ...metadataFormData, rule_id: newRuleId });
+    }
+    // Save rule_name.py or test.yml to DB
+    if (selectedFile.language === 'python' || selectedFile.language === 'yaml') {
+      const rule = rulesInDev.find(r => r.id === selectedRuleId);
+      await saveFileToDB(selectedFile, rule);
     }
     setRulesInDev(prevRules => prevRules.map(rule => {
       if (rule.id === selectedRuleId) {
-        // Set rule_id based on type
         let newRuleId = metadataFormData?.rule_id || rule.id;
         if (metadataFormData?.type) {
           newRuleId = getDefaultRuleId(metadataFormData.type);
