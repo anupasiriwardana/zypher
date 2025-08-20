@@ -18,7 +18,7 @@ const vulnRuleMetadataSchema = new Schema({
     },
     severity: {
         type: String,
-        enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+        enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL","INFO"],
         required: true,
     },
     category: {
