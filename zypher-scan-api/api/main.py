@@ -8,6 +8,7 @@ from routes.bp_scan import router as bpScan_router
 from routes.vuln_scan import router as vuln_scan_router
 from routes.vuln_scan_individual_file import router as vuln_scan_individual_file_router
 from routes.bp_scan_individual_file import router as bp_scan_individual_file_router
+from routes.custom_rule_test_scan import router as custom_rule_test_router
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,6 +31,7 @@ app.include_router(bpScan_router)
 app.include_router(vuln_scan_router)
 app.include_router(vuln_scan_individual_file_router)
 app.include_router(bp_scan_individual_file_router)
+app.include_router(custom_rule_test_router)
 
 # Run the app when called directly
 if __name__ == "__main__":
