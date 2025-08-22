@@ -4,7 +4,7 @@ import connectDB from "@/utils/db";
 
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
-  const role = request.headers.get("x-user-role");
+  const role = request.headers.get("x-user-role"); 
   await connectDB();
 
   if (!userId || !role) {
@@ -30,6 +30,13 @@ export async function POST(request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo_url: repoUrl }),
+      }),
+      fetch(`${process.env.FASTAPI_URL}/customeRule-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl,
+          user_id: session.user.id,
+         }),
       }),
     ]);
 

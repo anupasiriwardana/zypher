@@ -3,6 +3,7 @@ from typing import Optional
 
 class RepoRequest(BaseModel):
     repo_url: str
+    user_id: Optional[str] = "unknown"
 
 class FileScanRequest(BaseModel):
     filename: str
