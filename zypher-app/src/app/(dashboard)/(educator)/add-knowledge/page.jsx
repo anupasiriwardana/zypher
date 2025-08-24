@@ -9,12 +9,12 @@ const lexend = Lexend({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
-
+ 
 export default function AddKnowledgePage() {
   const [activeTab, setActiveTab] = useState("best");
 
   return (
-    <div className={`p-6 md:p-10 max-w-3xl mx-auto ${lexend.className}`}>
+    <div className={`p-2 md:p-10 max-w-8xl mx-auto ${lexend.className}`}>
       <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">
         Add New Knowledge
       </h1>

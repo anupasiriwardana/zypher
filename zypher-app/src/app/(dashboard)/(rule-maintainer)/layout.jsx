@@ -3,10 +3,11 @@
 import '@/app/globals.css';
 import { Lexend } from 'next/font/google';
 import RuleMaintainerSidebar from '@/components/sidebars/ruleMaintainerSidebar';
-import { Bell, UserCircle } from 'lucide-react';
+import { Bell, UserCircle, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
+import ChatPortal from '@/components/ChatPortal'; // Make sure the path is correct
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -16,10 +17,11 @@ const lexend = Lexend({
 export default function DashboardLayout({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showChatPortal, setShowChatPortal] = useState(false);
   const { data: session, status } = useSession();
 
-
   const hasNotifications = true;
+  const hasNewMessages = true;
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -30,7 +32,7 @@ export default function DashboardLayout({ children }) {
 
   const handleSignOut = () => {
     signOut({
-      callbackUrl: '/login', // Redirect to login after signout
+      callbackUrl: '/login',
     });
   };
 
@@ -38,21 +40,19 @@ export default function DashboardLayout({ children }) {
     <div className={lexend.className}>
       <div className="flex">
         <RuleMaintainerSidebar />
-
         <div className="ml-28 flex flex-col flex-1 min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-
           <header className="flex items-center justify-between px-6 py-4 relative">
             <div className="text-md text-[var(--text-secondary)] font-medium">
               {today}
             </div>
-
-
             <div className="flex items-center gap-6 relative">
+              {/* Bell Icon for System Notifications */}
               <div className="relative">
                 <button
                   onClick={() => {
                     setShowNotifications(!showNotifications);
                     setShowProfile(false);
+                    setShowChatPortal(false);
                   }}
                   className="relative hover:text-[var(--brand-yellow)] transition"
                 >
@@ -61,7 +61,6 @@ export default function DashboardLayout({ children }) {
                     <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
                   )}
                 </button>
-
                 {showNotifications && (
                   <div className="absolute right-0 mt-3 w-84 bg-[var(--input-bg)] text-md rounded-xl shadow-lg p-8 z-50">
                     <p className="text-[var(--text-secondary)] font-semibold mb-2">Notifications</p>
@@ -74,11 +73,30 @@ export default function DashboardLayout({ children }) {
                 )}
               </div>
 
+              {/* Chat Icon for User-to-User Messages */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowChatPortal(!showChatPortal);
+                    setShowProfile(false);
+                    setShowNotifications(false);
+                  }}
+                  className="relative hover:text-[var(--brand-yellow)] transition"
+                >
+                  <MessageCircle size={36} />
+                  {hasNewMessages && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+              </div>
+
+              {/* User Profile Icon */}
               <div className="relative">
                 <button
                   onClick={() => {
                     setShowProfile(!showProfile);
                     setShowNotifications(false);
+                    setShowChatPortal(false);
                   }}
                   className="hover:text-[var(--brand-yellow)] transition"
                 >
@@ -94,14 +112,14 @@ export default function DashboardLayout({ children }) {
                     <UserCircle size={36} />
                   )}
                 </button>
-
                 {showProfile && (
                   <div className="absolute right-0 mt-3 w-64 bg-[var(--input-bg)] text-md rounded-xl shadow-lg p-8 z-50">
                     <p className="font-semibold mb-2">Signed in as</p>
                     <p className="text-[var(--text-secondary)] mb-4">{session.user.email}</p>
-                    <button 
+                    <button
                       onClick={handleSignOut}
-                      className="w-full text-left hover:text-[var(--brand-yellow)] transition">
+                      className="w-full text-left hover:text-[var(--brand-yellow)] transition"
+                    >
                       Sign out
                     </button>
                   </div>
@@ -109,8 +127,9 @@ export default function DashboardLayout({ children }) {
               </div>
             </div>
           </header>
-
-          <main className="p-4 flex-1">{children}</main>
+          <main className="p-4 flex-1">
+            {showChatPortal ? <ChatPortal onClose={() => setShowChatPortal(false)} /> : children}
+          </main>
         </div>
       </div>
     </div>
