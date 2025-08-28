@@ -1,36 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import clsx from "clsx";
 import {
   Send,
   Loader2,
   CheckCircle,
   XCircle,
-  Hash,
   AlignLeft,
   SlidersHorizontal,
   FileType,
   ServerCog,
+  Hash,
 } from "lucide-react";
 
+// Mock API (replace with your real fetch call)
+const fetchCustomRules = async () => {
+  // Example structure returned by backend
+  return [
+    { id: 1, name: "Avoid Hardcoded Credentials", category: "yaml" },
+    { id: 2, name: "Restrict Public CI/CD Variables", category: "cicd" },
+    { id: 3, name: "Limit K8s Privileges", category: "k8s" },
+  ];
+};
+
 export function BestPracticeForm() {
-  const [title, setTitle] = useState("");
+  const [customRules, setCustomRules] = useState([]);
+  const [selectedRule, setSelectedRule] = useState("");
+  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("general");
   const [tags, setTags] = useState("");
   const [exampleCode, setExampleCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Load rules on mount
+  useEffect(() => {
+    const loadRules = async () => {
+      const rules = await fetchCustomRules();
+      setCustomRules(rules);
+    };
+    loadRules();
+  }, []);
+
+  const handleRuleChange = (e) => {
+    const ruleId = e.target.value;
+    setSelectedRule(ruleId);
+
+    const rule = customRules.find((r) => String(r.id) === ruleId);
+    if (rule) {
+      setCategory(rule.category);
+    } else {
+      setCategory("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback(null);
 
-    if (!title.trim() || !description.trim()) {
+    if (!selectedRule || !description.trim()) {
       setFeedback({
         type: "error",
-        message: "Title and Description are required.",
+        message: "Rule and Description are required.",
       });
       return;
     }
@@ -38,7 +70,7 @@ export function BestPracticeForm() {
     setIsSubmitting(true);
     try {
       console.log("Submitting Best Practice:", {
-        title,
+        ruleId: selectedRule,
         description,
         category,
         tags,
@@ -46,12 +78,16 @@ export function BestPracticeForm() {
       });
 
       await new Promise((res) => setTimeout(res, 2000));
-      setFeedback({ type: "success", message: "Knowledge added successfully!" });
-      setTitle("");
+
+      // Remove rule from dropdown after submission
+      setCustomRules((prev) => prev.filter((r) => String(r.id) !== selectedRule));
+      setSelectedRule("");
       setDescription("");
-      setCategory("general");
+      setCategory("");
       setTags("");
       setExampleCode("");
+
+      setFeedback({ type: "success", message: "Knowledge added successfully!" });
     } catch (err) {
       setFeedback({ type: "error", message: err.message });
     } finally {
@@ -64,35 +100,36 @@ export function BestPracticeForm() {
       onSubmit={handleSubmit}
       className="space-y-6 bg-[var(--input-bg)] p-8 rounded-2xl shadow-xl border border-[var(--border-input)]"
     >
-      {/* Title */}
+      {/* Rule Selector */}
       <div>
         <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-          <Hash size={16} /> Title <span className="text-red-500">*</span>
-        </label>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g., Avoid Hardcoded Credentials"
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
-          disabled={isSubmitting}
-        />
-      </div>
-
-      {/* Category */}
-      <div>
-        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-          <SlidersHorizontal size={16} /> Category
+          <Hash size={16} /> Select Rule <span className="text-red-500">*</span>
         </label>
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={selectedRule}
+          onChange={handleRuleChange}
           className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
         >
-          <option value="yaml">YAML</option>
-          <option value="cicd">CI/CD</option>
-          <option value="k8s">K8s</option>
+          <option value="">-- Select a custom rule --</option>
+          {customRules.map((rule) => (
+            <option key={rule.id} value={rule.id}>
+              {rule.name}
+            </option>
+          ))}
         </select>
+      </div>
+
+      {/* Auto-filled Category */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] bg-[var(--background)] mb-2 flex items-center gap-2">
+          <SlidersHorizontal size={16} /> Category
+        </label>
+        <input
+          value={category}
+          readOnly
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+        />
       </div>
 
       {/* Description */}
@@ -105,7 +142,7 @@ export function BestPracticeForm() {
           onChange={(e) => setDescription(e.target.value)}
           rows="5"
           placeholder="Explain the concept or rule in detail..."
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
         />
       </div>
@@ -119,7 +156,7 @@ export function BestPracticeForm() {
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           placeholder="e.g., YAML, Dockerfile, secrets"
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
         />
       </div>
@@ -134,7 +171,7 @@ export function BestPracticeForm() {
           onChange={(e) => setExampleCode(e.target.value)}
           rows="6"
           placeholder="Paste an example snippet..."
-          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
         />
       </div>

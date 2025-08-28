@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import clsx from "clsx";
 import {
   Send,
@@ -14,24 +14,58 @@ import {
   ServerCog,
 } from "lucide-react";
 
+// Mock API (replace with real API fetch)
+const fetchCustomRules = async () => {
+  return [
+    { id: 1, name: "Restrict Public EC2 Access", severity: "high" },
+    { id: 2, name: "Detect Secrets in Git History", severity: "critical" },
+  ];
+};
+
 export function SecurityRuleForm() {
+  const [customRules, setCustomRules] = useState([]);
+  const [selectedRule, setSelectedRule] = useState("");
   const [ruleName, setRuleName] = useState("");
   const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState("medium");
+  const [severity, setSeverity] = useState("");
   const [fileTypes, setFileTypes] = useState("");
   const [exampleCode, setExampleCode] = useState("");
   const [isCustomRule, setIsCustomRule] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Load rules on mount
+  useEffect(() => {
+    const loadRules = async () => {
+      const rules = await fetchCustomRules();
+      setCustomRules(rules);
+    };
+    loadRules();
+  }, []);
+
+  // Handle rule selection
+  const handleRuleChange = (e) => {
+    const ruleId = e.target.value;
+    setSelectedRule(ruleId);
+
+    const rule = customRules.find((r) => String(r.id) === ruleId);
+    if (rule) {
+      setRuleName(rule.name);
+      setSeverity(rule.severity);
+    } else {
+      setRuleName("");
+      setSeverity("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback(null);
 
-    if (!ruleName.trim() || !description.trim()) {
+    if (!selectedRule || !description.trim()) {
       setFeedback({
         type: "error",
-        message: "Rule Name and Description are required.",
+        message: "Rule and Description are required.",
       });
       return;
     }
@@ -39,6 +73,7 @@ export function SecurityRuleForm() {
     setIsSubmitting(true);
     try {
       console.log("Submitting Security Rule:", {
+        ruleId: selectedRule,
         ruleName,
         description,
         severity,
@@ -48,17 +83,23 @@ export function SecurityRuleForm() {
       });
 
       await new Promise((res) => setTimeout(res, 2000));
+
+      // Remove rule after submission
+      setCustomRules((prev) => prev.filter((r) => String(r.id) !== selectedRule));
+
+      // Reset form
+      setSelectedRule("");
+      setRuleName("");
+      setDescription("");
+      setSeverity("");
+      setFileTypes("");
+      setExampleCode("");
+      setIsCustomRule(false);
+
       setFeedback({
         type: "success",
         message: "Security rule submitted successfully!",
       });
-
-      setRuleName("");
-      setDescription("");
-      setSeverity("medium");
-      setFileTypes("");
-      setExampleCode("");
-      setIsCustomRule(false);
     } catch (err) {
       setFeedback({ type: "error", message: err.message });
     } finally {
@@ -71,37 +112,36 @@ export function SecurityRuleForm() {
       onSubmit={handleSubmit}
       className="space-y-6 bg-[var(--input-bg)] p-8 rounded-2xl shadow-xl border border-[var(--border-input)]"
     >
-      {/* Rule Name */}
+      {/* Rule Name (Dropdown) */}
       <div>
         <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
           <Hash size={16} /> Rule Name <span className="text-red-500">*</span>
         </label>
-        <input
-          value={ruleName}
-          onChange={(e) => setRuleName(e.target.value)}
-          placeholder="e.g., Disallow Public S3 Buckets"
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+        <select
+          value={selectedRule}
+          onChange={handleRuleChange}
+          className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
-        />
+        >
+          <option value="">-- Select security rule --</option>
+          {customRules.map((rule) => (
+            <option key={rule.id} value={rule.id}>
+              {rule.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Severity */}
+      {/* Severity (Auto-filled) */}
       <div>
         <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
           <SlidersHorizontal size={16} /> Severity
         </label>
-        <select
+        <input
           value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
-          className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
-          disabled={isSubmitting}
-        >
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-          <option value="informational">Informational</option>
-        </select>
+          readOnly
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+        />
       </div>
 
       {/* Description */}
@@ -201,4 +241,3 @@ export function SecurityRuleForm() {
     </form>
   );
 }
-
