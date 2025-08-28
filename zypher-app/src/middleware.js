@@ -66,6 +66,9 @@ export async function middleware(req) {
     '/api/scan-individual-file': ['primary-user'],
     '/api/rule-metadata': ['primary-user'],
     '/api/scan-results': ['primary-user'],
+    '/api/customRuleFile': ['primary-user', 'rule-maintainer', 'rule-developer', 'rule-implementer'],
+    '/api/customRuleMetadata': ['primary-user', 'rule-maintainer', 'rule-developer', 'rule-implementer'],
+    '/api/custom-rule-test-scan': ['rule-maintainer', 'rule-developer'],
   };
 
   // Find the most specific matching route

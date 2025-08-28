@@ -18,7 +18,7 @@ const bpRuleMetadataSchema = new Schema({
     },
     severity: {
         type: String,
-        enum: ["low", "medium", "high", "critical"],
+        enum: ["low", "medium", "high", "critical","info"],
         required: true,
     },
     match: {
