@@ -44,16 +44,17 @@ export function BestPracticeForm() {
   }, []);
 
   const handleRuleChange = (e) => {
-    const ruleId = e.target.value;
-    setSelectedRule(ruleId);
+  const ruleId = e.target.value;
+  setSelectedRule(ruleId);
 
-    const rule = customRules.find((r) => String(r.id) === ruleId);
-    if (rule) {
-      setCategory(rule.category);
-    } else {
-      setCategory("");
-    }
-  };
+  const rule = customRules.find((r) => String(r.id) === ruleId);
+  if (rule) {
+    setCategory(rule.category);
+  } else {
+    setCategory("");
+  }
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

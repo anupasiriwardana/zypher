@@ -14,14 +14,6 @@ import {
   ServerCog,
 } from "lucide-react";
 
-// Mock API (replace with real API fetch)
-const fetchCustomRules = async () => {
-  return [
-    { id: 1, name: "Restrict Public EC2 Access", severity: "high" },
-    { id: 2, name: "Detect Secrets in Git History", severity: "critical" },
-  ];
-};
-
 export function SecurityRuleForm() {
   const [customRules, setCustomRules] = useState([]);
   const [selectedRule, setSelectedRule] = useState("");
@@ -34,11 +26,29 @@ export function SecurityRuleForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Fetch custom rules from customRuleRequests
+  const fetchCustomRules = async () => {
+    const res = await fetch("/api/knowledgeBaseRequests");
+    if (!res.ok) throw new Error("Failed to fetch requests");
+    const data = await res.json();
+
+    // Only Published rules with KB request not completed
+    return data.filter(
+      (rule) =>
+        rule.status === "Pending"
+    );
+  };
+
   // Load rules on mount
   useEffect(() => {
     const loadRules = async () => {
-      const rules = await fetchCustomRules();
-      setCustomRules(rules);
+      try {
+        const rules = await fetchCustomRules();
+        setCustomRules(rules);
+      } catch (err) {
+        console.error(err);
+        setFeedback({ type: "error", message: "Failed to load knowledge base requests" });
+      }
     };
     loadRules();
   }, []);
@@ -48,44 +58,52 @@ export function SecurityRuleForm() {
     const ruleId = e.target.value;
     setSelectedRule(ruleId);
 
-    const rule = customRules.find((r) => String(r.id) === ruleId);
+    const rule = customRules.find((r) => String(r._id) === ruleId);
     if (rule) {
       setRuleName(rule.name);
-      setSeverity(rule.severity);
+      setSeverity(rule.suggested_severity || "");
+      setExampleCode(rule.sample_code || "");
     } else {
       setRuleName("");
       setSeverity("");
+      setExampleCode("");
     }
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback(null);
 
     if (!selectedRule || !description.trim()) {
-      setFeedback({
-        type: "error",
-        message: "Rule and Description are required.",
-      });
+      setFeedback({ type: "error", message: "Rule and Description are required." });
       return;
     }
 
     setIsSubmitting(true);
+
     try {
-      console.log("Submitting Security Rule:", {
-        ruleId: selectedRule,
-        ruleName,
+      const payload = {
+        kb_id: selectedRule, // you could generate a new ID if needed
+        name: ruleName,
         description,
         severity,
-        fileTypes,
-        exampleCode,
-        isCustomRule,
+        recommendation: "", // optional
+        type: isCustomRule ? "best-practice" : "vulnerability",
+        example_code: exampleCode,
+        createdBy: "user_id_here", // replace with real logged-in user
+      };
+
+      const res = await fetch("/api/knowledgeBase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      await new Promise((res) => setTimeout(res, 2000));
+      if (!res.ok) throw new Error("Failed to save to Knowledge Base");
 
-      // Remove rule after submission
-      setCustomRules((prev) => prev.filter((r) => String(r.id) !== selectedRule));
+      // Remove the rule from dropdown after adding
+      setCustomRules((prev) => prev.filter((r) => String(r._id) !== selectedRule));
 
       // Reset form
       setSelectedRule("");
@@ -96,10 +114,7 @@ export function SecurityRuleForm() {
       setExampleCode("");
       setIsCustomRule(false);
 
-      setFeedback({
-        type: "success",
-        message: "Security rule submitted successfully!",
-      });
+      setFeedback({ type: "success", message: "Rule added to Knowledge Base!" });
     } catch (err) {
       setFeedback({ type: "error", message: err.message });
     } finally {
@@ -125,7 +140,7 @@ export function SecurityRuleForm() {
         >
           <option value="">-- Select security rule --</option>
           {customRules.map((rule) => (
-            <option key={rule.id} value={rule.id}>
+            <option key={rule._id} value={rule._id}>
               {rule.name}
             </option>
           ))}
@@ -198,10 +213,7 @@ export function SecurityRuleForm() {
           disabled={isSubmitting}
           className="w-5 h-5 text-[var(--brand-yellow)] focus:ring-[var(--brand-yellow)] border-gray-300 rounded"
         />
-        <label
-          htmlFor="isCustomRule"
-          className="text-sm font-medium text-[var(--foreground)]"
-        >
+        <label htmlFor="isCustomRule" className="text-sm font-medium text-[var(--foreground)]">
           Is this a custom rule?
         </label>
       </div>

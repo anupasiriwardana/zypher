@@ -60,6 +60,9 @@ export async function middleware(req) {
     '/educator-settings': ['educator'],
 
     // Dashboard routes -> admin
+    'admin-settings': ['admin'],
+    'analytics': ['admin'],
+    'user-management': ['admin'],
 
     // API routes
     '/api/scan-tool': ['primary-user'],
