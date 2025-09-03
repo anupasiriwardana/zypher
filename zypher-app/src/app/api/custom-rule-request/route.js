@@ -69,7 +69,7 @@ export const GET = async (request) => {
   }
 
   // Check role-based access
-  const allowedRoles = ['primary-user', 'rule-maintainer'];
+  const allowedRoles = ['primary-user', 'rule-maintainer', 'rule-developer'];
   if (!allowedRoles.includes(role)) {
     return NextResponse.json(
       { error: "Forbidden" },
@@ -95,6 +95,16 @@ export const GET = async (request) => {
       const customRuleRequests = await CustomRuleRequest.find()
         .sort({ createdAt: -1 })
         .select('_id name description suggested_severity sample_code status assigned_developer rejected_reason createdAt')
+        .lean();
+
+      return NextResponse.json(
+        { requests: customRuleRequests },
+        { status: 200 }
+      );
+    } else if (role === 'rule-developer') {
+      const customRuleRequests = await CustomRuleRequest.find({ assigned_developer: userId })
+        .sort({ createdAt: -1 })
+        .select('_id name description suggested_severity sample_code status rejected_reason createdAt')
         .lean();
 
       return NextResponse.json(
