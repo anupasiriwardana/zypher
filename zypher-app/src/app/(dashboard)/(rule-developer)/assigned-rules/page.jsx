@@ -302,10 +302,10 @@ export default function AssignedRulesPage() {
     setSelectedRequest(null);
   };
 
-  const handleStartDeveloping = (ruleId) => {
+  const handleStartDeveloping = (ruleRequestId) => {
     // TODO: Implement start developing functionality
-    // This will redirect to development workspace with the selected rule ID
-    router.push(`/dashboard/rule-developer/development-workspace?ruleId=${ruleId}`);
+    // This will redirect to development workspace with the selected rule request ID
+    router.push(`/development-workspace?ruleRequestId=${ruleRequestId}&ruleType=custom`);
     closeModal();
   };
 
