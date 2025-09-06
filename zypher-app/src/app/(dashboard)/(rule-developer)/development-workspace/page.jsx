@@ -76,26 +76,38 @@ export default function DevelopmentWorkspacePage() {
   // Test console states
   const [testOutput, setTestOutput] = useState('');
   const [isTesting, setIsTesting] = useState(false);
+  
+  // Mark as ready for testing state
+  const [isMarkingReady, setIsMarkingReady] = useState(false);
 
 
-  // Auto-dismiss save feedback after 5 seconds for success messages
+  // Auto-dismiss save feedback after timeout (5 seconds for success, 8 seconds for errors)
   useEffect(() => {
-    if (saveFeedback && saveFeedback.type === 'success') {
-      const timer = setTimeout(() => setSaveFeedback(null), 5000);
+    if (saveFeedback) {
+      const timeout = saveFeedback.type === 'success' ? 5000 : 8000; // Longer timeout for errors
+      const timer = setTimeout(() => setSaveFeedback(null), timeout);
       return () => clearTimeout(timer);
     }
   }, [saveFeedback]);
 
-  // Fetch rule request details when ruleRequestId is provided
+  // Fetch rule request details when ruleRequestId is provided, otherwise fetch existing rules
   useEffect(() => {
     const ruleRequestId = searchParams.get('ruleRequestId');
     const ruleType = searchParams.get('ruleType');
 
-    if (ruleRequestId) {
-      fetchRuleRequestAndInitialize(ruleRequestId, ruleType);
-    } else {
-      setIsLoading(false);
-    }
+    const initializeWorkspace = async () => {
+      if (ruleRequestId) {
+        // First fetch and initialize from rule request
+        await fetchRuleRequestAndInitialize(ruleRequestId, ruleType);
+        // Then fetch existing rules to add them to the workspace
+        await fetchExistingRules(true); // Pass true to append to existing rules
+      } else {
+        // Just fetch existing rules
+        await fetchExistingRules(false); // Pass false to replace all rules
+      }
+    };
+
+    initializeWorkspace();
   }, [searchParams]);
 
   // Update metadata form when selectedFile changes
@@ -110,6 +122,190 @@ export default function DevelopmentWorkspacePage() {
       setMetadataForm(null);
     }
   }, [selectedFile]);
+
+  // Fetch existing rule files from API
+  const fetchExistingRules = async (appendToExisting = false) => {
+    try {
+      if (!appendToExisting) {
+        setIsLoading(true);
+        setError(null);
+      }
+
+      const response = await fetch('/api/custom-rule-file', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const ruleFiles = data.ruleFiles || [];
+        
+        if (ruleFiles.length > 0) {
+          // Convert rule files to the expected format and fetch metadata for each
+          const rulesWithFiles = await Promise.all(
+            ruleFiles.map(async (ruleFile) => {
+              try {
+                // Fetch metadata for this rule
+                const metadataResponse = await fetch(`/api/custom-rule-metadata/${ruleFile.rule_id}`, {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                });
+
+                let metadata = null;
+                if (metadataResponse.ok) {
+                  const metadataData = await metadataResponse.json();
+                  metadata = metadataData.ruleMetadata;
+                }
+
+                // Create the rule structure with files
+                const pythonFileName = `${toCamelCase(ruleFile.rule_name || 'CustomRule')}.py`;
+                
+                // Create metadata content (from database if available, otherwise create default)
+                const metadataContent = metadata ? {
+                  rule_id: metadata.rule_id,
+                  name: metadata.rule_name,
+                  description: metadata.description,
+                  severity: metadata.severity,
+                  remediation: metadata.remediation || '',
+                  type: 'Custom Rule',
+                  original_request_id: metadata.request_id
+                } : {
+                  rule_id: ruleFile.rule_id,
+                  name: ruleFile.rule_name || 'Unnamed Rule',
+                  description: 'No description available',
+                  severity: 'Medium',
+                  remediation: '',
+                  type: 'Custom Rule',
+                  original_request_id: ruleFile.request_id
+                };
+
+                const files = [
+                  {
+                    name: pythonFileName,
+                    language: 'python',
+                    content: ruleFile.file_content || '# No Python content available'
+                  },
+                  {
+                    name: 'test.yml',
+                    language: 'yaml',
+                    content: ruleFile.yaml_test_file_content || initialTestYml
+                  },
+                  {
+                    name: 'metadata.json',
+                    language: 'json',
+                    content: JSON.stringify(metadataContent, null, 2)
+                  }
+                ];
+
+                return {
+                  id: ruleFile.rule_id,
+                  name: ruleFile.rule_name,
+                  type: 'Custom Rule',
+                  status: ruleFile.status || 'Under Development',
+                  originalRequestId: ruleFile.request_id,
+                  ruleOwnerId: ruleFile.rule_owner_id, // Store the rule owner ID
+                  databaseId: ruleFile._id,
+                  files: files
+                };
+              } catch (error) {
+                console.error(`Error processing rule ${ruleFile.rule_id}:`, error);
+                // Return a basic rule structure even if metadata fetch fails
+                const fallbackMetadata = {
+                  rule_id: ruleFile.rule_id,
+                  name: ruleFile.rule_name || 'Unnamed Rule',
+                  description: 'No description available',
+                  severity: 'Medium',
+                  remediation: '',
+                  type: 'Custom Rule',
+                  original_request_id: ruleFile.request_id
+                };
+
+                return {
+                  id: ruleFile.rule_id,
+                  name: ruleFile.rule_name || 'Unnamed Rule',
+                  type: 'Custom Rule',
+                  status: ruleFile.status || 'Under Development',
+                  originalRequestId: ruleFile.request_id,
+                  ruleOwnerId: ruleFile.rule_owner_id, // Store the rule owner ID
+                  databaseId: ruleFile._id,
+                  files: [
+                    {
+                      name: `${toCamelCase(ruleFile.rule_name || 'CustomRule')}.py`,
+                      language: 'python',
+                      content: ruleFile.file_content || '# No Python content available'
+                    },
+                    {
+                      name: 'test.yml',
+                      language: 'yaml',
+                      content: ruleFile.yaml_test_file_content || initialTestYml
+                    },
+                    {
+                      name: 'metadata.json',
+                      language: 'json',
+                      content: JSON.stringify(fallbackMetadata, null, 2)
+                    }
+                  ]
+                };
+              }
+            })
+          );
+
+          if (appendToExisting) {
+            // Filter out duplicates and append to existing rules
+            setRulesInDev(prevRules => {
+              const existingIds = new Set(prevRules.map(rule => rule.id));
+              const newRules = rulesWithFiles.filter(rule => !existingIds.has(rule.id));
+              return [...prevRules, ...newRules];
+            });
+          } else {
+            // Replace all rules (when no ruleRequestId)
+            setRulesInDev(rulesWithFiles);
+            
+            // Auto-select the first rule if available
+            if (rulesWithFiles.length > 0) {
+              setSelectedRuleId(rulesWithFiles[0].id);
+              if (rulesWithFiles[0].files.length > 0) {
+                // Try to select metadata.json first, otherwise select the first file
+                const metadataFile = rulesWithFiles[0].files.find(f => f.name === 'metadata.json');
+                setSelectedFile(metadataFile || rulesWithFiles[0].files[0]);
+              }
+            }
+          }
+          
+          if (!appendToExisting) {
+            setSaveFeedback({ 
+              type: 'success', 
+              message: `Loaded ${rulesWithFiles.length} existing rule${rulesWithFiles.length > 1 ? 's' : ''}.` 
+            });
+          }
+        } else if (!appendToExisting) {
+          // No existing rules found (only show this message when not appending)
+          setSaveFeedback({ 
+            type: 'info', 
+            message: 'No existing rules found. Start by creating a new rule from assigned rule requests.' 
+          });
+        }
+      } else {
+        const errorData = await response.json();
+        if (!appendToExisting) {
+          setError(errorData.error || 'Failed to fetch existing rules');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching existing rules:', error);
+      if (!appendToExisting) {
+        setError('An unexpected error occurred while fetching existing rules');
+      }
+    } finally {
+      if (!appendToExisting) {
+        setIsLoading(false);
+      }
+    }
+  };
 
   // Fetch rule request details and auto-create rule development files
   const fetchRuleRequestAndInitialize = async (ruleRequestId, ruleType) => {
@@ -196,8 +392,6 @@ class ${className}(BaseRule):
       name: ruleRequest.name,
       description: ruleRequest.description,
       severity: ruleRequest.suggested_severity || 'Medium',
-      // status: 'Under Development',
-      // developer_note: `Developed from rule request: ${ruleRequest._id}`,
       type: ruleType,
       original_request_id: ruleRequest._id,
       remediation: ''
@@ -211,6 +405,7 @@ class ${className}(BaseRule):
       type: 'Custom Rule',
       status: 'Under Development',
       originalRequestId: ruleRequest._id,
+      ruleOwnerId: ruleRequest.user_id, // Store the rule owner ID
       files: [
         {
           name: pythonFileName,
@@ -229,8 +424,9 @@ class ${className}(BaseRule):
         }
       ]
     };
-
+    // Add the new rule to the development state
     setRulesInDev([newRule]);
+
     setSelectedRuleId(newRule.id);
     setSelectedFile(newRule.files[2]); // Open metadata.json first
     setSaveFeedback({ 
@@ -260,6 +456,7 @@ class ${className}(BaseRule):
   // Handle editor content change
   const handleEditorChange = (newValue) => {
     if (selectedRuleId && selectedFile) {
+      // Update the content in rulesInDev
       setRulesInDev(prevRules => prevRules.map(rule => {
         if (rule.id === selectedRuleId) {
           return {
@@ -271,6 +468,12 @@ class ${className}(BaseRule):
         }
         return rule;
       }));
+      
+      // Also update the selectedFile to reflect the current changes
+      setSelectedFile(prevFile => ({
+        ...prevFile,
+        content: newValue
+      }));
     }
   };
 
@@ -278,7 +481,7 @@ class ${className}(BaseRule):
   const handleSaveFile = async (metadataFormData) => {
     if (!selectedFile || !selectedRuleId) {
       setSaveFeedback({ type: 'error', message: 'No file selected to save.' });
-      return;
+      return false; // Return false on error
     }
     
     setIsSaving(true);
@@ -287,7 +490,7 @@ class ${className}(BaseRule):
     try {
       let updatedContent = selectedFile.content;
       
-      // If saving metadata.json, update with form data and call API
+      // If saving metadata.json, update with form data and call metadata API
       if (selectedFile.name === 'metadata.json' && metadataFormData) {
         updatedContent = JSON.stringify(metadataFormData, null, 2);
         
@@ -303,14 +506,84 @@ class ${className}(BaseRule):
             ruleDescription: metadataFormData.description,
             suggestedSeverity: metadataFormData.severity,
             remediation: metadataFormData.remediation || null,
-            ruleOwnerId: ruleRequestData?.user_id || null,
-            requestId: ruleRequestData?._id || null
+            ruleOwnerId: rulesInDev.find(r => r.id === metadataFormData.rule_id)?.ruleOwnerId || null,
+            requestId: rulesInDev.find(r => r.id === metadataFormData.rule_id)?.originalRequestId || null
           }),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to save metadata to database');
+        }
+      } else {
+        // For Python rule files and YAML test files, save both together
+        const rule = rulesInDev.find(r => r.id === selectedRuleId);
+        if (!rule) {
+          throw new Error('Rule not found');
+        }
+
+        // Get all file contents (including current changes)
+        // For the currently selected file, use the most up-to-date content from the editor
+        const currentRuleFiles = rule.files.map(file => {
+          if (file.name === selectedFile.name) {
+            // Use the current content from the selected file (which should include editor changes)
+            return { ...file, content: selectedFile.content };
+          }
+          return file;
+        });
+
+        const pythonFile = currentRuleFiles.find(f => f.language === 'python');
+        const testFile = currentRuleFiles.find(f => f.name === 'test.yml');
+        const metadataFile = currentRuleFiles.find(f => f.name === 'metadata.json');
+
+        if (!pythonFile || !testFile || !metadataFile) {
+          throw new Error('Missing required files (Python rule, test.yml, or metadata.json)');
+        }
+
+        let metadata;
+        try {
+          metadata = JSON.parse(metadataFile.content);
+        } catch (error) {
+          throw new Error('Invalid metadata.json format');
+        }
+
+        // Call API to save/update rule file with both Python and YAML content
+        const response = await fetch('/api/custom-rule-file', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ruleId: metadata.rule_id || selectedRuleId,
+            ruleName: metadata.name || rule.name,
+            ruleStatus: 'Under development',
+            ruleFileContent: pythonFile.content,
+            ruleOwnerId: rulesInDev.find(r => r.id === metadata.rule_id)?.ruleOwnerId || null,
+            requestId: rulesInDev.find(r => r.id === metadata.rule_id)?.originalRequestId || null,
+            yamlTestFileContent: testFile.content
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save rule file to database');
+        }
+
+        //update the status of the rule request
+        const requestStatusResponse = await fetch(`/api/custom-rule-request`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            requestId: rule.originalRequestId,
+            status: 'Under Development' 
+          }),
+        });
+
+        if (!requestStatusResponse.ok) {
+          const errorData = await requestStatusResponse.json();
+          throw new Error(errorData.error || 'Failed to update rule request status');
         }
       }
 
@@ -327,19 +600,33 @@ class ${className}(BaseRule):
         }
         return rule;
       }));
+
+      // Also update selectedFile to reflect the new content
+      setSelectedFile(prevFile => ({
+        ...prevFile,
+        content: updatedContent
+      }));
+
+      // If we saved metadata, also update the metadataForm state to prevent reversion
+      if (selectedFile.name === 'metadata.json' && metadataFormData) {
+        setMetadataForm(metadataFormData);
+      }
       
       setSaveFeedback({ 
         type: 'success', 
         message: selectedFile.name === 'metadata.json' 
           ? 'Metadata saved successfully to database!' 
-          : `File '${selectedFile.name}' saved successfully!` 
+          : `Rule files (Python + YAML) saved successfully to database with Active status!` 
       });
+      
+      return true; // Return true on success
     } catch (error) {
-      console.error('Save error:', error);
+      // console.error('Save error:', error);
       setSaveFeedback({ 
         type: 'error', 
         message: error.message || 'Failed to save file. Please try again.' 
       });
+      return false; // Return false on error
     } finally {
       setIsSaving(false);
     }
@@ -352,9 +639,89 @@ class ${className}(BaseRule):
   };
 
   // Handle metadata form save
-  const handleMetadataFormSave = (e) => {
+  const handleMetadataFormSave = async(e) => {
     e.preventDefault();
-    handleSaveFile(metadataForm);
+    await handleSaveFile(metadataForm);
+  };
+
+  // Handle mark as ready for testing
+  const handleMarkAsReady = async () => {
+    if (!selectedFile || !selectedRuleId) {
+      setSaveFeedback({ type: 'error', message: 'No file selected to save.' });
+      return;
+    }
+
+    const rule = rulesInDev.find(r => r.id === selectedRuleId);
+    if (!rule || !rule.originalRequestId) {
+      setSaveFeedback({ type: 'error', message: 'No associated rule request found for this rule.' });
+      return;
+    }
+
+    setIsMarkingReady(true);
+    setSaveFeedback(null);
+
+    try {
+      // Step 1: Save the current file and check if it was successful
+      let saveSuccessful;
+      saveSuccessful = await handleSaveFile(); // Save the files
+
+      // Only proceed if save was successful
+      if (!saveSuccessful) {
+        setSaveFeedback({ 
+          type: 'error', 
+          message: 'Save operation failed. Cannot mark as ready for testing until metadata is saved successfully.' 
+        });
+        return;
+      }
+
+      // Step 2: Update the rule request status to "Ready for Testing"
+      const response = await fetch('/api/custom-rule-request', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId: rule.originalRequestId,
+          status: 'Ready for Testing'
+        }),
+      });
+
+      if (response.ok) {
+        setSaveFeedback({ 
+          type: 'success', 
+          message: 'Rule saved and marked as Ready for Testing! The rule maintainer will be notified.' 
+        });
+        
+        // Wait 2 seconds to let user see the success message before clearing state
+        setTimeout(async () => {
+          // Clear all editor and rule states before refetching
+          setRulesInDev([]);
+          setSelectedRuleId(null);
+          setSelectedFile(null);
+          setSearchTerm('');
+          setMetadataForm(null);
+          setTestOutput('');
+          
+          // Refetch rules to get updated data
+          await fetchExistingRules(false);
+        }, 3000);
+
+      } else {
+        const errorData = await response.json();
+        setSaveFeedback({ 
+          type: 'error', 
+          message: `Files saved successfully, but failed to update status: ${errorData.error || 'Unknown error'}` 
+        });
+      }
+    } catch (error) {
+      console.error('Mark as ready error:', error);
+      setSaveFeedback({ 
+        type: 'error', 
+        message: error.message || 'Failed to mark rule as ready for testing. Please try again.' 
+      });
+    } finally {
+      setIsMarkingReady(false);
+    }
   };
 
   // Handle test run
@@ -511,10 +878,12 @@ class ${className}(BaseRule):
             metadataForm={metadataForm}
             testOutput={testOutput}
             isTesting={isTesting}
+            isMarkingReady={isMarkingReady}
             onEditorChange={handleEditorChange}
             onSaveFile={handleSaveFile}
             onMetadataFormChange={handleMetadataFormChange}
             onMetadataFormSave={handleMetadataFormSave}
+            onMarkAsReady={handleMarkAsReady}
             onRunTest={handleRunTest}
           />
         </div>

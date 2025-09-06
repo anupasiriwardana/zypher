@@ -10,7 +10,8 @@ import {
   FileCode,
   FileJson,
   FileType,
-  FileText
+  FileText,
+  SendHorizontal
 } from 'lucide-react';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
@@ -45,10 +46,12 @@ const CodeEditor = ({
   metadataForm,
   testOutput,
   isTesting,
+  isMarkingReady,
   onEditorChange,
   onSaveFile,
   onMetadataFormChange,
   onMetadataFormSave,
+  onMarkAsReady,
   onRunTest
 }) => {
   const currentFileContent = selectedFile ? selectedFile.content : '';
@@ -75,14 +78,24 @@ const CodeEditor = ({
           <span className="text-sm text-[var(--text-secondary)] ml-2">({selectedRuleId})</span>
         </h2>
         {selectedFile.name !== 'metadata.json' && (
-          <button
-            onClick={() => onSaveFile()}
-            className="inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-5 py-2 rounded-full hover:brightness-110 transition-all duration-300 shadow-md text-sm"
-            disabled={isSaving}
-          >
-            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            Save
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onSaveFile()}
+              className="inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-5 py-2 rounded-full hover:brightness-110 transition-all duration-300 shadow-md text-sm"
+              disabled={isSaving || isMarkingReady}
+            >
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              Save
+            </button>
+            <button
+              onClick={onMarkAsReady}
+              className="inline-flex items-center gap-2 bg-green-600 text-white font-bold px-5 py-2 rounded-full hover:brightness-110 transition-all duration-300 shadow-md text-sm"
+              disabled={isSaving || isMarkingReady}
+            >
+              {isMarkingReady ? <Loader2 size={16} className="animate-spin" /> : <SendHorizontal size={16} />}
+              {isMarkingReady ? 'Processing...' : 'Mark as Ready for Testing'}
+            </button>
+          </div>
         )}
       </div>
 
@@ -179,12 +192,33 @@ const CodeEditor = ({
               />
             </div>
           </div>
-          <button 
-            type="submit" 
-            className="mt-4 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-6 py-2 rounded-full shadow-md hover:brightness-110 transition-all duration-300"
-          >
-            Save Metadata
-          </button>
+          <div className="flex items-center gap-3 mt-4">
+            <button 
+              type="submit" 
+              className="bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-6 py-2 rounded-full shadow-md hover:brightness-110 transition-all duration-300"
+              disabled={isSaving || isMarkingReady}
+            >
+              Save Metadata
+            </button>
+            <button 
+              type="button"
+              onClick={onMarkAsReady}
+              className="bg-green-600 text-white font-bold px-6 py-2 rounded-full shadow-md hover:brightness-110 transition-all duration-300"
+              disabled={isSaving || isMarkingReady}
+            >
+              {isMarkingReady ? (
+                <>
+                  <Loader2 size={16} className="animate-spin inline mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <SendHorizontal size={16} className="inline mr-2" />
+                  Mark as Ready for Testing
+                </>
+              )}
+            </button>
+          </div>
         </form>
       ) : selectedFile.name === 'test.yml' ? (
         <>
