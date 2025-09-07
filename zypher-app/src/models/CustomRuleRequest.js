@@ -33,6 +33,7 @@ const customRuleRequestSchema = new Schema({
             "Under Development",
             "Ready for Testing",
             "Being Tested",
+            "Under Modification",
             "Approved",
             "Successfully Published",
             "Rejected"

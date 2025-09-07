@@ -18,7 +18,7 @@ export const GET = async (request, context) => {
     }
 
     // Check role-based access
-    const allowedRoles = ['rule-developer'];
+    const allowedRoles = ['rule-developer', 'rule-maintainer'];
     if (!allowedRoles.includes(role)) {
         return NextResponse.json(
             { error: "Forbidden" },

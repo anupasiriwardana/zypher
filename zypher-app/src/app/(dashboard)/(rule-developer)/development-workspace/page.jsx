@@ -97,10 +97,32 @@ export default function DevelopmentWorkspacePage() {
 
     const initializeWorkspace = async () => {
       if (ruleRequestId) {
-        // First fetch and initialize from rule request
-        await fetchRuleRequestAndInitialize(ruleRequestId, ruleType);
-        // Then fetch existing rules to add them to the workspace
-        await fetchExistingRules(true); // Pass true to append to existing rules
+        // First fetch existing rules to check if there's already a rule for this request
+        const existingRules = await fetchExistingRules(false, true); // Pass returnRules=true to get rules array
+        
+        // Check if there's already a rule with this request ID
+        const existingRule = existingRules?.find(rule => rule.originalRequestId === ruleRequestId);
+        
+        if (existingRule) {
+          // Rule already exists for this request, set it in state and select it
+          setRulesInDev(existingRules); // Set all existing rules in state
+          setSelectedRuleId(existingRule.id);
+          if (existingRule.files.length > 0) {
+            // Try to select metadata.json first, otherwise select the first file
+            const metadataFile = existingRule.files.find(f => f.name === 'metadata.json');
+            setSelectedFile(metadataFile || existingRule.files[0]);
+          }
+          setIsLoading(false); // Important: Set loading to false
+          setSaveFeedback({ 
+            type: 'info', 
+            message: `Found existing rule for this request: "${existingRule.name}". Continue development from where you left off.` 
+          });
+        } else {
+          // No existing rule found, initialize from rule request
+          await fetchRuleRequestAndInitialize(ruleRequestId, ruleType);
+          // Then fetch existing rules to add them to the workspace (append to new rule)
+          await fetchExistingRules(true); // Pass true to append to existing rules
+        }
       } else {
         // Just fetch existing rules
         await fetchExistingRules(false); // Pass false to replace all rules
@@ -124,9 +146,9 @@ export default function DevelopmentWorkspacePage() {
   }, [selectedFile]);
 
   // Fetch existing rule files from API
-  const fetchExistingRules = async (appendToExisting = false) => {
+  const fetchExistingRules = async (appendToExisting = false, returnRules = false) => {
     try {
-      if (!appendToExisting) {
+      if (!appendToExisting && !returnRules) {
         setIsLoading(true);
         setError(null);
       }
@@ -254,6 +276,11 @@ export default function DevelopmentWorkspacePage() {
             })
           );
 
+          if (returnRules) {
+            // When returnRules is true, just return the rules array without setting state
+            return rulesWithFiles;
+          }
+
           if (appendToExisting) {
             // Filter out duplicates and append to existing rules
             setRulesInDev(prevRules => {
@@ -276,32 +303,45 @@ export default function DevelopmentWorkspacePage() {
             }
           }
           
-          if (!appendToExisting) {
+          if (!appendToExisting && !returnRules) {
             setSaveFeedback({ 
               type: 'success', 
               message: `Loaded ${rulesWithFiles.length} existing rule${rulesWithFiles.length > 1 ? 's' : ''}.` 
             });
           }
-        } else if (!appendToExisting) {
-          // No existing rules found (only show this message when not appending)
+        } else if (!appendToExisting && !returnRules) {
+          // No existing rules found (only show this message when not appending and not returning)
           setSaveFeedback({ 
             type: 'info', 
             message: 'No existing rules found. Start by creating a new rule from assigned rule requests.' 
           });
         }
+        
+        if (returnRules) {
+          // Return empty array when no rules found
+          return [];
+        }
       } else {
         const errorData = await response.json();
-        if (!appendToExisting) {
+        if (!appendToExisting && !returnRules) {
           setError(errorData.error || 'Failed to fetch existing rules');
+        }
+        if (returnRules) {
+          // Return empty array on error when returnRules is true
+          return [];
         }
       }
     } catch (error) {
       console.error('Error fetching existing rules:', error);
-      if (!appendToExisting) {
+      if (!appendToExisting && !returnRules) {
         setError('An unexpected error occurred while fetching existing rules');
       }
+      if (returnRules) {
+        // Return empty array on error when returnRules is true
+        return [];
+      }
     } finally {
-      if (!appendToExisting) {
+      if (!appendToExisting && !returnRules) {
         setIsLoading(false);
       }
     }

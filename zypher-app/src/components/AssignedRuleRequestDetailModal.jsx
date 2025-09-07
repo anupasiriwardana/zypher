@@ -17,6 +17,7 @@ const statusMap = {
   'Pending Review': { label: 'Pending Review', color: 'text-blue-400', bg: 'bg-blue-600/20', icon: Hourglass },
   'Assigned': { label: 'Assigned to Developer', color: 'text-indigo-400', bg: 'bg-indigo-600/20', icon: UserCheck },
   'Under Development': { label: 'Under Development', color: 'text-purple-400', bg: 'bg-purple-600/20', icon: Code },
+  'Under Modification': { label: 'Modifications Requested', color: 'text-amber-500', bg: 'bg-amber-600/20', icon: AlertCircle },
   'Ready for Testing': { label: 'Ready for Testing', color: 'text-amber-400', bg: 'bg-amber-600/20', icon: ClipboardCheck },
   'Being Tested': { label: 'Being Tested', color: 'text-orange-400', bg: 'bg-orange-600/20', icon: FlaskConical },
   'Approved': { label: 'Approved', color: 'text-green-400', bg: 'bg-green-600/20', icon: CheckCircle },
@@ -32,7 +33,7 @@ const severityMap = {
   'info': { label: 'Informational', color: 'text-gray-400', bg: 'bg-gray-400/20' },
 };
 
-const AssignedRuleRequestDetailModal = ({ request, onClose, onStartDeveloping }) => {
+const AssignedRuleRequestDetailModal = ({ request, onClose, onStartDeveloping, onGoToDevelopmentWorkspace }) => {
   if (!request) return null;
 
   const statusData = statusMap[request.status] || { label: request.status, color: 'text-gray-400', bg: 'bg-gray-600/20', icon: AlertCircle };
@@ -50,6 +51,7 @@ const AssignedRuleRequestDetailModal = ({ request, onClose, onStartDeveloping })
   };
 
   const canStartDeveloping = request.status === 'Assigned';
+  const needsModification = request.status === 'Under Modification';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] animate-fadeIn">
@@ -104,10 +106,19 @@ const AssignedRuleRequestDetailModal = ({ request, onClose, onStartDeveloping })
 
           {request.rejected_reason && (
             <div className="mb-6">
-              <p className="text-sm text-[var(--text-secondary)] mb-2">Rejection Reason:</p>
-              <p className="bg-red-600/20 p-3 rounded-md text-sm border border-red-600/30 text-red-300">
-                {request.rejected_reason}
+              <p className="text-sm text-[var(--text-secondary)] mb-2">
+                {request.status === 'Under Modification' ? 'Modification Feedback:' : 'Rejection Reason:'}
               </p>
+              <div className={`p-4 rounded-md text-sm border ${
+                request.status === 'Under Modification' 
+                  ? 'bg-amber-600/20 border-amber-600/30 text-amber-200' 
+                  : 'bg-red-600/20 border-red-600/30 text-red-300'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <p>{request.rejected_reason}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -120,6 +131,16 @@ const AssignedRuleRequestDetailModal = ({ request, onClose, onStartDeveloping })
               >
                 <Code size={20} />
                 Start Developing
+              </button>
+            )}
+
+            {needsModification && (
+              <button
+                onClick={() => onGoToDevelopmentWorkspace(request._id)}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg text-lg transform hover:-translate-y-1 w-full flex items-center justify-center gap-3"
+              >
+                <Code size={20} />
+                Go to Development Workspace
               </button>
             )}
 

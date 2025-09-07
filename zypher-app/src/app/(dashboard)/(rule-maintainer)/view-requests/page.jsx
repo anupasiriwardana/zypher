@@ -235,6 +235,11 @@ export default function ViewRequestsPage() {
   const [prFilterSeverity, setPrFilterSeverity] = useState('all');
   const [prSortOrder, setPrSortOrder] = useState('desc');
 
+  // States for 'Ready for Testing' table
+  const [rtSearchTerm, setRtSearchTerm] = useState('');
+  const [rtFilterSeverity, setRtFilterSeverity] = useState('all');
+  const [rtSortOrder, setRtSortOrder] = useState('desc');
+
   // States for 'Complete List' table
   const [clSearchTerm, setClSearchTerm] = useState('');
   const [clFilterStatus, setClFilterStatus] = useState('all');
@@ -284,6 +289,10 @@ export default function ViewRequestsPage() {
 
   const pendingReviewRequests = useMemo(() => {
     return ruleRequests.filter(req => req.status === 'Pending Review');
+  }, [ruleRequests]);
+
+  const readyForTestingRequests = useMemo(() => {
+    return ruleRequests.filter(req => req.status === 'Ready for Testing');
   }, [ruleRequests]);
 
   const openModal = (request) => {
@@ -361,6 +370,24 @@ export default function ViewRequestsPage() {
         onRowClick={openModal}
         showStatusFilter={false}
         availableStatuses={['Pending Review']}
+        isLoading={isLoading}
+      />
+
+      <div className="my-10 border-t border-[var(--border-input)]"></div>
+
+      {/* Ready for Testing Rules Table */}
+      <RuleRequestsTable
+        title="Ready for Testing Requests"
+        requests={readyForTestingRequests}
+        searchTerm={rtSearchTerm}
+        setSearchTerm={setRtSearchTerm}
+        filterSeverity={rtFilterSeverity}
+        setFilterSeverity={setRtFilterSeverity}
+        sortOrder={rtSortOrder}
+        setSortOrder={setRtSortOrder}
+        onRowClick={openModal}
+        showStatusFilter={false}
+        availableStatuses={['Ready for Testing']}
         isLoading={isLoading}
       />
 

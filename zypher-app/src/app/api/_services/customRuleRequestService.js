@@ -14,6 +14,10 @@ export const updateCustomRuleRequestStatusByRuleMaintainer = async (requestId, s
         throw new Error("Rejection reason is required when status is 'Rejected'");
     }
 
+    if (status === "Under Modification" && (!rejected_reason || rejected_reason.trim() === "")) {
+        throw new Error("Rejection reason is required when status is 'Under Modification'");
+    }
+
     // Find the document first
     const customRuleRequest = await CustomRuleRequest.findById(requestId);
     if (!customRuleRequest) {
@@ -29,6 +33,8 @@ export const updateCustomRuleRequestStatusByRuleMaintainer = async (requestId, s
     } else if (status === "Rejected") {
       customRuleRequest.rejected_reason = rejected_reason;
       customRuleRequest.assigned_developer = null; // Clear assigned developer
+    } else if (status === "Under Modification") {
+      customRuleRequest.rejected_reason = rejected_reason;
     } else {
       // For other status changes, clear rejected_reason if it exists
       customRuleRequest.rejected_reason = undefined;
@@ -45,6 +51,8 @@ export const updateCustomRuleRequestStatusByRuleMaintainer = async (requestId, s
       successMessage = "Developer assigned successfully";
     } else if (status === "Rejected") {
       successMessage = "Request rejected successfully";
+    } else if (status === "Under Modification") {
+      successMessage = "Request is under modification";
     }
 
     return {
@@ -76,11 +84,6 @@ export const updateRuleRequestStatusByRuleDeveloper = async (requestId, status) 
     if (!customRuleRequest) {
       throw new Error("Custom rule request not found");
     };
-
-    if(customRuleRequest.status !== "Assigned" && customRuleRequest.status !== "Under Development") {
-        console.log(customRuleRequest.status);
-        throw new Error("Only assigned requests can be updated");
-    }
 
     // Update the document properties
     customRuleRequest.status = status;
