@@ -29,21 +29,40 @@ export const POST = async (request) => {
   const { ruleId, ruleName, ruleDescription, suggestedSeverity, remediation, ruleOwnerId, requestId} = await request.json();
 
   try {
-    const customRuleMetadataDoc = new CustomRuleMetadata({
-      rule_id: ruleId,
-      rule_name: ruleName,
-      description: ruleDescription,
-      severity: suggestedSeverity,
-      remediation: remediation || null,
-      rule_owner_id: ruleOwnerId,
-      request_id: requestId,
-      rule_developer_id: userId
-    });
+    // Check if a record with the same rule_id already exists
+    const existingRule = await CustomRuleMetadata.findOne({ rule_id: ruleId });
 
-    await customRuleMetadataDoc.save();
+    let customRuleMetadataDoc;
+    
+    if (existingRule) {
+      // Update existing record
+      existingRule.rule_name = ruleName;
+      existingRule.description = ruleDescription;
+      existingRule.severity = suggestedSeverity;
+      existingRule.remediation = remediation || null;
+      existingRule.rule_owner_id = ruleOwnerId;
+      existingRule.request_id = requestId;
+      existingRule.rule_developer_id = userId;
+      
+      customRuleMetadataDoc = await existingRule.save();
+    } else {
+      // Create new record
+      customRuleMetadataDoc = new CustomRuleMetadata({
+        rule_id: ruleId,
+        rule_name: ruleName,
+        description: ruleDescription,
+        severity: suggestedSeverity,
+        remediation: remediation || null,
+        rule_owner_id: ruleOwnerId,
+        request_id: requestId,
+        rule_developer_id: userId
+      });
+      
+      await customRuleMetadataDoc.save();
+    }
 
     return NextResponse.json(
-      { success: "Custom rule metadata saved successfully", id: customRuleMetadataDoc._id },
+      { success: existingRule ? "Custom rule metadata updated successfully" : "Custom rule metadata saved successfully", id: customRuleMetadataDoc._id },
       { status: 200 }
     );
 

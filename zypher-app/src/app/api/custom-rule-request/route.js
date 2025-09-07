@@ -2,6 +2,15 @@ import CustomRuleRequest from "@/models/CustomRuleRequest";
 import connectDB from "@/utils/db";
 import { NextResponse } from "next/server";
 
+import { 
+  updateCustomRuleRequestStatusByRuleMaintainer,
+  updateRuleRequestStatusByRuleDeveloper 
+} from "../_services/customRuleRequestService";
+
+import {
+  updateRuleFileStatusByRuleDeveloper
+} from "../_services/customRuleFileService";
+
 //submit custom rule request
 export const POST = async (request) => {
   const userId = request.headers.get("x-user-id");
@@ -135,8 +144,8 @@ export const PATCH = async (request) => {
     );
   }
 
-  // Check role-based access 
-  const allowedRoles = ['rule-maintainer'];
+  // Check role-based access
+  const allowedRoles = ['rule-maintainer', 'rule-developer'];
   if (!allowedRoles.includes(role)) {
     return NextResponse.json(
       { error: "Forbidden" },
@@ -144,90 +153,29 @@ export const PATCH = async (request) => {
     );
   }
 
-  await connectDB();
+  let result = {};
+  if(role === 'rule-maintainer'){
+    const { requestId, developerId, status, rejected_reason } = await request.json();
+    result = await updateCustomRuleRequestStatusByRuleMaintainer(requestId, status, developerId, rejected_reason);
+  
+  }else if(role === 'rule-developer'){
+    const { requestId, status } = await request.json();
+    result = await updateRuleRequestStatusByRuleDeveloper(requestId, status);
 
-  const { requestId, developerId, status, rejected_reason } = await request.json();
-  // In your PATCH route, add this at the beginning:
-  console.log("Received status:", status);
-  console.log("Received developerId:", developerId);
-  console.log("Received rejected_reason:", rejected_reason);
-
-  // Also add this to see the enum values from the model:
-  console.log("Allowed status values:", CustomRuleRequest.schema.path('status').enumValues);
-
-  try {
-    // Validate required fields based on status
-    if (status === "Assigned" && !developerId) {
-      return NextResponse.json(
-        { error: "Developer ID is required when status is 'Assigned'" },
-        { status: 400 }
-      );
+    //also update the rule file status if ready for testing
+    if(status === "Ready for Testing") {
+      await updateRuleFileStatusByRuleDeveloper(requestId, "Under testing");
     }
+  }
 
-    if (status === "Rejected" && (!rejected_reason || rejected_reason.trim() === "")) {
-      return NextResponse.json(
-        { error: "Rejection reason is required when status is 'Rejected'" },
-        { status: 400 }
-      );
-    }
-
-    // Find the document first
-    const customRuleRequest = await CustomRuleRequest.findById(requestId);
-    if (!customRuleRequest) {
-      return NextResponse.json(
-        { error: "Custom rule request not found" },
-        { status: 404 }
-      );
-    }
-
-    // Update the document properties
-    customRuleRequest.status = status;
-
-    if (status === "Assigned") {
-      customRuleRequest.assigned_developer = developerId;
-      customRuleRequest.rejected_reason = undefined; // Clear rejection reason
-    } else if (status === "Rejected") {
-      customRuleRequest.rejected_reason = rejected_reason;
-      customRuleRequest.assigned_developer = null; // Clear assigned developer
-    } else {
-      // For other status changes, clear rejected_reason if it exists
-      customRuleRequest.rejected_reason = undefined;
-    }
-
-    // Save the document (this will trigger validation)
-    await customRuleRequest.save();
-
-    // Populate the assigned_developer field
-    await customRuleRequest.populate('assigned_developer', 'email');
-
-    let successMessage = "Status updated successfully";
-    if (status === "Assigned") {
-      successMessage = "Developer assigned successfully";
-    } else if (status === "Rejected") {
-      successMessage = "Request rejected successfully";
-    }
-
+  if(result.success) {
     return NextResponse.json(
-      {
-        success: successMessage,
-        request: customRuleRequest
-      },
+      { success: result.success},
       { status: 200 }
     );
-
-  } catch (error) {
-    console.error("Error updating custom rule request:", error);
-
-    // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      return NextResponse.json(
-        { error: "Validation error", details: error.message },
-        { status: 400 }
-      );
-    }
-
+  }else{
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: result.error || "Internal server error" },
       { status: 500 }
     );
   }

@@ -68,9 +68,8 @@ export async function middleware(req) {
     '/api/scan-results': ['primary-user'],
     '/api/custom-rule-request': ['primary-user', 'rule-maintainer', 'rule-developer'],
     '/api/custom-rule-metadata': ['rule-developer'],
+    '/api/custom-rule-file': ['rule-developer'],
     '/api/user/rule-developer': ['rule-maintainer'],
-    '/api/customRuleFile': ['primary-user', 'rule-maintainer', 'rule-developer', 'rule-implementer'],
-    '/api/customRuleMetadata': ['primary-user', 'rule-maintainer', 'rule-developer', 'rule-implementer'],
     '/api/custom-rule-test-scan': ['rule-maintainer', 'rule-developer'],
   };
 
