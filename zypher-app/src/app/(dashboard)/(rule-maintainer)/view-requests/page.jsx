@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import RuleRequestDetailModal from '@/components/RuleRequestDetailModal';
+import { useRouter } from 'next/navigation';
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -225,6 +226,7 @@ const RuleRequestsTable = ({
 
 // --- Main Page Component ---
 export default function ViewRequestsPage() {
+  const router = useRouter();
   const [ruleRequests, setRuleRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -234,6 +236,11 @@ export default function ViewRequestsPage() {
   const [prSearchTerm, setPrSearchTerm] = useState('');
   const [prFilterSeverity, setPrFilterSeverity] = useState('all');
   const [prSortOrder, setPrSortOrder] = useState('desc');
+
+  // States for 'Ready for Testing' table
+  const [rtSearchTerm, setRtSearchTerm] = useState('');
+  const [rtFilterSeverity, setRtFilterSeverity] = useState('all');
+  const [rtSortOrder, setRtSortOrder] = useState('desc');
 
   // States for 'Complete List' table
   const [clSearchTerm, setClSearchTerm] = useState('');
@@ -245,6 +252,32 @@ export default function ViewRequestsPage() {
   useEffect(() => {
     fetchRuleRequests();
   }, []);
+
+  // Start Testing handler for modal
+  // Pass error to modal via callback
+  const handleStartTesting = async (requestId, setModalError) => {
+    try {
+      const response = await fetch('/api/custom-rule-request-start-test', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId,
+          requestStatus: 'Being Tested',
+        }),
+      });
+      if (response.ok) {
+        // Redirect to testing-workspace with requestId as URL param
+        router.push(`/testing-workspace?requestId=${requestId}`);
+      } else {
+        const errorData = await response.json();
+        if (setModalError) setModalError(errorData.error || 'Failed to start testing.');
+      }
+    } catch (error) {
+      if (setModalError) setModalError(error.message);
+    }
+  };
 
   const fetchRuleRequests = async () => {
     try {
@@ -284,6 +317,10 @@ export default function ViewRequestsPage() {
 
   const pendingReviewRequests = useMemo(() => {
     return ruleRequests.filter(req => req.status === 'Pending Review');
+  }, [ruleRequests]);
+
+  const readyForTestingRequests = useMemo(() => {
+    return ruleRequests.filter(req => req.status === 'Ready for Testing');
   }, [ruleRequests]);
 
   const openModal = (request) => {
@@ -366,6 +403,24 @@ export default function ViewRequestsPage() {
 
       <div className="my-10 border-t border-[var(--border-input)]"></div>
 
+      {/* Ready for Testing Rules Table */}
+      <RuleRequestsTable
+        title="Ready for Testing Requests"
+        requests={readyForTestingRequests}
+        searchTerm={rtSearchTerm}
+        setSearchTerm={setRtSearchTerm}
+        filterSeverity={rtFilterSeverity}
+        setFilterSeverity={setRtFilterSeverity}
+        sortOrder={rtSortOrder}
+        setSortOrder={setRtSortOrder}
+        onRowClick={openModal}
+        showStatusFilter={false}
+        availableStatuses={['Ready for Testing']}
+        isLoading={isLoading}
+      />
+
+      <div className="my-10 border-t border-[var(--border-input)]"></div>
+
       {/* Complete List of Rule Requests Table */}
       <RuleRequestsTable
         title="All Rule Requests"
@@ -390,6 +445,7 @@ export default function ViewRequestsPage() {
           request={selectedRequest}
           onClose={closeModal}
           onUpdateStatus={handleStatusUpdate}
+          onStartTesting={handleStartTesting}
         />
       )}
     </div>

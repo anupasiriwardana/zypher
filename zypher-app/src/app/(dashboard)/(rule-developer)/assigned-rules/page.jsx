@@ -37,6 +37,7 @@ const statusMap = {
   'Pending Review': { label: 'Pending Review', color: 'text-blue-400', bg: 'bg-blue-600/20', icon: Hourglass },
   'Assigned': { label: 'Assigned to Developer', color: 'text-indigo-400', bg: 'bg-indigo-600/20', icon: UserCheck },
   'Under Development': { label: 'Under Development', color: 'text-purple-400', bg: 'bg-purple-600/20', icon: Code },
+  'Under Modification': { label: 'Modifications Requested', color: 'text-amber-500', bg: 'bg-amber-600/20', icon: AlertCircle },
   'Ready for Testing': { label: 'Ready for Testing', color: 'text-amber-400', bg: 'bg-amber-600/20', icon: ClipboardCheck },
   'Being Tested': { label: 'Being Tested', color: 'text-orange-400', bg: 'bg-orange-600/20', icon: FlaskConical },
   'Approved': { label: 'Approved', color: 'text-green-400', bg: 'bg-green-600/20', icon: CheckCircle },
@@ -253,6 +254,11 @@ export default function AssignedRulesPage() {
   const [arFilterSeverity, setArFilterSeverity] = useState('all');
   const [arSortOrder, setArSortOrder] = useState('desc');
 
+  // States for 'Modification Requested Rules' table
+  const [mrSearchTerm, setMrSearchTerm] = useState('');
+  const [mrFilterSeverity, setMrFilterSeverity] = useState('all');
+  const [mrSortOrder, setMrSortOrder] = useState('desc');
+
   // States for 'All Assigned Rules' table
   const [allSearchTerm, setAllSearchTerm] = useState('');
   const [allFilterStatus, setAllFilterStatus] = useState('all');
@@ -294,6 +300,11 @@ export default function AssignedRulesPage() {
     return ruleRequests.filter(req => req.status === 'Assigned');
   }, [ruleRequests]);
 
+  // Filter requests that need modifications
+  const modificationRequestedRules = useMemo(() => {
+    return ruleRequests.filter(req => req.status === 'Under Modification');
+  }, [ruleRequests]);
+
   const openModal = (request) => {
     setSelectedRequest(request);
   };
@@ -305,6 +316,12 @@ export default function AssignedRulesPage() {
   const handleStartDeveloping = (ruleRequestId) => {
     // TODO: Implement start developing functionality
     // This will redirect to development workspace with the selected rule request ID
+    router.push(`/development-workspace?ruleRequestId=${ruleRequestId}&ruleType=custom`);
+    closeModal();
+  };
+
+  const handleGoToDevelopmentWorkspace = (ruleRequestId) => {
+    // Redirect to development workspace for modification
     router.push(`/development-workspace?ruleRequestId=${ruleRequestId}&ruleType=custom`);
     closeModal();
   };
@@ -349,6 +366,24 @@ export default function AssignedRulesPage() {
 
       <div className="my-10 border-t border-[var(--border-input)]"></div>
 
+      {/* Modification Requested Rules Table */}
+      <RuleRequestsTable
+        title="Rules Requiring Modifications"
+        requests={modificationRequestedRules}
+        searchTerm={mrSearchTerm}
+        setSearchTerm={setMrSearchTerm}
+        filterSeverity={mrFilterSeverity}
+        setFilterSeverity={setMrFilterSeverity}
+        sortOrder={mrSortOrder}
+        setSortOrder={setMrSortOrder}
+        onRowClick={openModal}
+        showStatusFilter={false}
+        availableStatuses={['Under Modification']}
+        isLoading={isLoading}
+      />
+
+      <div className="my-10 border-t border-[var(--border-input)]"></div>
+
       {/* All Assigned Rules Table */}
       <RuleRequestsTable
         title="All My Assigned Rules"
@@ -373,6 +408,7 @@ export default function AssignedRulesPage() {
           request={selectedRequest}
           onClose={closeModal}
           onStartDeveloping={handleStartDeveloping}
+          onGoToDevelopmentWorkspace={handleGoToDevelopmentWorkspace}
         />
       )}
     </div>

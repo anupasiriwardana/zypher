@@ -7,6 +7,7 @@ import {
   FileText,
   ListTodo,
   Settings,
+  FlaskConical
 
 } from "lucide-react";
 import clsx from "clsx";
@@ -20,6 +21,7 @@ const formatPageName = (id) => {
 const userNav = [
   { id: "view-requests", icon: FileText, href: "/view-requests" },
   { id: "custom-rules", icon: ListTodo, href: "/custom-rules" },
+  { id: "testing-workspace", icon: FlaskConical, href: "/testing-workspace" },
   { id: "rule-maintainer-settings", icon: Settings, href: "/rule-maintainer-settings" },
 ];
 
