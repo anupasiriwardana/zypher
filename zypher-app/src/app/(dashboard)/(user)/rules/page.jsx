@@ -1,7 +1,6 @@
-// src/app/dashboard/(user)/(rules)/page.js
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lexend } from 'next/font/google';
 import clsx from 'clsx';
 import {
@@ -18,7 +17,9 @@ import {
   ServerCog, 
   SlidersHorizontal, 
   FileType, 
-  CalendarDays, 
+  CalendarDays,
+  UserCheck,        // For Assigned status
+  ClipboardCheck,   // For Ready for Testing status
 } from 'lucide-react';
 
 const lexend = Lexend({
@@ -26,69 +27,95 @@ const lexend = Lexend({
   weight: ['400', '500', '600', '700'],
 });
 
-
-const dummyRequestedRules = [
-  {
-    id: "cr-001",
-    name: "Disallow Hardcoded DB Credentials",
-    status: "published",
-    submittedDate: "2025-06-15",
-    briefDescription: "Identifies hardcoded database credentials in YAML config files to prevent security leaks.",
-  },
-  {
-    id: "cr-002",
-    name: "Enforce HTTPS for Ingress",
-    status: "being-developed",
-    submittedDate: "2025-06-20",
-    briefDescription: "Ensures all Kubernetes Ingress resources enforce HTTPS redirection for secure communication.",
-  },
-  {
-    id: "cr-003",
-    name: "Restrict Wildcard Permissions in IAM",
-    status: "pending-review",
-    submittedDate: "2025-06-28",
-    briefDescription: "Flags AWS IAM policies that grant excessive '*' permissions on critical resources.",
-  },
-  {
-    id: "cr-004",
-    name: "No Public S3 Buckets in IaC",
-    status: "being-tested",
-    submittedDate: "2025-07-01",
-    briefDescription: "Checks for publicly accessible AWS S3 buckets defined in Terraform or CloudFormation templates.",
-  },
-  {
-    id: "cr-005",
-    name: "Require Image Digests in Deployments",
-    status: "published",
-    submittedDate: "2025-07-05",
-    briefDescription: "Verifies Docker image references use digests instead of mutable tags in Kubernetes deployments.",
-  },
-  {
-    id: "cr-006",
-    name: "Deny Root User Execution in Containers",
-    status: "pending-review",
-    submittedDate: "2025-07-07",
-    briefDescription: "Flags Dockerfiles or Kubernetes manifests that allow container processes to run as root.",
-  },
-];
-
-
 const statusMap = {
-  'pending-review': { label: 'Pending Review', color: 'text-blue-400', bg: 'bg-blue-600/20', icon: Hourglass },
-  'being-developed': { label: 'Being Developed', color: 'text-purple-400', bg: 'bg-purple-600/20', icon: Code },
-  'being-tested': { label: 'Being Tested', color: 'text-orange-400', bg: 'bg-orange-600/20', icon: FlaskConical },
-  'published': { label: 'Successfully Published', color: 'text-green-400', bg: 'bg-green-600/20', icon: BookOpen },
+  'Pending Review': {
+    label: 'Pending Review',
+    color: 'text-blue-400',
+    bg: 'bg-blue-600/20',
+    icon: Hourglass
+  },
+  'Assigned': {
+    label: 'Assigned to Developer',
+    color: 'text-indigo-400',
+    bg: 'bg-indigo-600/20',
+    icon: UserCheck
+  },
+  'Under Development': {
+    label: 'Under Development',
+    color: 'text-purple-400',
+    bg: 'bg-purple-600/20',
+    icon: Code
+  },
+  'Ready for Testing': {
+    label: 'Ready for Testing',
+    color: 'text-amber-400',
+    bg: 'bg-amber-600/20',
+    icon: ClipboardCheck
+  },
+  'Being Tested': {
+    label: 'Being Tested',
+    color: 'text-orange-400',
+    bg: 'bg-orange-600/20',
+    icon: FlaskConical
+  },
+  'Approved': {
+    label: 'Approved',
+    color: 'text-green-400',
+    bg: 'bg-green-600/20',
+    icon: CheckCircle
+  },
+  'Successfully Published': {
+    label: 'Successfully Published',
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-600/20',
+    icon: BookOpen
+  },
+  'Rejected': {
+    label: 'Rejected',
+    color: 'text-red-400',
+    bg: 'bg-red-600/20',
+    icon: XCircle
+  },
 };
 
 export default function RulesPage() {
-
   const [ruleName, setRuleName] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState('medium');
   const [targetFileTypes, setTargetFileTypes] = useState('');
   const [exampleCode, setExampleCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionFeedback, setSubmissionFeedback] = useState(null); 
+  const [submissionFeedback, setSubmissionFeedback] = useState(null);
+  const [userRequests, setUserRequests] = useState([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+
+  // Fetch user's custom rule requests
+  useEffect(() => {
+    fetchUserRequests();
+  }, []);
+
+  const fetchUserRequests = async () => {
+    try {
+      setIsLoadingRequests(true);
+      const response = await fetch('/api/custom-rule-request', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserRequests(data.requests || []);
+      } else {
+        console.error('Failed to fetch custom rule requests');
+      }
+    } catch (error) {
+      console.error('Error fetching custom rule requests:', error);
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  };
 
   const handleSubmitRule = async (e) => {
     e.preventDefault();
@@ -103,30 +130,61 @@ export default function RulesPage() {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call to submit the rule request
-      console.log('Submitting custom rule:', {
-        ruleName, description, severity, targetFileTypes, exampleCode
+      const response = await fetch('/api/custom-rule-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rule_name: ruleName,
+          rule_description: description,
+          suggested_severity: severity,
+          sample_code: exampleCode
+        }),
       });
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate network delay
 
-      // Simulate a success or failure
-      const success = Math.random() > 0.1; // 90% success rate for demo
-      if (success) {
-        setSubmissionFeedback({ type: 'success', message: 'Rule request submitted successfully! Our team will review it shortly.' });
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmissionFeedback({
+          type: 'success',
+          message: 'Rule request submitted successfully! Our team will review it shortly.'
+        });
+        // Set a timeout to clear the feedback after 5 seconds
+        setTimeout(() => {
+          setSubmissionFeedback(null);
+        }, 5000);
         // Clear form fields
         setRuleName('');
         setDescription('');
         setSeverity('medium');
         setTargetFileTypes('');
         setExampleCode('');
+        // Refresh the requests list
+        fetchUserRequests();
       } else {
-        throw new Error('Failed to submit rule request. Please try again.');
+        throw new Error(data.error || 'Failed to submit rule request. Please try again.');
       }
     } catch (error) {
-      setSubmissionFeedback({ type: 'error', message: error.message || 'An unexpected error occurred.' });
+      setSubmissionFeedback({
+        type: 'error',
+        message: error.message || 'An unexpected error occurred.'
+      });
+      // Set a timeout to clear the error feedback after 5 seconds
+      setTimeout(() => {
+        setSubmissionFeedback(null);
+      }, 5000);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   return (
@@ -176,50 +234,30 @@ export default function RulesPage() {
               ></textarea>
             </div>
 
-            {/* Severity & Target File Types (Flex row for alignment) */}
-            <div className="flex flex-col sm:flex-row gap-6">
-              {/* Severity */}
-              <div className="w-full sm:w-1/2">
-                <label htmlFor="severity" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-                  <SlidersHorizontal size={16} /> Suggested Severity
-                </label>
-                <div className="relative">
-                  <select
-                    id="severity"
-                    value={severity}
-                    onChange={(e) => setSeverity(e.target.value)}
-                    className="appearance-none w-full bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
-                    disabled={isSubmitting}
-                  >
-                    <option value="critical">Critical</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                    <option value="informational">Informational</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--text-secondary)]">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z"/></svg>
-                  </div>
+            {/* Severity */}
+            <div className="w-full">
+              <label htmlFor="severity" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+                <SlidersHorizontal size={16} /> Suggested Severity
+              </label>
+              <div className="relative">
+                <select
+                  id="severity"
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value)}
+                  className="appearance-none w-full bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
+                  disabled={isSubmitting}
+                >
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                  <option value="info">Informational</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--text-secondary)]">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z" /></svg>
                 </div>
               </div>
-
-              {/* Target File Types */}
-              {/* <div className="w-full sm:w-1/2">
-                <label htmlFor="fileTypes" className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-                  <FileType size={16} /> Target File Types
-                </label>
-                <input
-                  type="text"
-                  id="fileTypes"
-                  value={targetFileTypes}
-                  onChange={(e) => setTargetFileTypes(e.target.value)}
-                  placeholder="e.g., .yml, .json, Dockerfile"
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
-                  disabled={isSubmitting}
-                />
-              </div> */}
             </div>
-
 
             {/* Example Code */}
             <div>
@@ -276,28 +314,50 @@ export default function RulesPage() {
           </p>
 
           <div className="space-y-4">
-            {dummyRequestedRules.map((rule) => {
-              const statusInfo = statusMap[rule.status] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-600/20', icon: null };
-              const StatusIcon = statusInfo.icon;
+            {isLoadingRequests ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 size={24} className="animate-spin text-[var(--brand-yellow)]" />
+                <span className="ml-2 text-[var(--text-secondary)]">Loading your requests...</span>
+              </div>
+            ) : userRequests.length === 0 ? (
+              <div className="text-center py-8 text-[var(--text-secondary)]">
+                <p>You haven't submitted any custom rule requests yet.</p>
+                <p className="text-sm mt-2">Submit your first request using the form on the left!</p>
+              </div>
+            ) : (
+              userRequests.map((rule) => {
+                const statusInfo = statusMap[rule.status] || {
+                  label: rule.status,
+                  color: 'text-gray-400',
+                  bg: 'bg-gray-600/20',
+                  icon: null
+                };
+                const StatusIcon = statusInfo.icon;
 
-              return (
-                <div
-                  key={rule.id}
-                  className="bg-[var(--background)] p-5 rounded-lg border border-[var(--border-input)] hover:border-[var(--brand-yellow)] transition-all duration-200 shadow-md"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-[var(--foreground)]">{rule.name}</h3>
-                    <span className={clsx("px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1", statusInfo.bg, statusInfo.color)}>
-                      {StatusIcon && <StatusIcon size={14} />} {statusInfo.label}
-                    </span>
+                return (
+                  <div
+                    key={rule._id}
+                    className="bg-[var(--background)] p-5 rounded-lg border border-[var(--border-input)] hover:border-[var(--brand-yellow)] transition-all duration-200 shadow-md"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-semibold text-[var(--foreground)]">{rule.name}</h3>
+                      <span className={clsx("px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1", statusInfo.bg, statusInfo.color)}>
+                        {StatusIcon && <StatusIcon size={14} />} {statusInfo.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] mb-3">{rule.description}</p>
+                    {rule.suggested_severity && (
+                      <div className="text-xs text-[var(--text-secondary)] mb-2">
+                        Suggested Severity: <span className="font-medium capitalize">{rule.suggested_severity}</span>
+                      </div>
+                    )}
+                    <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                      <CalendarDays size={12} /> Submitted: {formatDate(rule.createdAt)}
+                    </div>
                   </div>
-                  <p className="text-sm text-[var(--text-secondary)] mb-3">{rule.briefDescription}</p>
-                  <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
-                    <CalendarDays size={12} /> Submitted: {rule.submittedDate}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>

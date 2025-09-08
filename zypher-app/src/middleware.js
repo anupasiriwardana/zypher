@@ -45,6 +45,7 @@ export async function middleware(req) {
     '/custom-rules': ['rule-maintainer'],
     '/rule-maintainer-settings': ['rule-maintainer'],
     '/view-requests': ['rule-maintainer'],
+    '/testing-workspace': ['rule-maintainer'],
 
     // Dashboard routes -> rule-developer
     '/assigned-rules': ['rule-developer'],
@@ -66,9 +67,14 @@ export async function middleware(req) {
     '/api/scan-individual-file': ['primary-user'],
     '/api/rule-metadata': ['primary-user'],
     '/api/scan-results': ['primary-user'],
-    '/api/customRuleFile': ['primary-user', 'rule-maintainer', 'rule-developer', 'rule-implementer'],
-    '/api/customRuleMetadata': ['primary-user', 'rule-maintainer', 'rule-developer', 'rule-implementer'],
+    '/api/custom-rule-request': ['primary-user', 'rule-maintainer', 'rule-developer'],
+    '/api/custom-rule-metadata': ['rule-developer', 'rule-maintainer'],
+    '/api/custom-rule-file': ['rule-developer', 'rule-maintainer'],
+    '/api/user/rule-developer': ['rule-maintainer'],
     '/api/custom-rule-test-scan': ['rule-maintainer', 'rule-developer'],
+    '/api/custom-rule-file-reject': ['rule-maintainer'],
+    '/api/custom-rule-file-publish': ['rule-maintainer'],
+    '/api/custom-rule-request-start-test': ['rule-maintainer'],
   };
 
   // Find the most specific matching route
