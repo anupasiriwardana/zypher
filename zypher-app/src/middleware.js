@@ -73,6 +73,8 @@ export async function middleware(req) {
     '/api/user/rule-developer': ['rule-maintainer'],
     '/api/custom-rule-test-scan': ['rule-maintainer', 'rule-developer'],
     '/api/custom-rule-file-reject': ['rule-maintainer'],
+    '/api/custom-rule-file-publish': ['rule-maintainer'],
+    '/api/custom-rule-request-start-test': ['rule-maintainer'],
   };
 
   // Find the most specific matching route

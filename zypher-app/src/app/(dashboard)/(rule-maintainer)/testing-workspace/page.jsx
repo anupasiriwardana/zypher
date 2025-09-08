@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Lexend } from 'next/font/google';
 import { TestTube, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import TestRuleExplorer from '@/components/TestRuleExplorer';
@@ -37,6 +37,7 @@ deploy-job:
 
 export default function TestingWorkspacePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   // State management
   const [rulesForTesting, setRulesForTesting] = useState([]);
@@ -70,9 +71,7 @@ export default function TestingWorkspacePage() {
       try {
         setIsLoading(true);
         setError(null);
-        
         await fetchRulesForTesting();
-        
       } catch (error) {
         console.error('Error initializing testing workspace:', error);
         setError('Failed to load rules for testing');
@@ -80,9 +79,20 @@ export default function TestingWorkspacePage() {
         setIsLoading(false);
       }
     };
-
     initializeWorkspace();
   }, []);
+
+  // After rules are loaded, select rule if ruleRequestId is present
+  useEffect(() => {
+    const ruleRequestId = searchParams.get('requestId');
+    if (ruleRequestId && rulesForTesting.length > 0) {
+      const matchingRule = rulesForTesting.find(rule => rule.originalRequestId === ruleRequestId);
+      if (matchingRule) {
+        setSelectedRule(matchingRule);
+        setTestFileContent(matchingRule.testFileContent);
+      }
+    }
+  }, [rulesForTesting, searchParams]);
 
   // Fetch rules ready for testing from API
   const fetchRulesForTesting = async () => {
@@ -289,47 +299,45 @@ export default function TestingWorkspacePage() {
     }
 
     try {
-      // TODO: Add API call to update rule status to 'Active' or 'Published'
-      // const response = await fetch('/api/custom-rule-file', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     ruleId: selectedRule.id,
-      //     ruleName: selectedRule.name,
-      //     ruleStatus: 'Active',
-      //     ruleFileContent: selectedRule.ruleFileContent,
-      //     ruleOwnerId: selectedRule.ruleOwnerId,
-      //     requestId: selectedRule.originalRequestId,
-      //     yamlTestFileContent: testFileContent
-      //   }),
-      // });
-
-      // TODO: Also update the CustomRuleRequest status to 'Published' or 'Completed'
-      
-      console.log('Publishing rule:', selectedRule.id);
-      
-      setSaveFeedback({ 
-        type: 'success', 
-        message: `Rule "${selectedRule.name}" has been approved and published successfully!` 
+      // Call the API endpoint to publish the rule
+      const response = await fetch('/api/custom-rule-file-publish', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ruleId: selectedRule.id,
+          requestId: selectedRule.originalRequestId,
+          requestStatus: 'Successfully Published',
+          ruleFileStatus: 'Active',
+        }),
       });
-      
-      // Update rule status to published and remove from testing list
-      setRulesForTesting(prevRules => 
-        prevRules.filter(rule => rule.id !== selectedRule.id)
-      );
-      
-      // Clear selection
-      setSelectedRule(null);
-      setTestFileContent('');
-      setTestOutput('');
-      
+
+      if (response.ok) {
+        setSaveFeedback({
+          type: 'success',
+          message: `Rule "${selectedRule.name}" has been approved and published successfully!`
+        });
+
+        // Wait for 4 seconds to show the success message
+        setTimeout(async () => {
+          // Clear selection and states
+          setSelectedRule(null);
+          setTestFileContent('');
+          setTestOutput('');
+
+          // Refetch rules to update the list
+          await fetchRulesForTesting();
+        }, 4000);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to publish rule');
+      }
     } catch (error) {
       console.error('Publish error:', error);
-      setSaveFeedback({ 
-        type: 'error', 
-        message: 'Failed to publish rule. Please try again.' 
+      setSaveFeedback({
+        type: 'error',
+        message: error.message || 'Failed to publish rule. Please try again.'
       });
     }
   };
@@ -361,14 +369,17 @@ export default function TestingWorkspacePage() {
           type: 'success', 
           message: `Rule "${selectedRule.name}" has been sent back to the developer for modifications.` 
         });
-        
-        // Clear current selection and states
-        setSelectedRule(null);
-        setTestFileContent('');
-        setTestOutput('');
-        
-        // Refetch rules to update the list
-        await fetchRulesForTesting();
+
+        // Wait for 4 seconds to show the success message
+        setTimeout(async () => {
+          // Clear current selection and states
+          setSelectedRule(null);
+          setTestFileContent('');
+          setTestOutput('');
+
+          // Refetch rules to update the list
+          await fetchRulesForTesting();
+        }, 4000);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to reject rule');

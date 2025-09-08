@@ -25,7 +25,9 @@ const severityMap = {
   'info': { label: 'Informational', color: 'text-gray-400', bg: 'bg-gray-400/20' },
 };
 
-const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus }) => {
+// Add onStartTesting to props
+const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesting }) => {
+  const [modalError, setModalError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -108,15 +110,8 @@ const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus }) => {
     }
   }, [request._id, rejectReason, onUpdateStatus]);
 
-  const handleStatusUpdate = useCallback(async (newStatus) => {
-    setIsSubmitting(true);
-    const result = await onUpdateStatus(request._id, newStatus);
-    setIsSubmitting(false);
-
-    if (result.success) {
-      onClose();
-    }
-  }, [request._id, onUpdateStatus, onClose]);
+  // Use isSubmitting for button loading state
+  const [isStartTesting, setIsStartTesting] = useState(false);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -284,14 +279,24 @@ const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus }) => {
             )}
 
             {request.status === 'Ready for Testing' && (
-              <button
-                onClick={() => handleStatusUpdate('Being Tested')}
-                disabled={isSubmitting}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center disabled:opacity-50"
-              >
-                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
-                Mark as Being Tested
-              </button>
+              <>
+                {modalError && (
+                  <div className="mb-2 text-red-500 text-sm text-center bg-red-100 rounded p-2">{modalError}</div>
+                )}
+                <button
+                  onClick={async () => {
+                    setModalError(null);
+                    setIsStartTesting(true);
+                    await onStartTesting(request._id, setModalError);
+                    setIsStartTesting(false);
+                  }}
+                  disabled={isStartTesting}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center disabled:opacity-50"
+                >
+                  {isStartTesting ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
+                  Start Testing
+                </button>
+              </>
             )}
 
             {request.status === 'Being Tested' && (
