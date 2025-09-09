@@ -169,8 +169,8 @@ async def scan_repo(repo_request: RepoRequest):
                     "high": severity_counts["HIGH"],
                     "medium": severity_counts["MEDIUM"],
                     "low": severity_counts["LOW"],
-                    "BSTP score": score["final_score"],
-                    "BSTP per_severity": score["per_severity"],
+                    "CUST score": score["final_score"],
+                    "CUST per_severity": score["per_severity"],
                     "risk_factor": score["risk_factor"]
                 }
             }

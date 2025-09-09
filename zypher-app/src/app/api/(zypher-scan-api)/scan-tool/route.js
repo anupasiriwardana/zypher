@@ -20,7 +20,7 @@ export async function POST(request) {
 
   try {
     //fetching vulnScan results and bpScan results in parallel
-    const [vulnScanRes, bpScanRes] = await Promise.all([
+    const [vulnScanRes, bpScanRes, customRuleScanRes] = await Promise.all([
       fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,13 +35,14 @@ export async function POST(request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo_url: repoUrl,
-          user_id: session.user.id,
+          user_id: userId,
          }),
       }),
     ]);
 
     const vulnScanData = await vulnScanRes.json();
     const bpScanData = await bpScanRes.json();
+    const customRuleScanData = await customRuleScanRes.json();
 
     if (!vulnScanRes.ok) {
       return NextResponse.json(
@@ -54,6 +55,13 @@ export async function POST(request) {
       return NextResponse.json(
         { error: bpScanData.detail || "Best practices scan failed" },
         { status: bpScanRes.status }
+      );
+    }
+
+    if (!customRuleScanRes.ok) {
+      return NextResponse.json(
+        { error: customRuleScanData.detail || "Custom Rule scan failed" },
+        { status: customRuleScanRes.status }
       );
     }
 
@@ -92,6 +100,21 @@ export async function POST(request) {
             risk_factor: vulnScanData.stats["risk_factor"],
           },
         },
+        customRuleScan: {
+          status: customRuleScanData.status,
+          results: customRuleScanData.results,
+          stats: {
+            scanned_files: customRuleScanData.stats.scanned_files,
+            total_findings: customRuleScanData.stats.total_findings,
+            critical: customRuleScanData.stats.critical,
+            high: customRuleScanData.stats.high,
+            medium: customRuleScanData.stats.medium,
+            low: customRuleScanData.stats.low,
+            custom_rule_score: customRuleScanData.stats["custom_rule_score"],
+            custom_rule_per_severity: customRuleScanData.stats["custom_rule_per_severity"],
+            risk_factor: customRuleScanData.stats["risk_factor"],
+          },
+        },
       });
 
       await scanDoc.save();
@@ -108,6 +131,7 @@ export async function POST(request) {
     const combinedResults = {
       vulnerabilityScanResults: vulnScanData,
       bestPracticesScanResults: bpScanData,
+      customRuleScanResults: customRuleScanData,
     };
 
     return NextResponse.json(combinedResults, { status: 200 });

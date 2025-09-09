@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const SeverityBadge = ({ severity }) => {
   const normalizedSeverity = severity?.toUpperCase();
@@ -164,6 +165,8 @@ export default function PasteUrlPageContent() {
   const [vulnRuleMetadata, setVulnRuleMetadata] = useState([]);
   const [bpRuleMetadata, setBpRuleMetadata] = useState([]);
 
+  const { data: session } = useSession();
+
   const router = useRouter();
 
   // Load initialVulnMaxScores from localStorage and fetch rule metadata on component mount
@@ -297,6 +300,7 @@ export default function PasteUrlPageContent() {
         }), // Use trimmedUrl here
       });
 
+
       if (!res.ok) {
         const errorData = await res
           .json()
@@ -308,7 +312,7 @@ export default function PasteUrlPageContent() {
       }
 
       const data = await res.json();
-
+      console.log("Scan response data:", data);
       if (data.vulnerabilityScanResults || data.bestPracticesScanResults) {
         setScanResults(data);
         setFeedback({
