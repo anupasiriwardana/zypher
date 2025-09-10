@@ -3,7 +3,7 @@ import inspect
 import types
 from bson import ObjectId
 from config.database import published_custom_rule_file_collection
-from models.bestPractices import Finding
+from models.customRule import Finding
 from .baseRule_class import BaseRule
 
 def load_rules(user_id: str) -> list:

@@ -11,7 +11,7 @@ from typing import List
 
 router = APIRouter(
     prefix='/customeRule-scan',
-    tags=['scan for best practices'],
+    tags=['scan for custome rule'],
 )
 
 # Initialize scanner once

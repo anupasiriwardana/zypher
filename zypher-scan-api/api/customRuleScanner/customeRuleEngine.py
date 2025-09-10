@@ -1,6 +1,6 @@
 from .parser import PipelineParser
 from .customRule_loader import load_rules
-from models.bestPractices import Finding
+from models.customRule import Finding
 from typing import List
 
 class ScannerEngine:

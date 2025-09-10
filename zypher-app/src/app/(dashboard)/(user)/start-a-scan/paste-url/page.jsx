@@ -312,8 +312,8 @@ export default function PasteUrlPageContent() {
       }
 
       const data = await res.json();
-      console.log("Scan response data:", data);
-      if (data.vulnerabilityScanResults || data.bestPracticesScanResults) {
+      // console.log("Scan response data:", data.customRuleScanResults);
+      if (data.vulnerabilityScanResults || data.bestPracticesScanResults || data.customRuleScanResults) {
         setScanResults(data);
         setFeedback({
           type: "success",
@@ -494,6 +494,29 @@ export default function PasteUrlPageContent() {
                   </h4>
                   <CircularProgressBar
                     score={stats["BSTP score"]}
+                    label="Score"
+                    maxScore={BpMaxScoreForProgressBar}
+                    riskFactor={stats.risk_factor}
+                  />
+                  {stats.risk_factor && (
+                    <div className="flex flex-col items-center">
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        Overall Risk Factor
+                      </p>
+                      <SeverityBadge severity={stats.risk_factor} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {scanType === "custom-rules" &&
+              stats["CUST score"] !== undefined && (
+                <div className="bg-[var(--background)] p-6 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col items-center justify-center space-y-4 h-full">
+                  <h4 className="text-md font-semibold text-[var(--text-secondary)]">
+                    Custom Rules Score
+                  </h4>
+                  <CircularProgressBar
+                    score={stats["CUST score"]}
                     label="Score"
                     maxScore={BpMaxScoreForProgressBar}
                     riskFactor={stats.risk_factor}
@@ -749,8 +772,7 @@ export default function PasteUrlPageContent() {
                 )}
               >
                 Vulnerabilities
-                {scanResults.vulnerabilityScanResults?.stats?.total_findings >
-                  0 && (
+                {scanResults.vulnerabilityScanResults?.stats?.total_findings > 0 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600/20 text-red-400">
                     {scanResults.vulnerabilityScanResults.stats.total_findings}
                   </span>
@@ -766,10 +788,25 @@ export default function PasteUrlPageContent() {
                 )}
               >
                 Best Practices
-                {scanResults.bestPracticesScanResults?.stats?.total_findings >
-                  0 && (
+                {scanResults.bestPracticesScanResults?.stats?.total_findings > 0 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-600/20 text-blue-400">
                     {scanResults.bestPracticesScanResults.stats.total_findings}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("custom-rules")}
+                className={clsx(
+                  "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                  activeTab === "custom-rules"
+                    ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                )}
+              >
+                Custom Rules
+                {scanResults.customRuleScanResults?.stats?.total_findings > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-600/20 text-purple-400">
+                    {scanResults.customRuleScanResults.stats.total_findings}
                   </span>
                 )}
               </button>
@@ -787,6 +824,13 @@ export default function PasteUrlPageContent() {
               renderScanTypeResults(
                 scanResults.bestPracticesScanResults,
                 "best-practices",
+                scanResults.repoUrl
+              )}
+            {activeTab === "custom-rules" &&
+              scanResults.customRuleScanResults &&
+              renderScanTypeResults(
+                scanResults.customRuleScanResults,
+                "custom-rules",
                 scanResults.repoUrl
               )}
 
