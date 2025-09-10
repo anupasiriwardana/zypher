@@ -8,6 +8,7 @@ class RepoRequest(BaseModel):
 class FileScanRequest(BaseModel):
     filename: str
     content: str
+    user_id: Optional[str] = "6873d0a1b8f41c7da5fe5ffd"
 
 class CustomRuleTestRequest(BaseModel):
     rule_id : str

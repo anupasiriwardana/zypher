@@ -3,10 +3,9 @@ import FileScanResult from "@/models/FileScanResult";
 import connectDB from "@/utils/db";
 
 export async function POST(request) {
-  await connectDB();
-
   const userId = request.headers.get("x-user-id");
   const role = request.headers.get("x-user-role");
+  await connectDB();
 
   if (!userId || !role) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,7 +19,8 @@ export async function POST(request) {
   const { filename, content } = await request.json();
 
   try {
-    const [vulnRes, bpRes] = await Promise.all([
+    
+    const [vulnRes, bpRes, customRuleRes] = await Promise.all([
       fetch(`${process.env.FASTAPI_URL}/vulnerability-scan-single-file`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -31,10 +31,17 @@ export async function POST(request) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename, content }),
       }),
+      fetch(`${process.env.FASTAPI_URL}/custom-rule-scan-single-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content, user_id: userId, }),
+      }),
     ]);
+    
 
     const vulnerabilities = await vulnRes.json();
     const bestPractices = await bpRes.json();
+    const customRules = await customRuleRes.json();
 
     if (!vulnRes.ok) {
       return NextResponse.json(
@@ -47,6 +54,13 @@ export async function POST(request) {
       return NextResponse.json(
         { error: bestPractices.detail || 'Best practices scan failed' },
         { status: bpRes.status }
+      );
+    }
+    
+    if (!customRuleRes.ok) {
+      return NextResponse.json(
+        { error: customRules.detail || 'Custom rule scan failed' },
+        { status: customRuleRes.status }
       );
     }
 
@@ -81,6 +95,20 @@ export async function POST(request) {
           per_severity: bestPractices.stats["BSTP per_severity"],
           risk_factor: bestPractices.stats.risk_factor
         }
+      },
+      customRuleScan: {
+        status: customRules.status,
+        findings: customRules.findings,
+        stats: {
+          total_findings: customRules.stats.total_findings,
+          critical: customRules.stats.critical,
+          high: customRules.stats.high,
+          medium: customRules.stats.medium,
+          low: customRules.stats.low,
+          score: customRules.stats["custom_rule_score"],
+          per_severity: customRules.stats["custom_rule_per_severity"],
+          risk_factor: customRules.stats.risk_factor
+        }
       }
     });
 
@@ -97,7 +125,8 @@ export async function POST(request) {
     return NextResponse.json(
       {
         vulnerabilities,
-        bestPractices
+        bestPractices,
+        customRules
       },
       { status: 200 }
     );
