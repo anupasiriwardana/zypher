@@ -105,8 +105,8 @@ export async function POST(request) {
           high: customRules.stats.high,
           medium: customRules.stats.medium,
           low: customRules.stats.low,
-          score: customRules.stats["cust score"],
-          per_severity: customRules.stats["cust per_severity"],
+          score: customRules.stats["CUST score"],
+          per_severity: customRules.stats["CUST per_severity"],
           risk_factor: customRules.stats.risk_factor
         }
       }

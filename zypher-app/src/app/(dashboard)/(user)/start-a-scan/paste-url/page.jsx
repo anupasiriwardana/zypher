@@ -312,7 +312,7 @@ export default function PasteUrlPageContent() {
       }
 
       const data = await res.json();
-      // console.log("Scan response data:", data.customRuleScanResults);
+      console.log("Scan response data:", data.customRuleScanResults);
       if (data.vulnerabilityScanResults || data.bestPracticesScanResults || data.customRuleScanResults) {
         setScanResults(data);
         setFeedback({
