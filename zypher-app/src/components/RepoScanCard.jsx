@@ -4,7 +4,7 @@ import { FolderGit, ArrowRight, CheckCircle, AlertTriangle, XCircle, FileText } 
 import Link from "next/link";
 import clsx from "clsx";
 
-export default function RepoScanCard({ repoUrl, date, scanDataId, vulnerabilityFindings, bestPracticeFindings, risk }) {
+export default function RepoScanCard({ repoUrl, date, scanDataId, vulnerabilityFindings, bestPracticeFindings, customRuleFindings, risk }) {
   const repoName = repoUrl.split('/').filter(Boolean).pop();
   const href = `/scan-results/${scanDataId}?type=repo`;
 
@@ -30,7 +30,7 @@ export default function RepoScanCard({ repoUrl, date, scanDataId, vulnerabilityF
           </div>
 
           <p className="text-sm text-[var(--text-secondary)] mb-4">
-            Vulnerabilities: <strong>{vulnerabilityFindings}</strong>, Best Practice Suggestions: <strong>{bestPracticeFindings}</strong>
+            Vulnerabilities: <strong>{vulnerabilityFindings}</strong>, Best Practice Suggestions: <strong>{bestPracticeFindings}</strong> {", "}Custom Rule Findings: <strong>{customRuleFindings}</strong>
           </p>
 
           <div className="flex justify-between items-end mt-auto">

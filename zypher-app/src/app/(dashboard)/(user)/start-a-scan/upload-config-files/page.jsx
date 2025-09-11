@@ -191,7 +191,7 @@ export default function UploadConfigPageContent() {
         throw new Error(data.error);
       }
       setScanResults(data);
-      console.log("scan results:", data.customRules);
+      // console.log("scan results:", data.customRules);
 
       if (data.bestPractices?.status === 'success' && data.vulnerabilities?.status === 'success') {
         setScanResult('success');

@@ -105,13 +105,13 @@ export async function POST(request) {
           high: customRules.stats.high,
           medium: customRules.stats.medium,
           low: customRules.stats.low,
-          score: customRules.stats["custom_rule_score"],
-          per_severity: customRules.stats["custom_rule_per_severity"],
+          score: customRules.stats["cust score"],
+          per_severity: customRules.stats["cust per_severity"],
           risk_factor: customRules.stats.risk_factor
         }
       }
     });
-
+    // console.log("Scan result document to be saved:", scanResultDoc);
     try {
       await scanResultDoc.save();
     } catch (saveErr) {

@@ -220,6 +220,17 @@ const ScanResult = () => {
             }
             processedScanData.bestPracticesScan.stats.scanned_files = 1;
           }
+          if (processedScanData.customRuleScan && processedScanData.customRuleScan.findings) {
+            processedScanData.customRuleScan.results = groupFindingsForFileScan(
+              processedScanData.customRuleScan.findings,
+              processedScanData.filename
+            );
+
+            if (!processedScanData.customRuleScan.stats) {
+              processedScanData.customRuleScan.stats = {};
+            }
+            processedScanData.customRuleScan.stats.scanned_files = 1;
+          }
         }
 
 
@@ -585,7 +596,7 @@ const ScanResult = () => {
     );
   }
 
-  const { filename, repo_url, vulnerabilityScan, bestPracticesScan, createdAt, scan_duration } = scanData;
+  const { filename, repo_url, vulnerabilityScan, bestPracticesScan, customRuleScan, createdAt, scan_duration } = scanData;
 
   const titleText = type === 'repo' ? (repo_url ? `Repository Scan: ${repo_url}` : 'Repository Scan') :
                     type === 'file' ? (filename ? `File Scan: ${filename.split('/').pop()}` : 'File Scan') :
@@ -668,11 +679,23 @@ const ScanResult = () => {
           >
             Best Practices
           </button>
+          <button
+            className={clsx(
+              "py-3 px-6 text-lg font-medium transition-colors",
+              activeTab === 'custom-rules'
+                ? "border-b-2 border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
+                : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+            )}
+            onClick={() => setActiveTab('custom-rules')}
+          >
+            Custom Rules
+          </button>
         </div>
 
         {/* Render content based on active tab and scan type */}
         {activeTab === 'vulnerabilities' && renderScanTypeResults(vulnerabilityScan, 'vulnerabilityScan')}
         {activeTab === 'best-practices' && renderScanTypeResults(bestPracticesScan, 'bestPracticesScan')}
+        {activeTab === 'custom-rules' && renderScanTypeResults(customRuleScan, 'customRuleScan')}
 
       </div>
     </div>
