@@ -18,4 +18,6 @@ custom_rule_metadata = db["customrulemetadatas"]
 bestPractice_rule_file_collection = db["BestPractice_rule_files"]
 bp_rule_metadata = db["bestPractices_rule_metadata"]
 published_custom_rule_file_collection = db["publishedCustomRules"]
-
+users_collection = db["users"]
+educator_queue_collection = db["educator_queue"]
+knowledge_base_request_collection = db["knowledgebaserequests"]
