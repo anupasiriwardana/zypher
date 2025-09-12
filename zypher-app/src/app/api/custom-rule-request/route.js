@@ -25,7 +25,7 @@ export const POST = async (request) => {
   }
 
   // Check role-based access
-  const allowedRoles = ['primary-user'];
+  const allowedRoles = ['primary-user', 'rule-maintainer', 'rule-developer'];
   if (!allowedRoles.includes(role)) {
     return NextResponse.json(
       { error: "Forbidden" },
