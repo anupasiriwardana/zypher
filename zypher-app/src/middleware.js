@@ -60,6 +60,10 @@ export async function middleware(req) {
     '/educator-requests': ['educator'],
     '/educator-settings': ['educator'],
 
+    //dashboard routes -> manager
+    '/subscription-plans': ['manager'],
+    '/income-analytics': ['manager'],
+
     // Dashboard routes -> admin
 
     // API routes
