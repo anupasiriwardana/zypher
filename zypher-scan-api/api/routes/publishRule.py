@@ -9,6 +9,7 @@ from config.database import (
     published_custom_rule_file_collection,
     custom_rule_metadata,
     custom_rule_file_collection,
+    custom_rule_request_collection,
     users_collection,
     educator_queue_collection,
     knowledge_base_request_collection
@@ -67,9 +68,20 @@ async def publish_custom_rule(request: PublishRequest):
 
         source_rule.pop("_id", None)
 
+        object_id = request.rule_id.split("-")[-1]
+
+        if(request.collection == "vulnerability"):
+            correct_rule_id = "CICD-VULN-"+ object_id
+        elif(request.collection == "bestPractise"):
+            correct_rule_id = "CICD-BSTP-"+ object_id
+        elif(request.collection == "custom_rule"):
+            correct_rule_id = "CICD-CUST-"+ object_id
+
+
+        
         # --- Prepare rule document ---
         rule_doc = {
-            "rule_id": request.rule_id,
+            "rule_id": correct_rule_id,
             "rule_name": source_rule.get("rule_name"),
             "status": "active",
             "file_content": source_rule.get("file_content"),
@@ -91,8 +103,8 @@ async def publish_custom_rule(request: PublishRequest):
         result = target_collection.insert_one(rule_doc)
 
         # --- Educator allocation ---
-        educators = list(users_collection.find({"role": "Educator"}, {"_id": 1}))
-        
+        educators = list(users_collection.find({"role": "educator"}, {"_id": 1}))
+
         # Initialize queue if empty
         if educator_queue_collection.count_documents({}) == 0:
             for edu in educators:
@@ -118,16 +130,25 @@ async def publish_custom_rule(request: PublishRequest):
             {"$set": {"last_assigned": datetime.utcnow()}},
             upsert=True
         )
+        object_id_str_one = request.rule_id.split("-")[-1]
+        custom_request = custom_rule_request_collection.find_one({"_id": ObjectId(object_id_str_one)})
+        if not custom_request:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Request with _id '{object_id_str_one}' not found in custom_rule_request_collection"
+            )
+
 
         # --- Create knowledge base request ---
         kb_request = {
-            "rule_id": request.rule_id,
+            "rule_id": correct_rule_id,
             "rule_name": source_rule.get("rule_name"),
-            "rule_description": source_rule.get("rule_description"),
-            "suggested_severity": source_rule.get("suggested_severity"),
-            "sample_code": source_rule.get("sample_code"),
+            "rule_description": custom_request.get("description"),
+            "suggested_severity": custom_request.get("suggested_severity"),
+            "sample_code": custom_request.get("sample_code"),
             "knowledge_base_status": "Pending",
             "user_id": rule_doc.get("user_id"),
+            "assigned_developer": custom_request.get("assigned_developer"),
             "assigned_educator": next_educator["_id"],
             "requestedAt": datetime.utcnow(),
             "createdAt": datetime.utcnow(),
@@ -135,6 +156,20 @@ async def publish_custom_rule(request: PublishRequest):
         }
 
         kb_result = knowledge_base_request_collection.insert_one(kb_request)
+
+        # --- Update custom_rule_request status ---
+        try:
+            # Extract ObjectId from rule_id suffix
+            object_id_str = request.rule_id.split("-")[-1]
+            if ObjectId.is_valid(object_id_str):
+                object_id = ObjectId(object_id_str)
+                custom_rule_request_collection.update_one(
+                    {"_id": object_id},
+                    {"$set": {"status": "Successfully Published", "updatedAt": datetime.utcnow()}}
+                )
+        except Exception:
+            # Ignore if rule_id suffix is not a valid ObjectId
+            pass    
 
         # --- Prepare response ---
         response = {
