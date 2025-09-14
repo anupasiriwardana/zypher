@@ -1,387 +1,414 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lexend } from 'next/font/google';
 import clsx from 'clsx';
+import AssignedRuleRequestDetailModal from '@/components/AssignedRuleRequestDetailModal';
 import {
-  Search, Filter, Clock, Calendar, CheckCircle, XCircle, ChevronDown, Code, Play, ArrowRight, X, FlaskConical,
+  Search, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  FlaskConical, 
+  Code, 
+  Hourglass, 
+  BookOpen, 
+  Hash, 
+  AlignLeft, 
+  ServerCog, 
+  SlidersHorizontal, 
+  CalendarDays,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
+  AlertCircle,
+  UserCheck,
+  ClipboardCheck,
+  Play,
+  X
 } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { coldarkDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 const lexend = Lexend({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
 });
 
-const assignedRulesData = [
-  {
-    id: 'R001',
-    name: 'No Hardcoded API Keys in YAML',
-    severity: 'Critical',
-    targetFileType: 'Auth.py',
-    status: 'To be developed',
-    submittedDate: '2025-07-01',
-    description: 'Detects API keys or sensitive strings directly embedded in YAML configuration files, which can lead to security breaches.',
-    exampleCode: `apiVersion: v1
-kind: ConfigMap
-data:
-  apiKey: "your_hardcoded_api_key_123"`,
-  },
-  {
-    id: 'R005',
-    name: 'Unencrypted Database Connections',
-    severity: 'Critical',
-    targetFileType: 'DB_config.json',
-    status: 'Under development',
-    submittedDate: '2025-07-10',
-    description: 'Database connections are being established without SSL/TLS encryption. The rule should identify unencrypted connection strings and flag them as high risk.',
-    exampleCode: `// Example configuration vulnerability
-{
-    "db_host": "192.168.1.1",
-    "db_port": 5432,
-    "ssl_enabled": false
-}`,
-  },
-  {
-    id: 'R010',
-    name: 'Cross-Site Scripting (XSS) in Forms',
-    severity: 'Medium',
-    targetFileType: 'FormHandler.js',
-    status: 'To be developed',
-    submittedDate: '2025-06-28',
-    description: 'User input in form submissions is not properly sanitized, allowing for potential XSS injection. The rule needs to ensure all user input is sanitized before rendering.',
-    exampleCode: `// Example XSS vulnerability
-const user_input = req.query.comment;
-res.send('Your comment: ' + user_input); // No sanitization
-`,
-  },
-];
+const statusMap = {
+  'Pending Review': { label: 'Pending Review', color: 'text-blue-400', bg: 'bg-blue-600/20', icon: Hourglass },
+  'Assigned': { label: 'Assigned to Developer', color: 'text-indigo-400', bg: 'bg-indigo-600/20', icon: UserCheck },
+  'Under Development': { label: 'Under Development', color: 'text-purple-400', bg: 'bg-purple-600/20', icon: Code },
+  'Under Modification': { label: 'Modifications Requested', color: 'text-amber-500', bg: 'bg-amber-600/20', icon: AlertCircle },
+  'Ready for Testing': { label: 'Ready for Testing', color: 'text-amber-400', bg: 'bg-amber-600/20', icon: ClipboardCheck },
+  'Being Tested': { label: 'Being Tested', color: 'text-orange-400', bg: 'bg-orange-600/20', icon: FlaskConical },
+  'Approved': { label: 'Approved', color: 'text-green-400', bg: 'bg-green-600/20', icon: CheckCircle },
+  'Successfully Published': { label: 'Successfully Published', color: 'text-emerald-400', bg: 'bg-emerald-600/20', icon: BookOpen },
+  'Rejected': { label: 'Rejected', color: 'text-red-400', bg: 'bg-red-600/20', icon: XCircle },
+};
 
-const developedRulesData = [
-  {
-    id: 'R002',
-    name: 'SQL Injection Prevention',
-    severity: 'High',
-    targetFileType: 'SQLQueries.php',
-    status: 'Under testing',
-    submittedDate: '2025-06-15',
-    description: 'A rule to identify and prevent dynamic SQL queries without parameterized statements. The rule is currently being tested for false positives and performance.',
-    exampleCode: `// Developed rule logic snippet
-if (is_concatenated_sql(query)) {
-    return 'SQL Injection Vulnerability';
-}`,
-  },
-  {
-    id: 'R003',
-    name: 'API Key Hardcoding Check',
-    severity: 'Low',
-    targetFileType: 'Config.yaml',
-    status: 'Published',
-    submittedDate: '2025-05-20',
-    description: 'Identifies hardcoded API keys and credentials within configuration files.',
-    exampleCode: `// Rule successfully implemented.
-// Example: Detect 'api_key = "secret_key"'`,
-  },
-  {
-    id: 'R004',
-    name: 'Unused Dependencies Removal',
-    severity: 'Low',
-    targetFileType: 'package.json',
-    status: 'Discarded',
-    submittedDate: '2025-06-01',
-    description: 'The Rule Maintainer discarded this rule due to complexity in distinguishing genuinely unused dependencies.',
-    exampleCode: `// Discarded rule logic
-// Attempts to analyze import usage across files.`,
-  },
-];
+const severityMap = {
+  'critical': { label: 'Critical', color: 'text-red-500', bg: 'bg-red-500/20' },
+  'high': { label: 'High', color: 'text-orange-500', bg: 'bg-orange-500/20' },
+  'medium': { label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-400/20' },
+  'low': { label: 'Low', color: 'text-blue-400', bg: 'bg-blue-400/20' },
+  'info': { label: 'Informational', color: 'text-gray-400', bg: 'bg-gray-400/20' },
+};
 
+// Reusable Table Component
+const RuleRequestsTable = ({
+  title,
+  requests,
+  searchTerm,
+  setSearchTerm,
+  filterStatus,
+  setFilterStatus,
+  filterSeverity,
+  setFilterSeverity,
+  sortOrder,
+  setSortOrder,
+  onRowClick,
+  showStatusFilter = true,
+  availableStatuses,
+  isLoading = false
+}) => {
+  const filteredAndSortedRequests = useMemo(() => {
+    if (!requests) return [];
 
-export default function AssignedRulesPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState({});
-  const [showModal, setShowModal] = useState(false);
-  const [selectedRule, setSelectedRule] = useState(null);
-  const router = useRouter();
+    let filtered = requests.filter(request => {
+      const matchesSearch =
+        request.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request._id?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  //function for filtering and searching
-  const filterRules = (rules) => {
-    return rules.filter(rule => {
-      const matchesSearch = rule.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            rule.id.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesSeverity = !activeFilters.severity || rule.severity === activeFilters.severity;
-      const matchesStatus = !activeFilters.status || rule.status === activeFilters.status;
+      const matchesStatus = !showStatusFilter || filterStatus === 'all' || request.status === filterStatus;
+      const matchesSeverity = filterSeverity === 'all' || request.suggested_severity === filterSeverity;
 
-      return matchesSearch && matchesSeverity && matchesStatus;
+      return matchesSearch && matchesStatus && matchesSeverity;
     });
-  };
 
-  const assignedRulesFiltered = useMemo(() => filterRules(assignedRulesData), [searchTerm, activeFilters]);
-  const developedRulesFiltered = useMemo(() => filterRules(developedRulesData), [searchTerm, activeFilters]);
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
 
-  const handleRowClick = (rule) => {
-    setSelectedRule(rule);
-    setShowModal(true);
-  };
+    return filtered;
+  }, [requests, searchTerm, filterStatus, filterSeverity, sortOrder, showStatusFilter]);
 
-  const handleStartDeveloping = (ruleId) => {
-    // Redirect to development workspace with the selected rule ID
-    router.push(`/dashboard/(rule-developer)/development-workspace?ruleId=${ruleId}`);
-  };
-
-  const handleStartUpgrading = (ruleId) => {
-    router.push(`/dashboard/(rule-developer)/development-workspace?upgradeRuleId=${ruleId}`);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'To be developed':
-        return 'text-blue-400 bg-blue-600/20';
-      case 'Under development':
-        return 'text-yellow-400 bg-yellow-600/20';
-      case 'Under testing':
-        return 'text-purple-400 bg-purple-600/20';
-      case 'Published':
-        return 'text-green-400 bg-green-600/20';
-      case 'Discarded':
-        return 'text-red-400 bg-red-600/20';
-      default:
-        return 'text-gray-400 bg-gray-600/20';
-    }
-  };
-
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'Critical':
-        return 'text-red-400';
-      case 'High':
-        return 'text-orange-400';
-      case 'Medium':
-        return 'text-yellow-400';
-      case 'Low':
-        return 'text-green-400';
-      default:
-        return 'text-gray-400';
-    }
-  };
-
-  const commonTableHeaders = [
-    // { key: 'id', label: 'Rule ID' },
-    { key: 'name', label: 'Rule Name' },
-    { key: 'severity', label: 'Severity' },
-    // { key: 'targetFileType', label: 'Target File Type' },
-    { key: 'status', label: 'Status' },
-    { key: 'submittedDate', label: 'Submitted Date' },
-  ];
-
-  //component for search and filters
-  const FilterBar = ({ onSearchChange, onFilterChange, type }) => {
-    const severities = ['Critical', 'High', 'Medium', 'Low'];
-    const assignedStatuses = ['To be developed', 'Under development'];
-    const developedStatuses = ['Under testing', 'Published', 'Discarded'];
-    const statuses = type === 'assigned' ? assignedStatuses : developedStatuses;
-
+  if (isLoading) {
     return (
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative w-full md:w-1/3">
-          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+      <div className="mb-12">
+        <h2 className="text-2xl md:text-3xl font-semibold mb-6 text-[var(--foreground)]">{title}</h2>
+        <div className="flex justify-center items-center py-20 bg-[var(--input-bg)] rounded-xl">
+          <Loader2 size={32} className="animate-spin text-[var(--brand-yellow)] mr-3" />
+          <span className="text-[var(--text-secondary)]">Loading requests...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-12">
+      <h2 className="text-2xl md:text-3xl font-semibold mb-6 text-[var(--foreground)]">{title}</h2>
+
+      {/* Search and Filter Bar for this table */}
+      <div className="bg-[var(--input-bg)] p-4 rounded-xl mb-6 shadow-md border border-[var(--border-input)] flex flex-col md:flex-row gap-4 md:gap-6 items-center">
+        <div className="relative flex-grow w-full md:w-auto">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
           <input
             type="text"
-            placeholder="Search by Rule ID or Name..."
-            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200 shadow-inner"
-            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search by ID, name, or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
           />
         </div>
 
-        <div className="flex gap-4 w-full md:w-2/3">
-          {/* Severity Filter */}
-          <div className="relative w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          {showStatusFilter && (
+            <div className="relative flex-grow">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="appearance-none w-full bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
+              >
+                <option value="all">All Statuses</option>
+                {availableStatuses.map(statusKey => (
+                  <option key={statusKey} value={statusKey}>{statusMap[statusKey]?.label || statusKey}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--text-secondary)]">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z" /></svg>
+              </div>
+            </div>
+          )}
+
+          <div className="relative flex-grow">
             <select
-              className="w-full appearance-none px-4 py-3 pr-10 rounded-xl bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent shadow-inner cursor-pointer"
-              onChange={(e) => onFilterChange('severity', e.target.value === 'All' ? null : e.target.value)}
+              value={filterSeverity}
+              onChange={(e) => setFilterSeverity(e.target.value)}
+              className="appearance-none w-full bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200"
             >
-              <option value="All">All Severities</option>
-              {severities.map(s => (
-                <option key={s} value={s}>{s}</option>
+              <option value="all">All Severities</option>
+              {Object.keys(severityMap).map(severityKey => (
+                <option key={severityKey} value={severityKey}>{severityMap[severityKey].label}</option>
               ))}
             </select>
-            <ChevronDown size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--text-secondary)]">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z" /></svg>
+            </div>
           </div>
 
-          {/* Status Filter */}
-          <div className="relative w-full md:w-auto">
-            <select
-              className="w-full appearance-none px-4 py-3 pr-10 rounded-xl bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent shadow-inner cursor-pointer"
-              onChange={(e) => onFilterChange('status', e.target.value === 'All' ? null : e.target.value)}
-            >
-              <option value="All">All Statuses</option>
-              {statuses.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <ChevronDown size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
-          </div>
+          <button
+            onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+            className="bg-[var(--button-bg)] text-[var(--foreground)] border border-[var(--border-input)] px-4 py-3 rounded-lg hover:border-[var(--brand-yellow)] hover:text-[var(--brand-yellow)] transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            Sort by Date: {sortOrder === 'desc' ? (
+              <>Newest <ArrowDownWideNarrow size={18} /></>
+            ) : (
+              <>Oldest <ArrowUpWideNarrow size={18} /></>
+            )}
+          </button>
         </div>
       </div>
-    );
-  };
 
-  const TableSection = ({ title, rules, type }) => {
-    return (
-      <div className="mb-12">
-        <div className="flex items-center gap-4 mb-8">
-          <h2 className="text-3xl font-bold text-[var(--brand-yellow)]">{title}</h2>
-          <span className="text-[var(--text-secondary)] text-lg">({rules.length} rules)</span>
+      {/* Table Content */}
+      {filteredAndSortedRequests.length === 0 ? (
+        <div className="text-center text-[var(--text-secondary)] p-10 rounded-xl bg-[var(--input-bg)] border border-[var(--border-input)]">
+          <p className="text-xl">No requests found matching your criteria in this list.</p>
+          <p className="text-sm mt-2">Try adjusting your search or filters.</p>
         </div>
-
-        <FilterBar 
-          onSearchChange={(value) => setSearchTerm(value)} 
-          onFilterChange={(key, value) => setActiveFilters(prev => ({ ...prev, [key]: value }))} 
-          type={type}
-        />
-
-        <div className="bg-[var(--input-bg)] p-6 rounded-xl shadow-2xl border border-[var(--border-input)] overflow-x-auto custom-scrollbar">
-          <table className="min-w-full divide-y divide-[var(--border-input)] text-left">
+      ) : (
+        <div className="overflow-x-auto bg-[var(--input-bg)] rounded-xl shadow-md border border-[var(--border-input)]">
+          <table className="min-w-full divide-y divide-[var(--border-input)]">
             <thead className="bg-[var(--hover-bg)]">
               <tr>
-                {commonTableHeaders.map(header => (
-                  <th key={header.key} className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    {header.label}
-                  </th>
-                ))}
+                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                  Rule Name
+                </th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                  Severity
+                </th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                  Submitted Date
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-input)]">
-              {rules.length === 0 ? (
-                <tr>
-                  <td colSpan={commonTableHeaders.length} className="px-6 py-10 text-center text-[var(--text-secondary)] text-lg">
-                    No {title.toLowerCase()} found matching criteria.
-                  </td>
-                </tr>
-              ) : (
-                rules.map((rule) => (
-                  <tr 
-                    key={rule.id} 
-                    onClick={() => handleRowClick(rule)}
-                    className="hover:bg-[var(--hover-bg)] transition-colors duration-200 cursor-pointer group"
+              {filteredAndSortedRequests.map((request) => {
+                const statusData = statusMap[request.status] || { label: request.status, color: 'text-gray-400', bg: 'bg-gray-600/20', icon: AlertCircle };
+                const severityData = severityMap[request.suggested_severity] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-600/20' };
+                const StatusIcon = statusData.icon;
+
+                return (
+                  <tr
+                    key={request._id}
+                    onClick={() => onRowClick(request)}
+                    className="hover:bg-[var(--hover-bg)] transition-colors duration-200 cursor-pointer"
                   >
-                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--foreground)]">{rule.id}</td> */}
-                    <td className="px-6 py-4 text-sm text-[var(--foreground)] font-medium group-hover:text-[var(--brand-yellow)] transition-colors">{rule.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <span className={getSeverityColor(rule.severity)}>{rule.severity}</span>
+                    <td className="px-6 py-4 max-w-xs truncate text-sm text-[var(--foreground)] group-hover:text-[var(--brand-yellow)]">
+                      {request.name}
                     </td>
-                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">{rule.targetFileType}</td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={clsx("px-3 py-1 rounded-full text-xs font-semibold", getStatusColor(rule.status))}>
-                        {rule.status}
+                      <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", severityData.bg, severityData.color)}>
+                        {severityData.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full items-center gap-1", statusData.bg, statusData.color)}>
+                        {StatusIcon && <StatusIcon size={14} />} {statusData.label}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        {rule.submittedDate}
-                      </div>
+                      {new Date(request.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
-    );
+      )}
+    </div>
+  );
+};
+
+// Main Page Component
+export default function AssignedRulesPage() {
+  const [ruleRequests, setRuleRequests] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const router = useRouter();
+
+  // States for 'Assigned Rules' table
+  const [arSearchTerm, setArSearchTerm] = useState('');
+  const [arFilterSeverity, setArFilterSeverity] = useState('all');
+  const [arSortOrder, setArSortOrder] = useState('desc');
+
+  // States for 'Modification Requested Rules' table
+  const [mrSearchTerm, setMrSearchTerm] = useState('');
+  const [mrFilterSeverity, setMrFilterSeverity] = useState('all');
+  const [mrSortOrder, setMrSortOrder] = useState('desc');
+
+  // States for 'All Assigned Rules' table
+  const [allSearchTerm, setAllSearchTerm] = useState('');
+  const [allFilterStatus, setAllFilterStatus] = useState('all');
+  const [allFilterSeverity, setAllFilterSeverity] = useState('all');
+  const [allSortOrder, setAllSortOrder] = useState('desc');
+
+  // Fetch rule requests from API
+  useEffect(() => {
+    fetchRuleRequests();
+  }, []);
+
+  const fetchRuleRequests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/custom-rule-request', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRuleRequests(data.requests || []);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to fetch custom rule requests');
+      }
+    } catch (error) {
+      console.error('Error fetching custom rule requests:', error);
+      setError('An unexpected error occurred while fetching data');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // --- Rule Detail Modal ---
-  const RuleDetailModal = ({ rule, onClose, onActionClick, isDeveloped }) => {
-    if (!rule) return null;
+  // Filter requests that are assigned to the current user (rule-developer)
+  const assignedRules = useMemo(() => {
+    return ruleRequests.filter(req => req.status === 'Assigned');
+  }, [ruleRequests]);
 
-    const actionText = isDeveloped ? "Start Upgrading" : "Start Developing";
-    
-    // Determine the syntax highlighter language based on the file type (simple mapping for example)
-    const language = rule.targetFileType.split('.').pop().toLowerCase();
+  // Filter requests that need modifications
+  const modificationRequestedRules = useMemo(() => {
+    return ruleRequests.filter(req => req.status === 'Under Modification');
+  }, [ruleRequests]);
 
+  const openModal = (request) => {
+    setSelectedRequest(request);
+  };
+
+  const closeModal = () => {
+    setSelectedRequest(null);
+  };
+
+  const handleStartDeveloping = (ruleRequestId) => {
+    // TODO: Implement start developing functionality
+    // This will redirect to development workspace with the selected rule request ID
+    router.push(`/development-workspace?ruleRequestId=${ruleRequestId}&ruleType=custom`);
+    closeModal();
+  };
+
+  const handleGoToDevelopmentWorkspace = (ruleRequestId) => {
+    // Redirect to development workspace for modification
+    router.push(`/development-workspace?ruleRequestId=${ruleRequestId}&ruleType=custom`);
+    closeModal();
+  };
+
+  if (error) {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-80 flex justify-center items-center p-6 backdrop-blur-sm animate-fadeIn">
-        <div className="bg-[var(--input-bg)] rounded-xl shadow-2xl border border-[var(--border-input)] p-10 w-full max-w-4xl transform transition-all duration-300 scale-100 animate-slideUp overflow-hidden">
-          
-          {/* Header and Close Button */}
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h3 className="text-3xl font-bold text-[var(--brand-yellow)] mb-2">{rule.name}</h3>
-              <p className="text-xl text-[var(--foreground)]">{rule.id} | <span className={getSeverityColor(rule.severity)}>{rule.severity}</span></p>
-            </div>
-            <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-red-500 transition-colors">
-              <X size={30} />
-            </button>
-          </div>
-
-          {/* Details Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div>
-              <h4 className="text-xl font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2"><FlaskConical size={20} /> Description</h4>
-              <p className="text-[var(--text-secondary)] leading-relaxed">{rule.description}</p>
-            </div>
-            <div>
-              <h4 className="text-xl font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2"><Code size={20} /> Example Code ({language})</h4>
-              <div className="rounded-lg overflow-hidden border border-[var(--border-input)] shadow-xl">
-                <SyntaxHighlighter language={language} style={coldarkDark} customStyle={{ padding: '1.5rem', fontSize: '0.875rem', lineHeight: '1.5' }}>
-                  {rule.exampleCode}
-                </SyntaxHighlighter>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Button and Status */}
-          <div className="flex justify-between items-center pt-6 border-t border-[var(--border-input)]">
-            <div className="flex items-center gap-4">
-              <span className="text-[var(--foreground)] font-semibold">Current Status:</span>
-              <span className={clsx("px-4 py-2 rounded-full text-sm font-semibold", getStatusColor(rule.status))}>
-                {rule.status}
-              </span>
-            </div>
-            <button
-              onClick={() => {
-                onActionClick(rule.id);
-                onClose();
-              }}
-              className="inline-flex items-center gap-3 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-8 py-3 rounded-full hover:brightness-110 transition-all duration-300 shadow-xl text-base"
-            >
-              {isDeveloped ? <Play size={20} /> : <Code size={20} />}
-              {actionText}
-            </button>
-          </div>
+      <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} min-h-screen flex items-center justify-center`}>
+        <div className="text-center text-red-400">
+          <AlertCircle size={48} className="mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">Error Loading Requests</h2>
+          <p className="text-lg mb-4">{error}</p>
+          <button
+            onClick={fetchRuleRequests}
+            className="bg-[var(--brand-yellow)] text-[var(--background)] px-6 py-2 rounded-lg hover:brightness-110 transition-all"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
-  };
+  }
 
   return (
-    <div className={`p-8 md:p-10 lg:p-12 ${lexend.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
+    <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp min-h-screen`}>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Assigned Rules</h1>
 
-      {/* Assigned Rules Table (To be developed / Under development) */}
-      <TableSection 
-        title="Assigned Rules"
-        rules={assignedRulesFiltered.filter(r => ['To be developed', 'Under development'].includes(r.status))}
-        type="assigned"
+      {/* Assigned Rules (Status: Assigned) Table */}
+      <RuleRequestsTable
+        title="Rules Ready for Development"
+        requests={assignedRules}
+        searchTerm={arSearchTerm}
+        setSearchTerm={setArSearchTerm}
+        filterSeverity={arFilterSeverity}
+        setFilterSeverity={setArFilterSeverity}
+        sortOrder={arSortOrder}
+        setSortOrder={setArSortOrder}
+        onRowClick={openModal}
+        showStatusFilter={false}
+        availableStatuses={['Assigned']}
+        isLoading={isLoading}
       />
 
-      {/* Developed Rules Table (Under testing / Published / Discarded) */}
-      <TableSection 
-        title="Developed Rules"
-        rules={developedRulesFiltered.filter(r => ['Under testing', 'Published', 'Discarded'].includes(r.status))}
-        type="developed"
+      <div className="my-10 border-t border-[var(--border-input)]"></div>
+
+      {/* Modification Requested Rules Table */}
+      <RuleRequestsTable
+        title="Rules Requiring Modifications"
+        requests={modificationRequestedRules}
+        searchTerm={mrSearchTerm}
+        setSearchTerm={setMrSearchTerm}
+        filterSeverity={mrFilterSeverity}
+        setFilterSeverity={setMrFilterSeverity}
+        sortOrder={mrSortOrder}
+        setSortOrder={setMrSortOrder}
+        onRowClick={openModal}
+        showStatusFilter={false}
+        availableStatuses={['Under Modification']}
+        isLoading={isLoading}
+      />
+
+      <div className="my-10 border-t border-[var(--border-input)]"></div>
+
+      {/* All Assigned Rules Table */}
+      <RuleRequestsTable
+        title="All My Assigned Rules"
+        requests={ruleRequests}
+        searchTerm={allSearchTerm}
+        setSearchTerm={setAllSearchTerm}
+        filterStatus={allFilterStatus}
+        setFilterStatus={setAllFilterStatus}
+        filterSeverity={allFilterSeverity}
+        setFilterSeverity={setAllFilterSeverity}
+        sortOrder={allSortOrder}
+        setSortOrder={setAllSortOrder}
+        onRowClick={openModal}
+        showStatusFilter={true}
+        availableStatuses={Object.keys(statusMap)}
+        isLoading={isLoading}
       />
 
       {/* Rule Detail Modal */}
-      {showModal && selectedRule && (
-        <RuleDetailModal
-          rule={selectedRule}
-          onClose={() => setShowModal(false)}
-          onActionClick={selectedRule.status === 'To be developed' || selectedRule.status === 'Under development' ? handleStartDeveloping : handleStartUpgrading}
-          isDeveloped={['Under testing', 'Published', 'Discarded'].includes(selectedRule.status)}
+      {selectedRequest && (
+        <AssignedRuleRequestDetailModal
+          request={selectedRequest}
+          onClose={closeModal}
+          onStartDeveloping={handleStartDeveloping}
+          onGoToDevelopmentWorkspace={handleGoToDevelopmentWorkspace}
         />
       )}
     </div>

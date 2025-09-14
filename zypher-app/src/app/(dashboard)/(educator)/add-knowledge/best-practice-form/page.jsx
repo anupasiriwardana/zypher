@@ -12,15 +12,35 @@ import {
   FileType,
   ServerCog,
   Hash,
+  Shield,
+  BookOpen,
+  Lightbulb,
+  AlertTriangle,
+  Search,
+  Link as LinkIcon,
 } from "lucide-react";
 
 // Mock API (replace with your real fetch call)
 const fetchCustomRules = async () => {
-  // Example structure returned by backend
   return [
-    { id: 1, name: "Avoid Hardcoded Credentials", category: "yaml" },
-    { id: 2, name: "Restrict Public CI/CD Variables", category: "cicd" },
-    { id: 3, name: "Limit K8s Privileges", category: "k8s" },
+    {
+      id: 1,
+      name: "Container_scan",
+      category: "CI/CD-SEC-7: Container Security",
+      severity: "HIGH",
+    },
+    {
+      id: 2,
+      name: "Restrict Public CI/CD Variables",
+      category: "CI/CD",
+      severity: "CRITICAL",
+    },
+    {
+      id: 3,
+      name: "Limit K8s Privileges",
+      category: "Kubernetes",
+      severity: "MEDIUM",
+    },
   ];
 };
 
@@ -28,13 +48,19 @@ export function BestPracticeForm() {
   const [customRules, setCustomRules] = useState([]);
   const [selectedRule, setSelectedRule] = useState("");
   const [category, setCategory] = useState("");
+  const [severity, setSeverity] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [exampleCode, setExampleCode] = useState("");
+  const [realWorldExamples, setRealWorldExamples] = useState("");
+  const [potentialImpacts, setPotentialImpacts] = useState("");
+  const [mitigationSteps, setMitigationSteps] = useState("");
+  const [bestPracticesSummary, setBestPracticesSummary] = useState("");
+  const [detectionMethods, setDetectionMethods] = useState("");
+  const [references, setReferences] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  // Load rules on mount
   useEffect(() => {
     const loadRules = async () => {
       const rules = await fetchCustomRules();
@@ -44,17 +70,18 @@ export function BestPracticeForm() {
   }, []);
 
   const handleRuleChange = (e) => {
-  const ruleId = e.target.value;
-  setSelectedRule(ruleId);
+    const ruleId = e.target.value;
+    setSelectedRule(ruleId);
 
-  const rule = customRules.find((r) => String(r.id) === ruleId);
-  if (rule) {
-    setCategory(rule.category);
-  } else {
-    setCategory("");
-  }
-};
-
+    const rule = customRules.find((r) => String(r.id) === ruleId);
+    if (rule) {
+      setCategory(rule.category || "");
+      setSeverity(rule.severity || "");
+    } else {
+      setCategory("");
+      setSeverity("");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,19 +101,32 @@ export function BestPracticeForm() {
         ruleId: selectedRule,
         description,
         category,
+        severity,
         tags,
         exampleCode,
+        realWorldExamples,
+        potentialImpacts,
+        mitigationSteps,
+        bestPracticesSummary,
+        detectionMethods,
+        references,
       });
 
       await new Promise((res) => setTimeout(res, 2000));
 
-      // Remove rule from dropdown after submission
       setCustomRules((prev) => prev.filter((r) => String(r.id) !== selectedRule));
       setSelectedRule("");
       setDescription("");
       setCategory("");
+      setSeverity("");
       setTags("");
       setExampleCode("");
+      setRealWorldExamples("");
+      setPotentialImpacts("");
+      setMitigationSteps("");
+      setBestPracticesSummary("");
+      setDetectionMethods("");
+      setReferences("");
 
       setFeedback({ type: "success", message: "Knowledge added successfully!" });
     } catch (err) {
@@ -123,13 +163,25 @@ export function BestPracticeForm() {
 
       {/* Auto-filled Category */}
       <div>
-        <label className="text-sm font-medium text-[var(--foreground)] bg-[var(--background)] mb-2 flex items-center gap-2">
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
           <SlidersHorizontal size={16} /> Category
         </label>
         <input
           value={category}
           readOnly
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+        />
+      </div>
+
+      {/* Auto-filled Severity */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <Shield size={16} /> Severity
+        </label>
+        <input
+          value={severity}
+          readOnly
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
         />
       </div>
 
@@ -143,7 +195,7 @@ export function BestPracticeForm() {
           onChange={(e) => setDescription(e.target.value)}
           rows="5"
           placeholder="Explain the concept or rule in detail..."
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
           disabled={isSubmitting}
         />
       </div>
@@ -157,7 +209,7 @@ export function BestPracticeForm() {
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           placeholder="e.g., YAML, Dockerfile, secrets"
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
           disabled={isSubmitting}
         />
       </div>
@@ -172,7 +224,97 @@ export function BestPracticeForm() {
           onChange={(e) => setExampleCode(e.target.value)}
           rows="6"
           placeholder="Paste an example snippet..."
-          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Real World Examples */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <BookOpen size={16} /> Real World Examples
+        </label>
+        <textarea
+          value={realWorldExamples}
+          onChange={(e) => setRealWorldExamples(e.target.value)}
+          rows="4"
+          placeholder="List real-world cases..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Potential Impacts */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <AlertTriangle size={16} /> Potential Impacts
+        </label>
+        <textarea
+          value={potentialImpacts}
+          onChange={(e) => setPotentialImpacts(e.target.value)}
+          rows="4"
+          placeholder="Describe potential security or compliance risks..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Mitigation Steps */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <Lightbulb size={16} /> Mitigation Steps
+        </label>
+        <textarea
+          value={mitigationSteps}
+          onChange={(e) => setMitigationSteps(e.target.value)}
+          rows="4"
+          placeholder="Provide steps to mitigate the issue..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Best Practices Summary */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <Lightbulb size={16} /> Best Practices Summary
+        </label>
+        <textarea
+          value={bestPracticesSummary}
+          onChange={(e) => setBestPracticesSummary(e.target.value)}
+          rows="4"
+          placeholder="Summarize recommended practices..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Detection Methods */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <Search size={16} /> Detection Methods
+        </label>
+        <textarea
+          value={detectionMethods}
+          onChange={(e) => setDetectionMethods(e.target.value)}
+          rows="4"
+          placeholder="Explain how to detect this issue..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* References */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
+          <LinkIcon size={16} /> References
+        </label>
+        <textarea
+          value={references}
+          onChange={(e) => setReferences(e.target.value)}
+          rows="3"
+          placeholder="Provide reference links..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
           disabled={isSubmitting}
         />
       </div>

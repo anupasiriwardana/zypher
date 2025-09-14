@@ -4,7 +4,7 @@ import '@/app/globals.css';
 import { Lexend } from 'next/font/google';
 import RuleMaintainerSidebar from '@/components/sidebars/ruleMaintainerSidebar';
 import { Bell, UserCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 
@@ -17,7 +17,6 @@ export default function DashboardLayout({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const { data: session, status } = useSession();
-
 
   const hasNotifications = true;
 
@@ -35,7 +34,7 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className={lexend.className}>
+    <Suspense className={lexend.className} fallback={<div className={lexend.className}>Loading...</div>}>
       <div className="flex">
         <RuleMaintainerSidebar />
 
@@ -45,7 +44,6 @@ export default function DashboardLayout({ children }) {
             <div className="text-md text-[var(--text-secondary)] font-medium">
               {today}
             </div>
-
 
             <div className="flex items-center gap-6 relative">
               <div className="relative">
@@ -113,6 +111,6 @@ export default function DashboardLayout({ children }) {
           <main className="p-4 flex-1">{children}</main>
         </div>
       </div>
-    </div>
+    </Suspense>
   );
 }

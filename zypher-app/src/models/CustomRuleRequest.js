@@ -1,25 +1,57 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
-const CustomRuleRequestSchema = new mongoose.Schema({
-  rule_id: { type: String, required: true },
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  suggested_severity: { 
-    type: String, 
-    enum: ['Critical', 'High', 'Medium', 'Low', 'Info'], 
-    required: true 
-  },
-  sample_code: { type: String },
-  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+const { Schema, Types } = mongoose;
 
-  user_id: { type: String, required: true },  // creator of the request
-  assigned_developer: { type: String },        // ID of assigned dev
-  implemented_by: { type: String },            // implementer ID
-  tested_by: { type: String },                 // tester ID
-
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
+const customRuleRequestSchema = new Schema({
+    name: {
+        type: String,
+        required: true,
+    },
+    description: {
+        type: String,
+        required: true,
+    },
+    suggested_severity: {
+        type: String,
+        enum: ["low", "medium", "high", "critical", "info"],
+        default: "medium"
+    },
+    sample_code: {
+        type: String,
+        default: ""
+    },
+    assigned_developer: {
+        type: Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    status: {
+        type: String,
+        enum: [
+            "Pending Review",
+            "Assigned", 
+            "Under Development",
+            "Ready for Testing",
+            "Being Tested",
+            "Under Modification",
+            "Approved",
+            "Successfully Published",
+            "Rejected"
+        ],
+        default: "Pending Review",
+        required: true
+    },
+    rejected_reason: {
+        type: String,
+        default: ""
+    },
+    user_id: {
+        type: Types.ObjectId,
+        ref: 'User',
+        required: true
+    }
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.models.CustomRuleRequest 
-  || mongoose.model('CustomRuleRequest', CustomRuleRequestSchema);
+export default mongoose.models.CustomRuleRequest || mongoose.model("CustomRuleRequest", customRuleRequestSchema);

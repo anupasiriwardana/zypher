@@ -1,20 +1,50 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
-const KnowledgeBaseRequestSchema = new mongoose.Schema({
-  custom_rule_request_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'CustomRuleRequest', 
-    required: true 
+const knowledgeBaseRequestSchema = new mongoose.Schema(
+  {
+    rule_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Rule",
+      required: true,
+    },
+    rule_name: { type: String, required: true },
+    rule_description: { type: String, required: true },
+    suggested_severity: {
+      type: String,
+      enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+      required: true,
+    },
+    sample_code: { type: String },
+    knowledge_base_status: {
+      type: String,
+      enum: ["Pending", "In Review", "Completed", "Rejected"],
+      default: "Pending",
+    },
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false, // optional
+    },
+    assigned_developer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    assigned_educator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    review_notes: [
+      {
+        reviewer_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        note: { type: String },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    requestedAt: { type: Date, default: Date.now },
   },
-  status: { 
-    type: String, 
-    enum: ['Pending', 'Completed'], 
-    default: 'Pending' 
-  },
-  assigned_educator: { type: String, required: true }, // educator reviewing the request
-  requestedAt: { type: Date, default: Date.now },
-  completedAt: { type: Date },
-});
+  { timestamps: true }
+);
 
-module.exports = mongoose.models.KnowledgeBaseRequest 
-  || mongoose.model('KnowledgeBaseRequest', KnowledgeBaseRequestSchema);
+export default mongoose.model("KnowledgeBaseRequest", knowledgeBaseRequestSchema);
