@@ -14,7 +14,7 @@ import {
   ServerCog,
 } from "lucide-react";
 
-export function SecurityRuleForm() {
+export function CustomRuleForm() {
   const [customRules, setCustomRules] = useState([]);
   const [selectedRule, setSelectedRule] = useState("");
   const [ruleName, setRuleName] = useState("");
@@ -31,9 +31,9 @@ export function SecurityRuleForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const fetchVulnerabilityRules = async () => {
+  const fetchCustomRules = async () => {
   try {
-    const res = await fetch("/api/knowledgeBaseRequests?type=vulnerability");
+    const res = await fetch("/api/knowledgeBaseRequests?type=custom");
     if (!res.ok) throw new Error("Failed to fetch requests: " + res.statusText);
     const data = await res.json();
     return data;
@@ -43,27 +43,22 @@ export function SecurityRuleForm() {
   }
 };
 
-  useEffect(() => {
-    const loadRules = async () => {
-      try {
-        const rules = await fetchVulnerabilityRules();
-        setCustomRules(rules);
-      } catch (err) {
-        console.error(err);
-        setFeedback({ type: "error", message: "Failed to load knowledge base requests" });
-      }
-    };
-    loadRules();
-  }, []);
+useEffect(() => {
+  const loadRules = async () => {
+    const customPendingRules = await fetchCustomRules();
+    setCustomRules(customPendingRules);
+  };
+  loadRules();
+}, []);
 
-  // Rule selection
+  // Handle rule selection
   const handleRuleChange = (e) => {
     const ruleId = e.target.value;
     setSelectedRule(ruleId);
 
     const rule = customRules.find((r) => String(r._id) === ruleId);
     if (rule) {
-      setRuleName(rule.name);
+      setRuleName(rule.rule_name);
       setSeverity(rule.suggested_severity || "");
       setExampleCode(rule.sample_code || "");
     } else {
@@ -125,7 +120,7 @@ export function SecurityRuleForm() {
       setReferences("");
       setExampleCode("");
 
-      setFeedback({ type: "success", message: "Rule added to Knowledge Base!" });
+      setFeedback({ type: "success", message: "Custom rule added to Knowledge Base!" });
     } catch (err) {
       setFeedback({ type: "error", message: err.message });
     } finally {
@@ -149,7 +144,7 @@ export function SecurityRuleForm() {
           className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
         >
-          <option value="">-- Select security rule --</option>
+          <option value="">-- Select custom rule --</option>
           {customRules.map((rule) => (
             <option key={rule._id} value={rule._id}>
               {rule.rule_name}
@@ -192,7 +187,7 @@ export function SecurityRuleForm() {
           value={explanation}
           onChange={(e) => setExplanation(e.target.value)}
           rows="5"
-          placeholder="Explain the security issue in detail..."
+          placeholder="Explain the custom rule in detail..."
           className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
           disabled={isSubmitting}
         />

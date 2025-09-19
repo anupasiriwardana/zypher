@@ -3,9 +3,9 @@ import mongoose from "mongoose";
 const knowledgeBaseRequestSchema = new mongoose.Schema(
   {
     rule_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Rule",
-      required: true,
+        type: String,
+        required: true,
+        unique: true,
     },
     rule_name: { type: String, required: true },
     rule_description: { type: String, required: true },
@@ -47,4 +47,5 @@ const knowledgeBaseRequestSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("KnowledgeBaseRequest", knowledgeBaseRequestSchema);
+export default mongoose.models.KnowledgeBaseRequest ||
+  mongoose.model("KnowledgeBaseRequest", knowledgeBaseRequestSchema);

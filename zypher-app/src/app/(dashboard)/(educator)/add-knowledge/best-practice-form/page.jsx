@@ -20,34 +20,21 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
-// Mock API (replace with your real fetch call)
-const fetchCustomRules = async () => {
-  return [
-    {
-      id: 1,
-      name: "Container_scan",
-      category: "CI/CD-SEC-7: Container Security",
-      severity: "HIGH",
-    },
-    {
-      id: 2,
-      name: "Restrict Public CI/CD Variables",
-      category: "CI/CD",
-      severity: "CRITICAL",
-    },
-    {
-      id: 3,
-      name: "Limit K8s Privileges",
-      category: "Kubernetes",
-      severity: "MEDIUM",
-    },
-  ];
+const fetchBestPractices = async () => {
+  try {
+    const res = await fetch("/api/knowledgeBaseRequests?type=bestpractice");
+    if (!res.ok) throw new Error("Failed to fetch requests: " + res.statusText);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Front-end fetch error:", err);
+    return [];
+  }
 };
 
 export function BestPracticeForm() {
-  const [customRules, setCustomRules] = useState([]);
+  const [bestPractice, setBestPractices] = useState([]);
   const [selectedRule, setSelectedRule] = useState("");
-  const [category, setCategory] = useState("");
   const [severity, setSeverity] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -63,8 +50,8 @@ export function BestPracticeForm() {
 
   useEffect(() => {
     const loadRules = async () => {
-      const rules = await fetchCustomRules();
-      setCustomRules(rules);
+      const rules = await fetchBestPractices();
+      setBestPractices(rules);
     };
     loadRules();
   }, []);
@@ -73,13 +60,13 @@ export function BestPracticeForm() {
     const ruleId = e.target.value;
     setSelectedRule(ruleId);
 
-    const rule = customRules.find((r) => String(r.id) === ruleId);
+    const rule = bestPractice.find((r) => String(r.id) === ruleId);
     if (rule) {
-      setCategory(rule.category || "");
-      setSeverity(rule.severity || "");
+      setSeverity(rule.suggested_severity || "");
+      setExampleCode(rule.sample_code || "");
     } else {
-      setCategory("");
       setSeverity("");
+      setExampleCode("");
     }
   };
 
@@ -100,7 +87,6 @@ export function BestPracticeForm() {
       console.log("Submitting Best Practice:", {
         ruleId: selectedRule,
         description,
-        category,
         severity,
         tags,
         exampleCode,
@@ -114,10 +100,9 @@ export function BestPracticeForm() {
 
       await new Promise((res) => setTimeout(res, 2000));
 
-      setCustomRules((prev) => prev.filter((r) => String(r.id) !== selectedRule));
+      setBestPractices((prev) => prev.filter((r) => String(r.id) !== selectedRule));
       setSelectedRule("");
       setDescription("");
-      setCategory("");
       setSeverity("");
       setTags("");
       setExampleCode("");
@@ -144,7 +129,7 @@ export function BestPracticeForm() {
       {/* Rule Selector */}
       <div>
         <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-          <Hash size={16} /> Select Rule <span className="text-red-500">*</span>
+          <Hash size={16} /> Best Practice <span className="text-red-500">*</span>
         </label>
         <select
           value={selectedRule}
@@ -152,26 +137,15 @@ export function BestPracticeForm() {
           className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
         >
-          <option value="">-- Select a custom rule --</option>
-          {customRules.map((rule) => (
-            <option key={rule.id} value={rule.id}>
-              {rule.name}
+          <option value="">-- Select a Best Practice --</option>
+          {bestPractice.map((rule) => (
+            <option key={rule.rule_id} value={rule.rule_id}>
+              {rule.rule_name}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Auto-filled Category */}
-      <div>
-        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-          <SlidersHorizontal size={16} /> Category
-        </label>
-        <input
-          value={category}
-          readOnly
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
-        />
-      </div>
 
       {/* Auto-filled Severity */}
       <div>
