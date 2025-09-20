@@ -22,12 +22,18 @@ export async function GET(req) {
     const entries = await KnowledgeBase.find(filter);
 
     // Normalize each entry
-    const normalized = entries.map((entry) => ({
-      ...entry.toObject(),
-      type:
-        entry.type ||
-        (entry.rule_id?.includes("VULN") ? "vulnerability" : "best-practice"),
-    }));
+    const normalized = entries.map((entry) => {
+      let type = entry.type;
+      if (!type) {
+        if (entry.rule_id?.includes("VULN")) type = "vulnerability";
+        else if (entry.rule_id?.includes("BSTP")) type = "best-practice";
+        else type = "custom";
+      }
+      return {
+        ...entry.toObject(),
+        type,
+      };
+    });
 
     return NextResponse.json(normalized, { status: 200 });
   } catch (err) {

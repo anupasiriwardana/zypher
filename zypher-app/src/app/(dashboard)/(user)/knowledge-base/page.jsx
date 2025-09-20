@@ -158,6 +158,38 @@ export default function KnowledgeBasePage() {
             </p>
           )}
         </div>
+        {/* Custom Rules Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold text-center text-[var(--brand-yellow)] mb-8">
+            Custom Rules
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {rules.filter((r) => r.type === "custom").length > 0 ? (
+              rules
+                .filter((r) => r.type === "custom")
+                .map((rule) => (
+                  <Link key={rule.rule_id} href={`/knowledge-base/${rule.rule_id}`} className="block">
+                    <div className="bg-[var(--input-bg)] p-6 rounded-xl border border-[var(--border-input)] shadow-md hover:border-[var(--brand-yellow)] transition">
+                      <div className="flex items-center gap-x-3">
+                        <FileCode size={24} className="text-[var(--brand-yellow)]" />
+                        <h3 className="text-xl font-semibold text-[var(--foreground)]">
+                          {rule.rule_id}: {rule.rule_name}
+                        </h3>
+                      </div>
+                      <p className="mt-2 text-[var(--text-secondary)] text-sm line-clamp-3">
+                        {rule.description}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+            ) : (
+              <p className="text-[var(--text-secondary)] text-center md:col-span-2">
+                No custom rules found.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
