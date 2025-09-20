@@ -17,7 +17,7 @@ const knowledgeBaseRequestSchema = new mongoose.Schema(
     sample_code: { type: String },
     knowledge_base_status: {
       type: String,
-      enum: ["Pending", "In Review", "Completed", "Rejected"],
+      enum: ["Pending", "Completed"],
       default: "Pending",
     },
     user_id: {

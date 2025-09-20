@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import KnowledgeBase from "@/models/KnowledgeBase";
+import KnowledgeBaseRequest from "@/models/KnowledgeBaseRequest";
 import connectDB from "@/utils/db";
 
 export async function GET(req) {
@@ -36,12 +37,51 @@ export async function GET(req) {
 
 
 export async function POST(req) {
-  await connectDB();
   try {
+    await connectDB();
+
     const body = await req.json();
-    const entry = await KnowledgeBase.create(body);
-    return NextResponse.json(entry, { status: 201 });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+
+    // normalize severity (uppercase)
+    const severity = body.suggested_severity
+      ? body.suggested_severity.toUpperCase()
+      : body.severity?.toUpperCase();
+
+    // 1. Add to knowledgeBases
+    const newEntry = new KnowledgeBase({
+      rule_id: body.rule_id,
+      rule_name: body.rule_name,
+      category: body.category,
+      severity: severity,
+      explanation: body.explanation,
+      description: body.description,
+      real_world_examples: body.real_world_examples || [],
+      potential_impacts: body.potential_impacts || [],
+      mitigation_steps: body.mitigation_steps || [],
+      best_practices_summary: body.best_practices_summary || [],
+      detection_methods: body.detection_methods || [],
+      references: body.references || [],
+      example_code: body.example_code,
+      status: "active",
+    });
+
+    await newEntry.save();
+
+    // 2. Update request status → Completed
+    if (body.request_id) {
+      await KnowledgeBaseRequest.findOneAndUpdate(
+        { _id: body.request_id },
+        { $set: { knowledge_base_status: "Completed" } },
+        { new: true }
+      );
+    } else {
+      console.warn("request_id missing, could not update KnowledgeBaseRequest");
+    }
+
+    return NextResponse.json({ success: true, data: newEntry }, { status: 201 });
+  } catch (error) {
+    console.error("Error saving knowledge base:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }
+

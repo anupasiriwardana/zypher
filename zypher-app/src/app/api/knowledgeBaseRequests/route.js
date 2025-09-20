@@ -13,7 +13,7 @@ export async function POST(req) {
   }
 }
 
-// GET /api/knowledgeBaseRequests?type=custom
+// GET /api/knowledgeBaseRequests?type=?
 export async function GET(req) {
   await connectDB();
   try {

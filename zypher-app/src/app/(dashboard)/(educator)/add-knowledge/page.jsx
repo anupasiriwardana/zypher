@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { Lexend } from "next/font/google";
-import { BestPracticeForm } from "./best-practice-form/page";
-import { SecurityRuleForm } from "./security-rule-form/page";
-import { CustomRuleForm } from "./custom-rule-form/page";
+import KnowledgeForm from "@/components/KnowledgeForm"; // ✅ one shared form
 
 const lexend = Lexend({
   subsets: ["latin"],
@@ -54,10 +52,10 @@ export default function AddKnowledgePage() {
         </button>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === "best" && <BestPracticeForm />}
-      {activeTab === "security" && <SecurityRuleForm />}
-      {activeTab === "custom" && <CustomRuleForm />}
+      {/* Tab Content — use the generic form */}
+      {activeTab === "best" && <KnowledgeForm type="bestpractice" title="Best Practice" />}
+      {activeTab === "security" && <KnowledgeForm type="vulnerability" title="Security Rule" />}
+      {activeTab === "custom" && <KnowledgeForm type="custom" title="Custom Rule" />}
     </div>
   );
 }
