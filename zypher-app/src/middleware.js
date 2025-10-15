@@ -22,6 +22,7 @@ export async function middleware(req) {
 
     //API routes
     "/api/auth",  // Auth routes
+    "/api/pricing-plan-landing-page", // Public pricing plans
   ];
 
   const isExcluded =
