@@ -80,6 +80,8 @@ export async function middleware(req) {
     '/api/custom-rule-file-reject': ['rule-maintainer'],
     '/api/custom-rule-file-publish': ['rule-maintainer'],
     '/api/custom-rule-request-start-test': ['rule-maintainer'],
+    '/api/pricing-plan': ['manager', 'primary-user'],
+    '/api/user-plan-subscribe': ['primary-user'],
   };
 
   // Find the most specific matching route

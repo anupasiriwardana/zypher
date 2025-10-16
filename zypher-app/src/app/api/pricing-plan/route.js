@@ -3,6 +3,7 @@ import PricingPlan from "@/models/PricingPlan";
 import connectDB from "@/utils/db";
 
 import { getPricingPlans } from "@/app/api/_services/pricingPlanService";
+import { checkRoleAccess } from "@/app/api/_services/requestValidationService";
 
 export const POST = async (request) => {
     try {
@@ -94,6 +95,36 @@ export const POST = async (request) => {
 
         return NextResponse.json(
             { error: error || "Internal server error" },
+            { status: 500 }
+        );
+    }
+};
+
+export const GET = async (request) => {
+    const userId = request.headers.get("x-user-id");
+    const role = request.headers.get("x-user-role");
+
+    const allowedRoles = ['primary-user', 'manager'];
+    const accessError = await checkRoleAccess(allowedRoles, role, userId);
+    if (accessError) {
+        return NextResponse.json(
+            { error: accessError.error },
+            { status: accessError.status }
+        );
+    }
+
+    try{
+        const result = await getPricingPlans();
+        if(result.error){
+            throw new Error(result.error);
+        }
+        return NextResponse.json(
+            { data: result.data },
+            { status: 200 }
+        );
+    }catch(error){
+        return NextResponse.json(
+            { error: error.message || "Internal server error" },
             { status: 500 }
         );
     }
