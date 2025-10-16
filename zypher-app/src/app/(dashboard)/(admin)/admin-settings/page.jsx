@@ -86,39 +86,31 @@ export default function AdminSettingsPage() {
       className={`p-6 md:p-10 animate-fadeInUp min-h-screen ${lexend.className}`}
     >
       <h1 className="text-3xl font-bold mb-8 text-[var(--foreground)]">
-        Educator Settings
+        Admin Settings
       </h1>
 
       <div className="bg-[var(--input-bg)] p-8 rounded-xl shadow-xl border border-[var(--border-input)] space-y-10">
         {/* Profile Section */}
         <form onSubmit={handleProfileSave} className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-6 items-center">
-            <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[var(--brand-yellow)]">
-              <Image
-                src={profilePic}
-                alt="Educator Avatar"
-                className="w-full h-full object-cover"
-                width={100}
-                height={100}
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/Images/avatar.jpg";
-                }}
-              />
-              <label
-                htmlFor="educator-pic"
-                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-              >
-                <ImageIcon size={22} className="text-white" />
-                <input
-                  type="file"
-                  id="educator-pic"
-                  accept="image/*"
-                  onChange={handleProfilePicChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
+            <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[var(--brand-yellow)] flex-shrink-0">
+                  <img
+                    src={profilePic}
+                    alt="Profile Avatar"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/Images/placeholder-avatar.png'; }} // Fallback
+                  />
+                  <label htmlFor="profile-pic-upload" className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                    <ImageIcon size={24} className="text-white" />
+                    <input
+                      id="profile-pic-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePicChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
 
             <div className="flex-grow space-y-4 w-full">
               <div>

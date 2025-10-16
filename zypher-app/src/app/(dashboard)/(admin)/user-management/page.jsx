@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from "react";
 import { Lexend } from 'next/font/google';
 import { Loader2, Trash2, UserPlus } from 'lucide-react';
 
@@ -9,73 +9,118 @@ const lexend = Lexend({
   weight: ['400', '500', '600', '700'],
 });
 
-const roles = [
-  'Rule Maintainer',
-  'Rule Developer',
-  'Rule Implementer',
-  'Educator',
-];
-
-const allUsersMock = [
-  { name: "Alice", email: "alice@zypher.com", role: "Developer" },
-  { name: "Bob", email: "bob@zypher.com", role: "Developer" },
-  { name: "Charlie", email: "charlie@zypher.com", role: "Developer" },
-  { name: "Dana", email: "dana@zypher.com", role: "Developer" },
-];
-
 export default function AdminUserManagement() {
+  // Role labels for UI
+  const roles = [
+    "Rule Maintainer",
+    "Rule Developer",
+    "Educator",
+  ];
+
+  // Map UI role → DB role
+  const roleMap = {
+    "Rule Maintainer": "rule-maintainer",
+    "Rule Developer": "rule-developer",
+    "Educator": "educator",
+  };
+
+  function convertRoleToDisplay(dbRole) {
+    const entry = Object.entries(roleMap).find(([display, value]) => value === dbRole);
+    return entry ? entry[0] : dbRole;
+  }
+
+  // 🔹 FIX: Add missing states
+  const [users, setUsers] = useState([]);
+  const [assignedRoles, setAssignedRoles] = useState({});
+  const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
-  const [users, setUsers] = useState(allUsersMock);
+  const [emailInput, setEmailInput] = useState("");
   const [selectedRole, setSelectedRole] = useState(roles[0]);
-  const [assignedRoles, setAssignedRoles] = useState({
-    'Rule Maintainer': 'maintainer@zypher.com',
-    'Rule Developer': 'developer@zypher.com',
-    'Rule Implementer': 'implementer@zypher.com',
-    'Educator': 'educator@zypher.com',
-  });
 
-  const handleAssign = () => {
-    if (!emailInput.trim()) return;
-    setAssigning(true);
-    setTimeout(() => {
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await fetch("/api/users");
+        const data = await res.json();
+        setUsers(data);
+
+        // Build mapping of which roles are assigned
+        const roleAssignments = {};
+        data.forEach((u) => {
+          if (u.role && roles.includes(convertRoleToDisplay(u.role))) {
+            roleAssignments[convertRoleToDisplay(u.role)] = u.email;
+          }
+        });
+        setAssignedRoles(roleAssignments);
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUsers();
+  }, []);
+
+
+  const handleAssign = async () => {
+  if (!emailInput.trim()) return;
+  setAssigning(true);
+  try {
+    const dbRole = selectedRole.toLowerCase().replace(" ", "-"); 
+    // e.g. "Rule Maintainer" → "rule-maintainer"
+
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: emailInput, role: dbRole }),
+    });
+
+    const result = await res.json();
+    if (result.success) {
       setAssignedRoles((prev) => ({ ...prev, [selectedRole]: emailInput }));
-      setEmailInput('');
-      setAssigning(false);
-    }, 1000);
-  };
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.email === emailInput ? { ...u, role: dbRole } : u
+        )
+      );
+      setEmailInput("");
+    }
+  } catch (err) {
+    console.error("Failed to assign role", err);
+  } finally {
+    setAssigning(false);
+  }
+};
 
-  const handleRemove = (role) => {
-    setAssignedRoles((prev) => ({ ...prev, [role]: null }));
-  };
+
+  const handleRemove = async (role) => {
+  const email = assignedRoles[role];
+  if (!email) return;
+
+  try {
+    const res = await fetch("/api/users", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      setAssignedRoles((prev) => ({ ...prev, [role]: null }));
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.email === email ? { ...u, role: "primary-user" } : u
+        )
+      );
+    }
+  } catch (err) {
+    console.error("Failed to remove role", err);
+  }
+};
+
 
   return (
     <div className={`p-6 md:p-10 space-y-10 ${lexend.className}`}>
-      <h1 className="text-3xl font-bold text-[var(--foreground)]">User Management</h1>
-
-        <div className="bg-[var(--input-bg)] p-6 rounded-xl border border-[var(--border-input)]">
-        <h2 className="text-xl font-semibold mb-4">All Registered Users</h2>
-        <div className="overflow-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="text-[var(--text-secondary)] border-b border-[var(--border-input)]">
-                <th className="py-2 px-4">Name</th>
-                <th className="py-2 px-4">Email</th>
-                <th className="py-2 px-4">Role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, i) => (
-                <tr key={i} className="border-b border-[var(--border-input)]">
-                  <td className="py-2 px-4">{user.name}</td>
-                  <td className="py-2 px-4">{user.email}</td>
-                  <td className="py-2 px-4">{user.role}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
       <h1 className="text-3xl font-bold mb-8 text-[var(--foreground)]">
         Manage Platform Roles
       </h1>
@@ -139,6 +184,30 @@ export default function AdminUserManagement() {
             )}
             Assign Role
           </button>
+        </div>
+      </div>
+      
+        <div className="bg-[var(--input-bg)] p-6 rounded-xl border border-[var(--border-input)]">
+        <h2 className="text-xl font-semibold mb-4">All Registered Users</h2>
+        <div className="overflow-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="text-[var(--text-secondary)] border-b border-[var(--border-input)]">
+                <th className="py-2 px-4">Name</th>
+                <th className="py-2 px-4">Email</th>
+                <th className="py-2 px-4">Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user, i) => (
+                <tr key={i} className="border-b border-[var(--border-input)]">
+                  <td className="py-2 px-4">{user.name}</td>
+                  <td className="py-2 px-4">{user.email}</td>
+                  <td className="py-2 px-4">{user.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
