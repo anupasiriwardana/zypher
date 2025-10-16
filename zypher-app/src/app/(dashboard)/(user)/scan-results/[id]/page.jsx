@@ -520,32 +520,7 @@ const ScanResult = () => {
                     <SeverityBadge severity={stats.risk_factor} />
                   </div>
                 )}
-                {currentScanTypeKey === "bestPracticesScan" &&
-                  displayScore !== undefined && (
-                    <div className="flex flex-col items-center">
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        Overall Best Practices Rating
-                      </p>
-                      {displayScore >= 90 && (
-                        <span className="text-green-400 font-semibold">
-                          Excellent
-                        </span>
-                      )}
-                      {displayScore < 90 && displayScore >= 70 && (
-                        <span className="text-yellow-400 font-semibold">
-                          Good
-                        </span>
-                      )}
-                      {displayScore < 70 && displayScore >= 50 && (
-                        <span className="text-orange-400 font-semibold">
-                          Needs Improvement
-                        </span>
-                      )}
-                      {displayScore < 50 && (
-                        <span className="text-red-400 font-semibold">Poor</span>
-                      )}
-                    </div>
-                  )}
+                
               </div>
             )}
           </div>
