@@ -50,7 +50,8 @@ const RuleTable = ({
         rule.ruleId?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesSeverity =
-        filterSeverity === "all" || rule.severity.toLowerCase() === filterSeverity;
+        filterSeverity === "all" ||
+        rule.severity.toLowerCase() === filterSeverity;
 
       return matchesSearch && matchesSeverity;
     });
@@ -209,6 +210,46 @@ export default function ActiveRulesPage() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedRule, setSelectedRule] = useState(null);
+  const [newRuleModalOpen, setNewRuleModalOpen] = useState(false);
+  const [ruleToEdit, setRuleToEdit] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionFeedback, setSubmissionFeedback] = useState(null);
+
+  const handleSubmitRule = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/rules", {
+        method: "POST", // or PUT if updating
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ruleId: ruleToEdit?.ruleId || undefined, // send ID if updating
+          ruleName,
+          description,
+          severity,
+          exampleCode,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit rule");
+
+      setSubmissionFeedback({
+        type: "success",
+        message: "Rule submitted successfully!",
+      });
+      setTimeout(() => {
+        setNewRuleModalOpen(false); // close modal after success
+        setSubmissionFeedback(null);
+        // optionally refetch rules here
+      }, 1200);
+    } catch (err) {
+      console.error(err);
+      setSubmissionFeedback({ type: "error", message: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Individual states for each tab
   const [tabStates, setTabStates] = useState({
@@ -307,6 +348,26 @@ export default function ActiveRulesPage() {
           </button>
         ))}
       </div>
+
+      <RuleDetailModal
+        isOpen={newRuleModalOpen}
+        onClose={() => setNewRuleModalOpen(false)}
+        ruleName={ruleToEdit?.ruleName || ""}
+        setRuleName={(v) => setRuleToEdit((prev) => ({ ...prev, ruleName: v }))}
+        description={ruleToEdit?.description || ""}
+        setDescription={(v) =>
+          setRuleToEdit((prev) => ({ ...prev, description: v }))
+        }
+        severity={ruleToEdit?.severity || "informational"}
+        setSeverity={(v) => setRuleToEdit((prev) => ({ ...prev, severity: v }))}
+        exampleCode={ruleToEdit?.exampleCode || ""}
+        setExampleCode={(v) =>
+          setRuleToEdit((prev) => ({ ...prev, exampleCode: v }))
+        }
+        isSubmitting={isSubmitting}
+        handleSubmitRule={handleSubmitRule}
+        submissionFeedback={submissionFeedback}
+      />
 
       {/* Table for Active Tab */}
       <RuleTable
