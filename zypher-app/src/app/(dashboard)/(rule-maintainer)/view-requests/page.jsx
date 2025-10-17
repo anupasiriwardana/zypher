@@ -11,6 +11,8 @@ import {
 
 import RuleRequestDetailModal from '@/components/RuleRequestDetailModal';
 import { useRouter } from 'next/navigation';
+import NewRuleRequestModal from './newRule';
+import { useSession } from "next-auth/react";
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -248,6 +250,17 @@ export default function ViewRequestsPage() {
   const [clFilterSeverity, setClFilterSeverity] = useState('all');
   const [clSortOrder, setClSortOrder] = useState('desc');
 
+  // New Rule modal states
+  const [isNewRuleModalOpen, setIsNewRuleModalOpen] = useState(false);
+  const [ruleName, setRuleName] = useState('');
+  const [description, setDescription] = useState('');
+  const [severity, setSeverity] = useState('medium');
+  const [exampleCode, setExampleCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionFeedback, setSubmissionFeedback] = useState('');
+
+  const { data: session } = useSession();
+
   // Fetch rule requests from API
   useEffect(() => {
     fetchRuleRequests();
@@ -278,6 +291,57 @@ export default function ViewRequestsPage() {
       if (setModalError) setModalError(error.message);
     }
   };
+  // 🔹 Submit handler for new rule
+  const handleSubmitRule = async () => {
+    try {
+      setIsSubmitting(true);
+      setSubmissionFeedback('');
+
+      const userId = session?.user?.id;
+      const userRole = session?.user?.role || 'rule-maintainer';
+      if (!userId) {
+        setSubmissionFeedback('❌ Error: User not authenticated.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const response = await fetch('/api/custom-rule-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+          'x-user-role': userRole
+        },
+        body: JSON.stringify({
+          rule_name: ruleName,
+          rule_description: description,
+          suggested_severity: severity,
+          sample_code: exampleCode,
+          user_id: userId
+        }),
+      });
+
+      if (response.ok) {
+        setSubmissionFeedback('✅ Rule submitted successfully!');
+        setIsNewRuleModalOpen(false);
+        setRuleName('');
+        setDescription('');
+        setSeverity('medium');
+        setExampleCode('');
+        fetchRuleRequests(); // refresh the list
+      } else {
+        const errorData = await response.json();
+        setSubmissionFeedback(`❌ Failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      setSubmissionFeedback(`❌ Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ... keep the rest of your fetchRuleRequests, openModal, closeModal, etc.
+
 
   const fetchRuleRequests = async () => {
     try {
@@ -383,7 +447,31 @@ export default function ViewRequestsPage() {
 
   return (
     <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp min-h-screen`}>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Custom Rule Requests</h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">Custom Rule Requests</h1>
+        <button
+          onClick={() => setIsNewRuleModalOpen(true)}
+          className="w-full md:w-auto px-6 py-3 bg-[var(--brand-yellow)] text-[var(--background)] rounded-lg font-semibold hover:brightness-110 transition-all"
+        >
+          + Add New Rule
+        </button>
+      </div>
+
+      <NewRuleRequestModal
+        isOpen={isNewRuleModalOpen}
+        onClose={() => setIsNewRuleModalOpen(false)}
+        ruleName={ruleName}
+        setRuleName={setRuleName}
+        description={description}
+        setDescription={setDescription}
+        severity={severity}
+        setSeverity={setSeverity}
+        exampleCode={exampleCode}
+        setExampleCode={setExampleCode}
+        isSubmitting={isSubmitting}
+        handleSubmitRule={handleSubmitRule}
+        submissionFeedback={submissionFeedback}
+      />
 
       {/* Pending Review Rules Table */}
       <RuleRequestsTable

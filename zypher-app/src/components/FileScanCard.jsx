@@ -4,7 +4,7 @@ import { FileText, ArrowRight, CheckCircle, AlertTriangle, XCircle } from "lucid
 import Link from "next/link";
 import clsx from "clsx";
 
-export default function FileScanCard({ filename, date, scanDataId, vulnerabilityFindings, bestPracticeFindings, risk }) {
+export default function FileScanCard({ filename, date, scanDataId, vulnerabilityFindings, bestPracticeFindings, customRuleFindings, risk }) {
   const href = `/scan-results/${scanDataId}?type=file`;
 
   const statusInfo = {
@@ -29,7 +29,7 @@ export default function FileScanCard({ filename, date, scanDataId, vulnerability
           </div>
 
           <p className="text-sm text-[var(--text-secondary)] mb-4">
-            Vulnerabilities: <strong>{vulnerabilityFindings}</strong>, Best Practice Suggestions: <strong>{bestPracticeFindings}</strong>
+            Vulnerabilities: <strong>{vulnerabilityFindings}</strong>, Best Practice Suggestions: <strong>{bestPracticeFindings}</strong> {", "}Custom Rule Findings: <strong>{customRuleFindings}</strong>
           </p>
 
           <div className="flex justify-between items-end mt-auto">

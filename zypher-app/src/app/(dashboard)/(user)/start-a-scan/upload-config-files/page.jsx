@@ -8,6 +8,7 @@ import {
 import clsx from "clsx";
 import * as yaml from 'yaml';
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const SeverityBadge = ({ severity }) => {
   const normalizedSeverity = severity?.toUpperCase();
@@ -44,6 +45,8 @@ export default function UploadConfigPageContent() {
   const [vulnRuleMetadata, setVulnRuleMetadata] = useState([]);
   const [bpRuleMetadata, setBpRuleMetadata] = useState([]);
 
+   const { data: session } = useSession();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export default function UploadConfigPageContent() {
 
         setVulnRuleMetadata(data.vuln_rule_metadata || []);
         setBpRuleMetadata(data.bp_rule_metadata || []);
-        console.log("fetched rule metadata:", data);
+        // console.log("fetched rule metadata:", data);
 
       } catch (error) {
         console.error(error);
@@ -165,6 +168,8 @@ export default function UploadConfigPageContent() {
     setActiveTab('vulnerabilities');
 
     try {
+      
+      
       const response = await fetch('/api/scan-individual-file', {
         method: 'POST',
         headers: {
@@ -172,10 +177,11 @@ export default function UploadConfigPageContent() {
         },
         body: JSON.stringify({
           filename: selectedFile.fileObject.name,
-          content: selectedFile.content
+          content: selectedFile.content,
+          user_id: session?.user?.id
         })
       });
-
+ 
       if (!response.ok) {
         throw new Error(`Scan failed: ${response.statusText}`);
       }
@@ -185,13 +191,14 @@ export default function UploadConfigPageContent() {
         throw new Error(data.error);
       }
       setScanResults(data);
+      // console.log("scan results:", data.customRules);
 
       if (data.bestPractices?.status === 'success' && data.vulnerabilities?.status === 'success') {
         setScanResult('success');
       } else {
         setScanResult('failure');
       }
-      console.log('Scan results:', data);
+      // console.log('Scan results:', data);
 
     } catch (error) {
       console.error('Scan error:', error.message);
@@ -475,10 +482,27 @@ export default function UploadConfigPageContent() {
                                 </span>
                               )}
                             </button>
+                            <button
+                              onClick={() => setActiveTab('custom-rules')}
+                              className={clsx(
+                                "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                                activeTab === 'custom-rules'
+                                  ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
+                                  : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                              )}
+                            >
+                              Custom Rules
+                              {scanResults.customRules?.stats?.total_findings > 0 && (
+                                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600/20 text-green-400">
+                                  {scanResults.customRules.stats.total_findings}
+                                </span>
+                              )}
+                            </button>
                           </div>
 
                           {activeTab === 'vulnerabilities' && renderScanTypeResults(scanResults.vulnerabilities, 'vulnerabilities')}
                           {activeTab === 'best-practices' && renderScanTypeResults(scanResults.bestPractices, 'best-practices')}
+                          {activeTab === 'custom-rules' && renderScanTypeResults(scanResults.customRules, 'custom-rules')}
 
                           {/* Optional: Raw Data Display, similar to PasteUrlPageContent */}
                           {/*<div className="mt-12 text-left">

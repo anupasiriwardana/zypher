@@ -28,6 +28,7 @@ export const GET = async (request) => {
                 filename: 1,
                 "vulnerabilityScan.stats": 1,
                 "bestPracticesScan.stats": 1,
+                "customRuleScan.stats": 1,
                 createdAt: 1
             }
         ).lean();
@@ -39,6 +40,7 @@ export const GET = async (request) => {
                 repo_url: 1,
                 "vulnerabilityScan.stats": 1,
                 "bestPracticesScan.stats": 1,
+                "customRuleScan.stats": 1,
                 createdAt: 1
             }
         ).lean();

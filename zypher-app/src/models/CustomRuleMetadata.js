@@ -41,4 +41,4 @@ const CustomRuleMetadataSchema = new Schema({
   },
 });
 
-module.exports = mongoose.models.CustomRuleMetadata || mongoose.model('CustomRuleMetadata', CustomRuleMetadataSchema);
+export default mongoose.models.CustomRuleMetadata || mongoose.model('CustomRuleMetadata', CustomRuleMetadataSchema);
