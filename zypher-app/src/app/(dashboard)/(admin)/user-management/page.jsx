@@ -38,28 +38,34 @@ export default function AdminUserManagement() {
   const [selectedRole, setSelectedRole] = useState(roles[0]);
 
   useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const res = await fetch("/api/users");
-        const data = await res.json();
-        setUsers(data);
+  async function fetchUsers() {
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
 
-        // Build mapping of which roles are assigned
-        const roleAssignments = {};
-        data.forEach((u) => {
-          if (u.role && roles.includes(convertRoleToDisplay(u.role))) {
-            roleAssignments[convertRoleToDisplay(u.role)] = u.email;
-          }
-        });
-        setAssignedRoles(roleAssignments);
-      } catch (err) {
-        console.error("Failed to fetch users", err);
-      } finally {
-        setLoading(false);
-      }
+      setUsers(data);
+
+      // Build mapping of which roles are assigned (always as array)
+      const roleAssignments = {};
+      data.forEach((u) => {
+        const displayRole = convertRoleToDisplay(u.role);
+        if (roles.includes(displayRole)) {
+          if (!roleAssignments[displayRole]) roleAssignments[displayRole] = [];
+          roleAssignments[displayRole].push(u.email);
+        }
+      });
+
+      setAssignedRoles(roleAssignments);
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    } finally {
+      setLoading(false);
     }
-    fetchUsers();
-  }, []);
+  }
+
+  fetchUsers();
+}, []);
+
 
 
   const handleAssign = async () => {
@@ -93,9 +99,9 @@ export default function AdminUserManagement() {
 };
 
 
-  const handleRemove = async (role) => {
-  const email = assignedRoles[role];
-  if (!email) return;
+  const handleRemove = async (role, email) => {
+  const confirmRemove = confirm(`Are you sure you want to remove ${role} role from ${email}?`);
+  if (!confirmRemove) return;
 
   try {
     const res = await fetch("/api/users", {
@@ -106,7 +112,6 @@ export default function AdminUserManagement() {
     const result = await res.json();
 
     if (result.success) {
-      setAssignedRoles((prev) => ({ ...prev, [role]: null }));
       setUsers((prev) =>
         prev.map((u) =>
           u.email === email ? { ...u, role: "primary-user" } : u
@@ -134,17 +139,23 @@ export default function AdminUserManagement() {
             <h2 className="text-xl font-semibold text-[var(--brand-yellow)] mb-2">
               {role}
             </h2>
-            <p className="text-md text-[var(--foreground)] mb-4">
-              {assignedRoles[role] || <span className="text-[var(--text-secondary)]">Not assigned</span>}
-            </p>
-            {assignedRoles[role] ? (
-              <button
-                onClick={() => handleRemove(role)}
-                className="inline-flex items-center gap-2 text-red-500 border border-red-500 px-4 py-2 rounded-lg hover:bg-red-600/10 transition"
-              >
-                <Trash2 size={18} /> Remove Role
-              </button>
-            ) : null}
+            <div className="text-md text-[var(--foreground)] mb-4">
+              {assignedRoles[role]?.length > 0 ? (
+                assignedRoles[role].map((email) => (
+                  <div key={email} className="flex items-center justify-between mb-1">
+                    <span>{email}</span>
+                    <button
+                      onClick={() => handleRemove(role, email)}
+                      className="inline-flex items-center gap-2 text-red-500 border border-red-500 px-3 py-1 rounded-lg hover:bg-red-600/10 transition"
+                    >
+                      <Trash2 size={16} /> Remove
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <span className="text-[var(--text-secondary)]">Not assigned</span>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -158,8 +169,8 @@ export default function AdminUserManagement() {
             className="bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] px-4 py-3 rounded-lg focus:outline-none"
           >
             {roles.map((role) => (
-              <option key={role} value={role} disabled={!!assignedRoles[role]}>
-                {role} {assignedRoles[role] ? '(Already Assigned)' : ''}
+              <option key={role} value={role} >
+                {role}
               </option>
             ))}
           </select>
@@ -184,30 +195,6 @@ export default function AdminUserManagement() {
             )}
             Assign Role
           </button>
-        </div>
-      </div>
-      
-        <div className="bg-[var(--input-bg)] p-6 rounded-xl border border-[var(--border-input)]">
-        <h2 className="text-xl font-semibold mb-4">All Registered Users</h2>
-        <div className="overflow-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="text-[var(--text-secondary)] border-b border-[var(--border-input)]">
-                <th className="py-2 px-4">Name</th>
-                <th className="py-2 px-4">Email</th>
-                <th className="py-2 px-4">Role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, i) => (
-                <tr key={i} className="border-b border-[var(--border-input)]">
-                  <td className="py-2 px-4">{user.name}</td>
-                  <td className="py-2 px-4">{user.email}</td>
-                  <td className="py-2 px-4">{user.role}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
