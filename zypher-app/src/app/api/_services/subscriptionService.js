@@ -30,7 +30,7 @@ export const getUserSubscription = async(userId) => {
     try{
         await connectDB();
         const subscription = await Subscription.findOne({ userId })
-            .select('planId status startDate endDate scanLimit allowCustomRuleRequests createdAt updatedAt')
+            .select('_id planId status startDate endDate scanLimit allowCustomRuleRequests createdAt updatedAt')
             .sort({ createdAt: -1 }) // Sort by createdAt in descending order to get the latest
             .lean();
         
@@ -48,4 +48,32 @@ export const getUserSubscription = async(userId) => {
             error: error.message || "Internal server error"
         };
     }   
+};
+
+export const cancelUserSubscription = async(subscriptionId) => {
+    try{
+        await connectDB();
+        const updatedSubscription = await Subscription.findByIdAndUpdate(
+            subscriptionId,
+            { 
+                status: "canceled",
+                updatedAt: new Date()
+            },
+            { new: true }
+        ).lean();
+        
+        if (!updatedSubscription) {
+            return { 
+                error: "Subscription not found" 
+            };
+        }
+        return { 
+            success: "Subscription canceled successfully", 
+            data: updatedSubscription 
+        };
+    }catch (error) {
+        return { 
+            error: error.message || "Internal server error"
+        };
+    }
 };

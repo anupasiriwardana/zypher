@@ -3,7 +3,8 @@ import connectDB from "@/utils/db";
 
 import { 
     createUserSubscription,
-    getUserSubscription
+    getUserSubscription,
+    cancelUserSubscription
  } from "@/app/api/_services/subscriptionService";
 
  import { 
@@ -36,10 +37,23 @@ export const POST = async (request) => {
             throw new Error(defaultPlan.error);
         }
         if(plan_id === defaultPlan.data.plan_id){
-            return NextResponse.json(
-                { error: "Cannot subscribe to the default plan" },
-                { status: 400 }
-            );
+            //cancel subscription to existing plan
+            const userSubscription = await getUserSubscription(userId);
+            if(userSubscription && !userSubscription.error){
+                if(userSubscription.data.status === 'active'){
+                    const cancelResult = await cancelUserSubscription(userSubscription.data._id);
+                    if(cancelResult.error){
+                        throw new Error(cancelResult.error);
+                    }
+                    return NextResponse.json(
+                        {
+                            success : true,
+                            message: "Subscription canceled. Switched to default plan" 
+                        },
+                        { status: 200}
+                    );
+                }
+            }
         }
         
         const selectedPlanLimits = await getPlanLimitsByPlanId(plan_id);
@@ -59,7 +73,10 @@ export const POST = async (request) => {
             throw new Error(userSubscription.error);
         }
         return NextResponse.json(
-            { message: "User Subscription created successfully" },
+            { 
+                success: true,
+                message: "User Subscription created successfully" 
+            },
             { status: 201 }
         );        
     }catch(error){
