@@ -16,7 +16,7 @@ export const POST = async (request) => {
     // Check if user is authenticated
     if (!userId || !role) {
         return NextResponse.json(
-            { error: "Unauthorized" },
+            { error: "Unauthorized: missing x-user-id or x-user-role header" },
             { status: 401 }
         );
     }
@@ -32,7 +32,16 @@ export const POST = async (request) => {
 
     await connectDB();
 
-    const { ruleId, ruleName, ruleStatus, ruleFileContent, ruleOwnerId, requestId, yamlTestFileContent } = await request.json();
+    const payload = await request.json();
+    const { ruleId, ruleName, ruleStatus, ruleFileContent, ruleOwnerId, requestId, yamlTestFileContent } = payload || {};
+
+    // Basic payload validation - return 400 if required fields missing
+    if (!ruleId || !ruleName || !ruleFileContent || !ruleOwnerId) {
+        return NextResponse.json(
+            { error: "Bad Request: ruleId, ruleName, ruleFileContent and ruleOwnerId are required in the request body" },
+            { status: 400 }
+        );
+    }
 
     try {
         //check whether rule metadata is present
@@ -47,7 +56,10 @@ export const POST = async (request) => {
         if (existingRule) {
             // Update existing record
             existingRule.rule_name = ruleName;
-            existingRule.status = ruleStatus;
+            // Only update status if provided to avoid setting undefined
+            if (typeof ruleStatus !== 'undefined' && ruleStatus !== null) {
+                existingRule.status = ruleStatus;
+            }
             existingRule.file_content = ruleFileContent;
             existingRule.rule_owner_id = ruleOwnerId;
             existingRule.request_id = requestId;
@@ -65,7 +77,8 @@ export const POST = async (request) => {
             const customRuleFileDoc = new CustomRuleFile({
                 rule_id: ruleId,
                 rule_name: ruleName,
-                status: ruleStatus,
+                // Default to 'Under development' when status not provided to satisfy required field
+                status: ruleStatus || 'Under development',
                 file_content: ruleFileContent,
                 rule_owner_id: ruleOwnerId,
                 request_id: requestId,

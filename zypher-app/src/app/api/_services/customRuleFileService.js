@@ -117,6 +117,7 @@ export const updateRuleFileStatusByRuleMaintainer = async (ruleId, status, categ
       const existingRule = await targetModel.findOne({ rule_id: ruleId });
 
       if (!existingRule) {
+        // Ensure required fields for target models are provided (status and rule_developer_id)
         await targetModel.create({
           rule_id: customRuleFile.rule_id,
           rule_name: customRuleFile.rule_name,
@@ -124,7 +125,9 @@ export const updateRuleFileStatusByRuleMaintainer = async (ruleId, status, categ
           file_content: customRuleFile.file_content,
           yaml_test_file_content: customRuleFile.yaml_test_file_content,
           rule_owner_id: customRuleFile.rule_owner_id,
-          created_at: customRuleFile.createdAt, // or created_at if using that in DB
+          status: customRuleFile.status || 'Active',
+          rule_developer_id: customRuleFile.rule_developer_id,
+          created_at: customRuleFile.createdAt, // keep original created timestamp if desired
         });
       }
     }
