@@ -52,7 +52,23 @@ export const POST = async (request) => {
                         },
                         { status: 200}
                     );
+                }else{
+                    return NextResponse.json(
+                        {
+                            success : true,
+                            message: "No active subscription found. Already on default plan" 
+                        },
+                        { status: 200}
+                    );
                 }
+            }else{
+                return NextResponse.json(
+                    {
+                        success : true,
+                        message: "No active subscription found. Already on default plan" 
+                    },
+                    { status: 200}
+                );  
             }
         }
         
