@@ -30,10 +30,10 @@ export const PATCH = async (request) => {
         );
     }
 
-    const { ruleId, requestId, requestStatus, ruleFileStatus } = await request.json();
+    const { ruleId, requestId, requestStatus, ruleFileStatus, category } = await request.json();
 
     try{
-        const result1 = await updateRuleFileStatusByRuleMaintainer(ruleId, ruleFileStatus);
+        const result1 = await updateRuleFileStatusByRuleMaintainer(ruleId, ruleFileStatus, category);
         if(result1.error){
             throw new Error(result1.error);
         }
