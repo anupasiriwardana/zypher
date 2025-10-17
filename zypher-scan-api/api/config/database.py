@@ -17,5 +17,6 @@ custom_rule_file_collection = db["customrulefiles"]
 custom_rule_metadata = db["customrulemetadatas"]
 bestPractice_rule_file_collection = db["BestPractice_rule_files"]
 bp_rule_metadata = db["bestPractices_rule_metadata"]
-published_custom_rule_file_collection = db["publishedCustomRules"]
+# published_custom_rule_file_collection = db["publishedCustomRules"]
+published_custom_rule_file_collection = db["customrulefiles"]
 
