@@ -13,7 +13,7 @@ export default function MainLayout({ children }) {
   return (
     <div className={`${lexend.variable}`}>
       <Navbar />
-      <main>{children}</main>
+      <main className="pt-[80px]">{children}</main>
       <Footer />
     </div>
   );
