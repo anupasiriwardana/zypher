@@ -13,12 +13,16 @@ db = client.zypher_db
 collection_name = db["zypher_collection"]
 
 vulnerability_rule_file_collection = db["vulnerability_rule_files"]
+vulnerability_rule_metadata = db["vulnerability_rule_metadata"]
 custom_rule_file_collection = db["customrulefiles"]
 custom_rule_metadata = db["customrulemetadatas"]
 bestPractice_rule_file_collection = db["BestPractice_rule_files"]
 bp_rule_metadata = db["bestPractices_rule_metadata"]
 published_custom_rule_file_collection = db["publishedCustomRules"]
+publishedCustomeRuleMetadata_collection = db["publishedCustomeRuleMetadata"]
 users_collection = db["users"]
 educator_queue_collection = db["educator_queue"]
 knowledge_base_request_collection = db["knowledgebaserequests"]
 custom_rule_request_collection = db["customrulerequests"]
+past_version_rule_collection = db["pastVersionRules"]
+

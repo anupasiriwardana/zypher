@@ -49,7 +49,7 @@ export default function TestingWorkspacePage() {
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [testOutput, setTestOutput] = useState("");
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("Custom Rules"); // ✅ New dropdown state
+  const [selectedCategory, setSelectedCategory] = useState("custom"); 
 
   useEffect(() => {
     if (saveFeedback) {
@@ -277,34 +277,55 @@ export default function TestingWorkspacePage() {
     }
 
     try {
-      const response = await fetch("/api/custom-rule-file-publish", {
-        method: "PATCH",
+      // 1️⃣ Call backend FastAPI to publish the rule
+      const publishResponse = await fetch("/api/publish-custom-rule", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ruleId: selectedRule.id,
-          requestId: selectedRule.originalRequestId,
-          requestStatus: "Successfully Published",
-          ruleFileStatus: "Active",
-          category: selectedCategory, // ✅ include selected dropdown category
+          rule_id: selectedRule.id,
+          collection: selectedCategory,
         }),
       });
 
-      if (response.ok) {
-        setSaveFeedback({
-          type: "success",
-          message: `Rule "${selectedRule.name}" has been published under "${selectedCategory}" successfully!`,
-        });
+      const publishData = await publishResponse.json();
 
-        setTimeout(async () => {
-          setSelectedRule(null);
-          setTestFileContent("");
-          setTestOutput("");
-          await fetchRulesForTesting();
-        }, 4000);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to publish rule");
+      if (!publishResponse.ok) {
+        throw new Error(
+          publishData.detail || "Failed to publish rule in FastAPI backend"
+        );
       }
+
+      // 2️⃣ Update MongoDB rule file status
+      const updateResponse = await fetch("/api/custom-rule-file-publish", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: selectedRule.originalRequestId,
+          requestStatus: "Successfully Published",
+        }),
+      });
+
+      const updateData = await updateResponse.json();
+
+      if (!updateResponse.ok) {
+        throw new Error(
+          updateData.error || "Failed to update rule status in database"
+        );
+      }
+
+      // ✅ Both steps successful
+      setSaveFeedback({
+        type: "success",
+        message: `Rule "${selectedRule.name}" has been approved and published successfully!`,
+      });
+
+      // Reset after 4 seconds
+      setTimeout(async () => {
+        setSelectedRule(null);
+        setTestFileContent("");
+        setTestOutput("");
+        await fetchRulesForTesting();
+      }, 4000);
     } catch (error) {
       console.error("Publish error:", error);
       setSaveFeedback({
@@ -439,16 +460,25 @@ export default function TestingWorkspacePage() {
 
         <div className="bg-[var(--input-bg)] p-6 rounded-xl shadow-2xl border border-[var(--border-input)] flex flex-col overflow-hidden transition-all duration-300 flex-grow min-w-0">
           <div className="flex justify-end items-center mb-4 gap-3">
-            {/* ✅ Dropdown next to Publish */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-[var(--background)] border border-[var(--border-input)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand-yellow)]"
-            >
-              <option value="bestpractice">Best Practices</option>
-              <option value="vulnerability">Vulnerabilities</option>
-              <option value="custom">Custom Rules</option>
-            </select>
+            {/* ✅ Label + Dropdown */}
+            <div className="flex flex-row items-center gap-3 text-right">
+              <label
+                htmlFor="collection"
+                className="text-sm text-[var(--text-secondary)] mb-1"
+              >
+                Choose Rule Type
+              </label>
+              <select
+                id="collection"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-[var(--background)] border border-[var(--border-input)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand-yellow)]"
+              >
+                <option value="custom">Custom Rules</option>
+                <option value="bestpractice">Best Practices</option>
+                <option value="vulnerability">Vulnerabilities</option>
+              </select>
+            </div>
           </div>
 
           <TestFileEditor

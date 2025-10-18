@@ -11,6 +11,8 @@ import {
   CheckCircle,
   XCircle,
   BookOpen,
+  Loader2,
+  Send,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -55,7 +57,6 @@ const requestStatusMap = {
     icon: BookOpen,
   },
 };
-
 const severityMap = {
   critical: { label: "Critical", color: "text-red-500", bg: "bg-red-500/20" },
   high: { label: "High", color: "text-orange-500", bg: "bg-orange-500/20" },
@@ -70,9 +71,16 @@ const severityMap = {
 
 // --- Component ---
 const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
-  // ✅ Hooks must be INSIDE the component
   const [isNewRuleModalOpen, setIsNewRuleModalOpen] = useState(false);
   const [ruleToEdit, setRuleToEdit] = useState(null);
+
+  // Fields for NewRuleRequestModal
+  const [ruleName, setRuleName] = useState("");
+  const [description, setDescription] = useState("");
+  const [severity, setSeverity] = useState("medium");
+  const [exampleCode, setExampleCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionFeedback, setSubmissionFeedback] = useState(null);
 
   if (!rule) return null;
 
@@ -82,7 +90,7 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
     bg: "bg-gray-600/20",
     icon: null,
   };
-  const severityData = severityMap[rule.severity.toLowerCase()] || {
+  const severityData = severityMap[rule.severity?.toLowerCase()] || {
     label: "Unknown",
     color: "text-gray-400",
     bg: "bg-gray-600/20",
@@ -91,9 +99,7 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
 
   const handleRemove = useCallback(() => {
     if (
-      window.confirm(
-        `Are you sure you want to remove rule "${rule.ruleName}" from the system?`
-      )
+      window.confirm(`Are you sure you want to remove rule "${rule.ruleName}"?`)
     ) {
       onRemove(rule.id);
       onClose();
@@ -101,14 +107,68 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
   }, [rule, onClose, onRemove]);
 
   const handleUpgrade = () => {
-    setRuleToEdit(rule); // Pass current rule to modal
-    setIsNewRuleModalOpen(true);
+
+      setRuleToEdit(rule);
+      setRuleName(rule.ruleName || "");
+      setDescription(rule.description || "");
+      setSeverity(rule.severity || "medium");
+      setExampleCode(rule.exampleCode || "");
+      setSubmissionFeedback(null);
+      setIsNewRuleModalOpen(true);
+
+  };
+
+  const handleSubmitRule = async (e) => {
+    e.preventDefault(); // important!
+    setIsSubmitting(true);
+    setSubmissionFeedback(null);
+  
+    try {
+      const response = await fetch('/api/custom-rule-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ruleId: ruleToEdit ? ruleToEdit.ruleId : null,
+          rule_name: ruleName,
+          rule_description: description,
+          suggested_severity: severity.toLowerCase(),
+          sample_code: exampleCode,
+        }),
+      });
+      console.log(ruleToEdit);
+      
+      if (response.ok) {
+        setSubmissionFeedback({ type: "success", message: "✅ Rule submitted successfully!" });
+        setIsNewRuleModalOpen(false);
+        setRuleName('');
+        setDescription('');
+        setSeverity('medium');
+        setExampleCode('');
+        fetchRuleRequests(); // refresh the list
+        onUpgrade?.({
+          ...ruleToEdit,
+          ruleName,
+          description,
+          severity,
+          exampleCode,
+        });
+      } else {
+        const errorData = await response.json();
+        setSubmissionFeedback({ type: "error", message: `❌ Failed: ${errorData.error || 'Unknown error'}` });
+      }
+    } catch (err) {
+      setSubmissionFeedback({ type: "error", message: `❌ Error: ${err.message}` });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <>
       {/* Main Rule Detail Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] animate-fadeIn">
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] animate-fadeIn">
         <div className="bg-[var(--background)] rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform scale-95 animate-scaleIn border border-[var(--border-input)]">
           <div className="flex justify-between items-center p-6 border-b border-[var(--border-input)]">
             <h3 className="text-2xl font-bold text-[var(--foreground)]">
@@ -212,7 +272,7 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
               </button>
               <button
                 onClick={handleUpgrade}
-                className="bg-[var(--brand-yellow)] hover:bg-[#ffe01a] text-black font-semibold py-2 px-5 rounded-lg flex items-center gap-2 transition-colors duration-200"
+                className="bg-[var(--brand-yellow)] hover:bg-yellow-500 text-black font-semibold py-2 px-5 rounded-lg flex items-center gap-2 transition-all duration-200 active:scale-95"
               >
                 <ArrowUpCircle size={20} /> Initiate Upgrade
               </button>
@@ -232,7 +292,18 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
         <NewRuleRequestModal
           isOpen={isNewRuleModalOpen}
           onClose={() => setIsNewRuleModalOpen(false)}
-          existingRule={ruleToEdit}
+          ruleName={ruleName}
+          setRuleName={setRuleName}
+          description={description}
+          setDescription={setDescription}
+          severity={severity}
+          setSeverity={setSeverity}
+          exampleCode={exampleCode}
+          setExampleCode={setExampleCode}
+          isSubmitting={isSubmitting}
+          handleSubmitRule={handleSubmitRule}
+          submissionFeedback={submissionFeedback}
+          zIndex={200} // optional: ensure it's above the detail modal
         />
       )}
     </>

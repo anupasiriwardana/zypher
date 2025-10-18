@@ -35,10 +35,11 @@ export const POST = async (request) => {
 
   await connectDB();
 
-  const { rule_name, rule_description, suggested_severity, sample_code} = await request.json();
+  const { ruleId = null,rule_name, rule_description, suggested_severity, sample_code} = await request.json();
 
   try {
     const customRuleRequestDoc = new CustomRuleRequest({
+      rule_id: ruleId,
       name: rule_name,
       description: rule_description,
       suggested_severity: suggested_severity,
@@ -103,7 +104,7 @@ export const GET = async (request) => {
     } else if (role === 'rule-maintainer') {
       const customRuleRequests = await CustomRuleRequest.find()
         .sort({ createdAt: -1 })
-        .select('_id name description suggested_severity sample_code status assigned_developer rejected_reason createdAt')
+        .select('_id rule_id name description suggested_severity sample_code status assigned_developer rejected_reason createdAt')
         .lean();
 
       return NextResponse.json(
@@ -113,7 +114,7 @@ export const GET = async (request) => {
     } else if (role === 'rule-developer') {
       const customRuleRequests = await CustomRuleRequest.find({ assigned_developer: userId })
         .sort({ createdAt: -1 })
-        .select('_id name description suggested_severity sample_code status rejected_reason createdAt')
+        .select('_id rule_id name description suggested_severity sample_code status rejected_reason createdAt')
         .lean();
 
       return NextResponse.json(

@@ -80,59 +80,90 @@ export const updateRuleFileTestContentByRuleMaintainer = async (ruleId, testFile
     }
 }
 
+// export const updateRuleFileStatusByRuleMaintainer = async (ruleId, status, category) => {
+//   try {
+//     await connectDB();
+
+//     // 1️⃣ Update the rule file status in CustomRuleFile
+//     const customRuleFile = await CustomRuleFile.findOneAndUpdate(
+//       { rule_id: ruleId },
+//       { status },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!customRuleFile) {
+//       throw new Error("Custom rule file not found");
+//     }
+
+//     // 2️⃣ If status is "Active", publish to the corresponding collection
+//     if (status === "Active") {
+//       let targetModel;
+
+//       switch (category?.toLowerCase()) {
+//         case "bestpractice":
+//           targetModel = BestPracticeRule;
+//           break;
+//         case "vulnerability":
+//           targetModel = VulnerabilityRule;
+//           break;
+//         case "custom":
+//           targetModel = CustomRule;
+//           break;
+//         default:
+//           throw new Error(`Invalid category: ${category}`);
+//       }
+
+//       // Check if the rule already exists to avoid duplication
+//       const existingRule = await targetModel.findOne({ rule_id: ruleId });
+
+//       if (!existingRule) {
+//         await targetModel.create({
+//           rule_id: customRuleFile.rule_id,
+//           rule_name: customRuleFile.rule_name,
+//           description: customRuleFile.description || "No description available",
+//           file_content: customRuleFile.file_content,
+//           yaml_test_file_content: customRuleFile.yaml_test_file_content,
+//           rule_owner_id: customRuleFile.rule_owner_id,
+//           created_at: customRuleFile.createdAt, // or created_at if using that in DB
+//         });
+//       }
+//     }
+
+//     return { success: "Status updated and rule published successfully" };
+
+//   } catch (error) {
+//     console.error("Error updating rule file status:", error);
+//     return { error: error.message };
+//   }
+// };
 export const updateRuleFileStatusByRuleMaintainer = async (ruleId, status, category) => {
   try {
-    await connectDB();
+    //If publishing, call the FastAPI route directly
+    const fastApiUrl = `${process.env.FASTAPI_URL}/publish-custom-rule`; // 🔧 change to deployed backend
+    const response = await fetch(fastApiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rule_id: ruleId,
+        collection:
+          category?.toLowerCase() === "bestpractice"
+            ? "bestPractise"
+            : category?.toLowerCase() === "vulnerability"
+            ? "vulnerability"
+            : "custom",
+      }),
+    });
 
-    // 1️⃣ Update the rule file status in CustomRuleFile
-    const customRuleFile = await CustomRuleFile.findOneAndUpdate(
-      { rule_id: ruleId },
-      { status },
-      { new: true, runValidators: true }
-    );
+    const data = await response.json();
 
-    if (!customRuleFile) {
-      throw new Error("Custom rule file not found");
+    if (!response.ok) {
+      throw new Error(data.detail || "Failed to publish rule");
     }
 
-    // 2️⃣ If status is "Active", publish to the corresponding collection
-    if (status === "Active") {
-      let targetModel;
-
-      switch (category?.toLowerCase()) {
-        case "bestpractice":
-          targetModel = BestPracticeRule;
-          break;
-        case "vulnerability":
-          targetModel = VulnerabilityRule;
-          break;
-        case "custom":
-          targetModel = CustomRule;
-          break;
-        default:
-          throw new Error(`Invalid category: ${category}`);
-      }
-
-      // Check if the rule already exists to avoid duplication
-      const existingRule = await targetModel.findOne({ rule_id: ruleId });
-
-      if (!existingRule) {
-        await targetModel.create({
-          rule_id: customRuleFile.rule_id,
-          rule_name: customRuleFile.rule_name,
-          description: customRuleFile.description || "No description available",
-          file_content: customRuleFile.file_content,
-          yaml_test_file_content: customRuleFile.yaml_test_file_content,
-          rule_owner_id: customRuleFile.rule_owner_id,
-          created_at: customRuleFile.createdAt, // or created_at if using that in DB
-        });
-      }
-    }
-
-    return { success: "Status updated and rule published successfully" };
-
+    return { success: "Rule successfully published!", details: data };
   } catch (error) {
-    console.error("Error updating rule file status:", error);
+    console.error("Error publishing rule:", error);
     return { error: error.message };
   }
 };
+

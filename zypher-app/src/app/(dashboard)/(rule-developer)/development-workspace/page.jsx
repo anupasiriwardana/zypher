@@ -45,11 +45,15 @@ jobs:
 `;
 
 // Generate rule ID based on type
-const generateRuleId = (type, ruleRequestInfo) => {
+const generateRuleId = (ruleRequest, type) => {
+  if (ruleRequest.rule_id) return ruleRequest.rule_id; // Use existing ruleId if present
+
+  
+
   const timestamp = Date.now().toString().slice(-4);
-  if (type === 'Vulnerability') return `VULN-${timestamp}`;
-  if (type === 'Best Practice') return `BP-${timestamp}`;
-  if (type === 'custom') return `CICD-CUST-${ruleRequestInfo._id || timestamp}`;
+  if (type === 'Vulnerability') return `CICD-CUST-${ruleRequest._id || timestamp}`;
+  if (type === 'Best Practice') return `CICD-CUST-${ruleRequest._id || timestamp}`;
+  if (type === 'custom') return `CICD-CUST-${ruleRequest._id || timestamp}`;
 };
 
 export default function DevelopmentWorkspacePage() {
@@ -384,7 +388,7 @@ export default function DevelopmentWorkspacePage() {
 
   // Initialize rule development files from rule request
   const initializeRuleFromRequest = async (ruleRequest, ruleType) => {
-    const ruleId = generateRuleId(ruleType, ruleRequest);
+    const ruleId = generateRuleId(ruleRequest, ruleType);;
     const className = toPascalCase(ruleRequest.name);
     const pythonFileName = `${toCamelCase(ruleRequest.name)}.py`;
     

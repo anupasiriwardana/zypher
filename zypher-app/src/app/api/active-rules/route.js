@@ -66,7 +66,6 @@ export const GET = async (request) => {
       vulnerabilities: attachSeverity(vulnerabilities, vulnMeta)
     };
 
-    console.log("Fetched active rules with severity:", groupedRules);
 
     return NextResponse.json({ success: true, groupedRules }, { status: 200 });
 
