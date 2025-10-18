@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from 'react';
 import { Lexend } from 'next/font/google';
-import clsx from 'clsx';
-import Image from 'next/image';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+
+import ProfileForm from "@/components/ProfileForm";
+import PasswordForm from "@/components/PasswordForm";
+
+import clsx from "clsx";
 
 import {
   User, ClipboardList, 
@@ -17,61 +21,24 @@ const lexend = Lexend({
 });
 
 export default function RuleDeveloperSettingsPage() {
+  const { data: session } = useSession();
+  const [profilePic, setProfilePic] = useState("/Images/avatar.jpg");
+
+  // added missing UI state
   const [activeTab, setActiveTab] = useState('account');
 
-  const [developerName, setDeveloperName] = useState('Alice Developer');
-  const [developerEmail, setDeveloperEmail] = useState('alice.dev@zypher.com');
-  const [developerProfilePic, setDeveloperProfilePic] = useState('/Images/avatar.jpg'); 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [isSavingAccount, setIsSavingAccount] = useState(false);
-  const [accountFeedback, setAccountFeedback] = useState(null);
-
-  const handleProfileSave = async (e) => {
-    e.preventDefault();
-    setAccountFeedback(null);
-    setIsSavingAccount(true);
-    //API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setAccountFeedback({ type: 'success', message: 'Profile updated successfully!' });
-    setIsSavingAccount(false);
-  };
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    setAccountFeedback(null);
-    setIsSavingAccount(true);
-    if (newPassword !== confirmNewPassword) {
-      setAccountFeedback({ type: 'error', message: 'New passwords do not match.' });
-      setIsSavingAccount(false);
-      return;
-    }
-    if (newPassword.length < 8) {
-      setAccountFeedback({ type: 'error', message: 'New password must be at least 8 characters.' });
-      setIsSavingAccount(false);
-      return;
-    }
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setAccountFeedback({ type: 'success', message: 'Password changed successfully!' });
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmNewPassword('');
-    setIsSavingAccount(false);
-  };
-
-  const handleProfilePicChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setDeveloperProfilePic(reader.result);
+  useEffect(() => {
+      if (!session?.user?.email) return;
+  
+      const fetchProfile = async () => {
+        const res = await fetch(`/api/user-settings?email=${session.user.email}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.image) setProfilePic(data.image);
       };
-      reader.readAsDataURL(file);
-      setAccountFeedback({ type: 'info', message: 'Profile picture uploaded. Click Save Changes to confirm.' });
-    }
-  };
+  
+      fetchProfile();
+    }, [session?.user?.email]);
 
   const employmentTermsDeveloper = `
     This Employment Agreement ("Agreement") is made effective as of [Start Date], by and between Zypher Inc. ("the Company") and [Rule Developer Name] ("the Employee").
@@ -155,131 +122,24 @@ export default function RuleDeveloperSettingsPage() {
         {activeTab === 'account' && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">Your Profile Information</h2>
-            <form onSubmit={handleProfileSave} className="space-y-6 mb-10">
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                {/* Profile Picture */}
-                <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[var(--brand-yellow)] flex-shrink-0">
-                  <Image
-                    src={developerProfilePic}
-                    alt="Developer Profile Avatar"
-                    width={96}
-                    height={96}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/Images/placeholder-avatar.png'; }} // Fallback
-                  />
-                  <label htmlFor="profile-pic-upload" className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer">
-                    <ImageIcon size={24} className="text-white" />
-                    <input
-                      id="profile-pic-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleProfilePicChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                {/* Name & Email Fields */}
-                <div className="flex-grow space-y-4 w-full">
-                  <div>
-                    <label htmlFor="developer-name" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Name</label>
-                    <input
-                      type="text"
-                      id="developer-name"
-                      value={developerName}
-                      onChange={(e) => setDeveloperName(e.target.value)}
-                      className={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="developer-email" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Email</label>
-                    <input
-                      type="email"
-                      id="developer-email"
-                      value={developerEmail}
-                      disabled
-                      className={clsx(inputStyle, "cursor-not-allowed text-[var(--text-secondary)]")}
-                    />
-                  </div>
-                </div>
-              </div>
-              {accountFeedback && accountFeedback.type !== 'info' && (
-                <div className={clsx(
-                  "p-3 rounded-lg text-sm flex items-center gap-2",
-                  accountFeedback.type === 'success' ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'
-                )}>
-                  {accountFeedback.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-                  <span>{accountFeedback.message}</span>
-                </div>
-              )}
-              {accountFeedback && accountFeedback.type === 'info' && (
-                <div className="p-3 rounded-lg text-sm flex items-center gap-2 bg-blue-600/20 text-blue-400">
-                  <Info size={18} />
-                  <span>{accountFeedback.message}</span>
-                </div>
-              )}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-6 py-3 rounded-full hover:brightness-110 transition-all duration-300 shadow-md text-base"
-                  disabled={isSavingAccount}
-                >
-                  {isSavingAccount ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                  Save Changes
-                </button>
-              </div>
-            </form>
-
-            <div className="border-t border-[var(--border-input)] pt-10">
-              <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">Change Password</h2>
-              <form onSubmit={handleChangePassword} className="space-y-6">
-                <div>
-                  <label htmlFor="current-password" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Current Password</label>
-                  <input
-                    type="password"
-                    id="current-password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className={inputStyle}
-                    required
-                    disabled={isSavingAccount}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="new-password" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">New Password</label>
-                  <input
-                    type="password"
-                    id="new-password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className={inputStyle}
-                    required
-                    disabled={isSavingAccount}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="confirm-new-password" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Confirm New Password</label>
-                  <input
-                    type="password"
-                    id="confirm-new-password"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    className={inputStyle}
-                    required
-                    disabled={isSavingAccount}
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-2 bg-[var(--brand-yellow)] text-[var(--background)] font-bold px-6 py-3 rounded-full hover:brightness-110 transition-all duration-300 shadow-md text-base"
-                    disabled={isSavingAccount}
-                  >
-                    {isSavingAccount ? <Loader2 size={20} className="animate-spin" /> : <KeyRound size={20} />}
-                    Update Password
-                  </button>
-                </div>
-              </form>
-            </div>
+            {session?.user && (
+                                          <ProfileForm
+                                            role={session.user.role}
+                                            userId={session.user.id}
+                                            initialEmail={session.user.email}
+                                            initialProfilePic={profilePic}
+                                            saveEndpoint="/api/user-settings"
+                                          />
+                                        )}
+                                
+                                
+                                        {/* Password Form */}
+                                        {session?.user && (
+                                          <PasswordForm
+                                            userId={session.user.id}
+                                            updateEndpoint="/api/change-password"
+                                          />
+                                        )}
           </div>
         )}
 
