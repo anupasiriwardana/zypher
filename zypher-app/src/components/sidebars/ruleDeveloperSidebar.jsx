@@ -28,65 +28,98 @@ export default function RuleDeveloperSidebar() {
   return (
     <>
       <style>{`
-        /* Sidebar Specific Animations */
+        /* ========= SIDEBAR ANIMATIONS ========= */
 
-        /* Logo Pulse Glow */
         @keyframes logo-glow-pulse {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.1; transform: scale(1.05); }
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.08); }
         }
         .animate-logo-glow-pulse {
           animation: logo-glow-pulse 4s ease-in-out infinite alternate;
         }
 
-        /* Active Indicator Line Animation */
-        @keyframes active-indicator {
-          0% { transform: translateY(-50%) scaleY(0); }
-          70% { transform: translateY(-50%) scaleY(1.1); }
-          100% { transform: translateY(-50%) scaleY(1); }
-        }
-        .animate-active-indicator {
-          animation: active-indicator 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-        }
-
-        /* NEW: Active State Square Outline Animation */
         @keyframes active-square-outline {
-          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
           100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
+        /* ========= ACTIVE STATE ========= */
         .is-active::before {
           content: '';
           position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 68px; /* Slightly larger than 64px (h-16 w-16) for outline effect */
-          height: 68px;
+          width: 52px;
+          height: 52px;
           border: 2px solid var(--brand-yellow);
-          border-radius: 16px; /* rounded-xl equivalent for square look */
-          box-shadow: 0 0 10px rgba(252,232,3,0.3); /* Add subtle glow to outline */
-          transition: all 0.3s ease;
-          animation: active-square-outline 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-          z-index: 0; /* Behind the icon */
-          pointer-events: none; /* Ensure it doesn't block clicks */
+          border-radius: 12px;
+          box-shadow: 0 0 8px rgba(252, 232, 3, 0.3);
+          animation: active-square-outline 0.3s ease forwards;
+          z-index: 0;
+          pointer-events: none;
+          transition: all 0.25s ease;
         }
 
-        /* Define custom CSS variables for colors if not already in your :root */
-        /* If these are already in your globals.css :root, you don't need them here. */
+        .is-active:hover::before {
+          box-shadow: 0 0 12px rgba(252, 232, 3, 0.4);
+          transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        /* ========= HOVER STATE ========= */
+        .nav-item:hover {
+          background-color: var(--hover-bg);
+          border-radius: 12px;
+          transition: background-color 0.3s ease, border-radius 0.3s ease;
+        }
+
+        /* ========= TOOLTIP ========= */
+        .tooltip {
+          position: absolute;
+          left: calc(100% + 16px);
+          background-color: var(--input-bg);
+          color: var(--foreground);
+          font-size: 0.875rem;
+          padding: 6px 12px;
+          border-radius: 8px;
+          white-space: nowrap;
+          border: 1px solid var(--border-input);
+          box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-4px);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .group:hover .tooltip {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+
+        /* ========= COLORS ========= */
         :root {
           --background: #0D0D0D;
           --foreground: #F0F0F0;
-          --text-secondary: #A0A0A0;
           --border-input: #2C2C2C;
           --brand-yellow: #FCE803;
           --input-bg: #1A1A1A;
-          --button-bg: #2C2C2C;
           --hover-bg: #1F1F1F;
         }
       `}</style>
 
-      <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
+    <aside
+        className="
+          fixed top-0 left-0
+          h-screen
+          w-20 md:w-28
+          bg-[var(--background)]
+          border-r border-[var(--border-input)]
+          flex flex-col items-center
+          py-8 z-50
+          transition-all duration-300
+        "
+      >
 
 
         <Link href="/assigned-rules" className="flex items-center justify-center w-16 h-16 rounded-xl mb-16 group relative overflow-hidden">
@@ -95,8 +128,8 @@ export default function RuleDeveloperSidebar() {
             <Image
               src="/Images/zypher.png"
               alt="Zypher Logo"
-              width={36}
-              height={36}
+              width={34}
+              height={34}
               className="relative z-10 object-contain"
             />
         </Link>
@@ -120,7 +153,7 @@ export default function RuleDeveloperSidebar() {
                 )}
               >
                 <Icon
-                  size={30}
+                  size={26}
                   className={clsx(
                     "transition-colors duration-300 relative z-10",
                     isActive

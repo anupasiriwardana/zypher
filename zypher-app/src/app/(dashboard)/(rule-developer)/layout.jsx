@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }) {
         <RuleDeveloperSidebar />
 
         <div className="ml-28 flex flex-col flex-1 min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-
+          <div className="scaled-content">
           <header className="flex items-center justify-between px-6 py-4 relative">
             <div className="text-md text-[var(--text-secondary)] font-medium">
               {today}
@@ -111,6 +111,7 @@ export default function DashboardLayout({ children }) {
           </header>
 
           <main className="p-4 flex-1">{children}</main>
+        </div>
         </div>
       </div>
     </Suspense>

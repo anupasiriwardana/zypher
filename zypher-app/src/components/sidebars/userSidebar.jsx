@@ -121,21 +121,21 @@ export default function UserSidebar() {
           bg-[var(--background)]
           border-r border-[var(--border-input)]
           flex flex-col items-center
-          py-8 z-50
+          pb-8 z-50
           transition-all duration-300
         "
       >
         {/* Logo */}
         <Link
           href="/start-a-scan"
-          className="flex items-center justify-center w-16 h-16 rounded-xl mb-14 relative"
+          className="flex items-center justify-center w-16 h-16 rounded-xl mb-8 relative"
         >
           <div />
           <Image
             src="/Images/zypher.png"
             alt="Zypher Logo"
-            width={34}
-            height={34}
+            width={24}
+            height={24}
             className="object-contain animate-logo-glow-pulse"
           />
         </Link>

@@ -20,19 +20,19 @@ const Navbar = () => {
         scrolled ? "shadow-md border-b border-[#333]" : ""
       }`}
     >
-      <div className="max-w-8xl mx-auto flex justify-between items-center px-6 py-4 text-lg md:px-14 lg:px-16">
+      <div className="max-w-8xl mx-auto flex justify-between items-center px-6 py-3 text-base md:px-10 lg:px-14">
         {/* Logo + nav links */}
-        <div className="flex items-center gap-12">
+        <div className="flex items-center gap-8">
           <Link href="/">
             <Image
               src="/Images/ZypherLogo-white.png"
               alt="Zypher logo"
-              width={150}
-              height={24}
+              width={130}
+              height={22}
               className="object-contain"
             />
           </Link>
-          <ul className="flex gap-8 text-white font-semibold">
+          <ul className="hidden md:flex gap-6 text-white font-medium text-[15px]">
             <li><Link href="/features">Features</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/about">About</Link></li>
@@ -40,7 +40,7 @@ const Navbar = () => {
         </div>
 
         {/* Auth buttons */}
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <Link href="/login">
             <Button variant="outline">Log In</Button>
           </Link>
