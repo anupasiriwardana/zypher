@@ -154,7 +154,11 @@ export const getUserPaymentHistory = async (userId) => {
     try {
         await connectDB();
 
-        const payments = await Payment.find({ userId })
+        // Only fetch completed or failed payments, exclude pending ones
+        const payments = await Payment.find({ 
+            userId,
+            status: { $in: ["completed", "failed"] } 
+        })
             .sort({ createdAt: -1 })
             .lean();
 

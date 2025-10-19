@@ -24,6 +24,8 @@ export default function BillingsSection() {
   const [isYearly, setIsYearly] = useState(false);
   const [toast, setToast] = useState(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
   // Toast notification function - moved here to be defined before it's used
   const showToast = (message, type = 'success') => {
@@ -33,6 +35,7 @@ export default function BillingsSection() {
 
   useEffect(() => {
     fetchPricingPlans();
+    fetchPaymentHistory();
   }, []);
 
   const fetchPricingPlans = async () => {
@@ -205,14 +208,28 @@ export default function BillingsSection() {
     }).filter(Boolean); // Remove null items (current plan)
   };
   
+  // Fetch real payment history from API
+  const fetchPaymentHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      const response = await fetch('/api/payments/history');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch payment history');
+      }
+      
+      const result = await response.json();
+      setPaymentHistory(result.data || []);
+    } catch (err) {
+      console.error('Error fetching payment history:', err);
+      // No need to show a toast for this as it's not critical
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+  
   const availablePlans = getAvailablePlans();
-
-  const paymentHistory = [
-    { date: "Jul 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-001" },
-    { date: "Jun 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-002" },
-    { date: "May 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-003" },
-    { date: "Apr 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-004" },
-  ];
 
   // Separate function to initiate payment (direct form submission flow)
   const initiatePayment = async (plan, isYearly) => {
@@ -563,41 +580,56 @@ export default function BillingsSection() {
       </div>
 
       <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">Payment History</h2>
-      <div className="overflow-x-auto bg-[var(--background)] rounded-xl shadow-md border border-[var(--border-input)]">
-        <table className="min-w-full divide-y divide-[var(--border-input)]">
-          <thead className="bg-[var(--hover-bg)]">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Date</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Amount</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Plan</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Invoice</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-input)]">
-            {paymentHistory.map((item, index) => (
-              <tr key={index} className="hover:bg-[var(--hover-bg)] transition-colors duration-200">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{item.date}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{item.amount}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{item.plan}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", item.status === 'Paid' ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400')}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleViewInvoice(item.invoice)}
-                    className="text-[var(--brand-yellow)] hover:underline flex items-center gap-1"
-                  >
-                    <FileText size={14} /> {item.invoice}
-                  </button>
-                </td>
+      {isLoadingHistory ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 size={24} className="animate-spin text-[var(--brand-yellow)]" />
+          <span className="ml-2 text-[var(--text-secondary)]">Loading payment history...</span>
+        </div>
+      ) : paymentHistory.length === 0 ? (
+        <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md text-center">
+          <p className="text-[var(--text-secondary)]">No payment history found.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto bg-[var(--background)] rounded-xl shadow-md border border-[var(--border-input)]">
+          <table className="min-w-full divide-y divide-[var(--border-input)]">
+            <thead className="bg-[var(--hover-bg)]">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Date</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Amount</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Description</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Status</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Reference</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-input)]">
+              {paymentHistory.map((payment, index) => (
+                <tr key={index} className="hover:bg-[var(--hover-bg)] transition-colors duration-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">
+                    {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : new Date(payment.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">
+                    {payment.amount.toFixed(2)} {payment.currency}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{payment.paymentDescription || payment.planName || 'Subscription Payment'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", 
+                      payment.status === 'completed' ? 'bg-green-600/20 text-green-400' : 
+                      payment.status === 'failed' ? 'bg-red-600/20 text-red-400' : 
+                      'bg-yellow-600/20 text-yellow-400')}>
+                      {payment.status === 'completed' ? 'Paid' : payment.status === 'failed' ? 'Failed' : payment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <span className="text-[var(--text-secondary)] flex items-center gap-1">
+                      <FileText size={14} /> {payment.payhereOrderId || payment._id.substring(0, 8)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
