@@ -287,17 +287,14 @@ export default function BillingsSection() {
   };
 
   const handlePlanAction = async (planId) => {
-    try {
-      console.log("Plan action triggered for planId:", planId);
-      
+    try {      
       // Find the plan details
       const newPlan = pricingPlans.find(plan => 
         plan._id === planId || plan.id === planId || plan.plan_id === planId
       );
       
       if (!newPlan) {
-        console.error("Selected plan not found. Available plans:", pricingPlans);
-        console.error("Looking for planId:", planId);
+        consoe.error("Looking for planId:", planId);
         throw new Error("Selected plan not found");
       }
       
@@ -316,13 +313,13 @@ export default function BillingsSection() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            plan_id: newPlan.plan_id || newPlan._id, // Use either plan_id or _id
-            isYearly: isYearly
+            plan_id: newPlan.plan_id,
+            isYearly: isYearly,
+            paymentId : null
           })
         });
         
         const data = await response.json();
-        console.log("Free plan subscription response:", data);
         
         if (!response.ok) {
           throw new Error(data.error || 'Failed to update subscription');

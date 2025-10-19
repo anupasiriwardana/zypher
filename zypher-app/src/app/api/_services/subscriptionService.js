@@ -33,15 +33,19 @@ export const createUserSubscription = async(userId, planId, isYearly, scanLimit,
 export const getUserSubscription = async(userId) => {
     try{
         await connectDB();
-        const subscription = await Subscription.findOne({ userId })
+        const subscription = await Subscription.findOne({ 
+            userId : userId,
+            status : 'active'
+         })
             .select('_id planId status startDate endDate scanLimit allowCustomRuleRequests createdAt updatedAt')
             .sort({ createdAt: -1 }) // Sort by createdAt in descending order to get the latest
             .lean();
         
         if (!subscription) {
-            return { 
-                error: "Subscription not found" 
-            };
+            throw new Error("Subscription not found");
+        }
+        if(subscription.endDate < new Date()){
+            throw new Error("No active subscription found");
         }
         return { 
             success: true, 
@@ -95,21 +99,7 @@ export const updateSubscriptionStatusByPaymentId = async(paymentId, status) => {
             }
         }
 
-        // If activating, also set start/end dates based on isYearly flag
         const update = { status: status, updatedAt: new Date() };
-        if (status === 'active') {
-            const sub = await Subscription.findOne({ paymentId: paymentObjectId }).lean();
-            if (!sub) {
-                return { error: 'Subscription not found for the given payment ID' };
-            }
-            const now = new Date();
-            const end = new Date(now);
-            // We don't have isYearly on the model, so keep existing endDate window or default to +1 month
-            // If you store isYearly elsewhere, adjust here accordingly.
-            end.setMonth(end.getMonth() + 1);
-            update.startDate = now;
-            update.endDate = end;
-        }
 
         const updatedSubscription = await Subscription.findOneAndUpdate(
             { paymentId: paymentObjectId },

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { handlePaymentNotification } from "@/app/api/_services/paymentService";
-import { updateSubscriptionStatusByPaymentId } from "@/app/api/_services/subscriptionService";
+import { 
+    updateSubscriptionStatusByPaymentId,
+    getUserSubscription,
+    cancelUserSubscription
+ } from "@/app/api/_services/subscriptionService";
 import { getPlanLimitsByPlanId } from "@/app/api/_services/pricingPlanService";
 import { getPaymentByOrderId } from "@/app/api/_services/paymentService";
 
@@ -89,6 +93,18 @@ export async function POST(request) {
         }
         
         if (data.status_code === "2" && internalPaymentId) {
+            //payment successful 
+            //cancelling any existing subscriptions before activating new one
+            const existingUserSubscription = await getUserSubscription(payment.userId);
+            if (existingUserSubscription && !existingUserSubscription.error) {
+                if (existingUserSubscription.data.status === 'active') {
+                    const cancelResult = await cancelUserSubscription(existingUserSubscription.data._id);
+                    if (cancelResult.error) {
+                        throw new Error(cancelResult.error);
+                    }
+                }
+            }
+
             console.log(`Payment successful (status_code=2). Activating subscription for paymentId: ${internalPaymentId}`);
             // Payment is successful - activate the subscription
             const subscriptionResult = await updateSubscriptionStatusByPaymentId(
