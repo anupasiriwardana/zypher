@@ -5,8 +5,13 @@ import connectDB from "@/utils/db";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialize Resend to avoid build-time errors when API key is absent
 const RESEND_FROM = process.env.RESEND_FROM || "Zypher Admin <onboarding@resend.dev>";
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+}
 
 // Generate a random password for new users
 function generatePassword() {
@@ -40,7 +45,8 @@ export async function POST(req) {
       user = await User.create({ email, password: hashedPassword, role });
 
       // Send credentials email (best-effort with explicit error reporting)
-      if (!process.env.RESEND_API_KEY) {
+      const resend = getResend();
+      if (!resend) {
         console.error("❗ RESEND_API_KEY is missing. Skipping email send.");
         return NextResponse.json({
           success: true,
@@ -119,7 +125,8 @@ export async function POST(req) {
     user.role = role;
     await user.save();
 
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       console.error("❗ RESEND_API_KEY is missing. Skipping role update email.");
       return NextResponse.json({
         success: true,
