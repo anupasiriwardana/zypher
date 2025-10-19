@@ -15,7 +15,7 @@ def load_rules(user_id: str) -> list:
 
         # Fetch rules for this user with status 'active'
         user_rules_cursor = published_custom_rule_file_collection.find({
-            "rule_id": obj_user_id,
+            "user_id": obj_user_id,
             "status": "active"
         })
 
