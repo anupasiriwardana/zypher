@@ -160,7 +160,45 @@ export const updateRuleFileStatusByRuleMaintainer = async (ruleId, status, categ
       throw new Error(data.detail || "Failed to publish rule");
     }
 
-    return { success: "Rule successfully published!", details: data };
+    // 2️⃣ If status is "Active", publish to the corresponding collection
+    if (status === "Active") {
+      let targetModel;
+
+      switch (category?.toLowerCase()) {
+        case "bestpractice":
+          targetModel = BestPracticeRule;
+          break;
+        case "vulnerability":
+          targetModel = VulnerabilityRule;
+          break;
+        case "custom":
+          targetModel = CustomRule;
+          break;
+        default:
+          throw new Error(`Invalid category: ${category}`);
+      }
+
+      // Check if the rule already exists to avoid duplication
+      const existingRule = await targetModel.findOne({ rule_id: ruleId });
+
+      if (!existingRule) {
+        // Ensure required fields for target models are provided (status and rule_developer_id)
+        await targetModel.create({
+          rule_id: customRuleFile.rule_id,
+          rule_name: customRuleFile.rule_name,
+          description: customRuleFile.description || "No description available",
+          file_content: customRuleFile.file_content,
+          yaml_test_file_content: customRuleFile.yaml_test_file_content,
+          rule_owner_id: customRuleFile.rule_owner_id,
+          status: customRuleFile.status || 'Active',
+          rule_developer_id: customRuleFile.rule_developer_id,
+          created_at: customRuleFile.createdAt, // keep original created timestamp if desired
+        });
+      }
+    }
+
+    return { success: "Status updated and rule published successfully" };
+
   } catch (error) {
     console.error("Error publishing rule:", error);
     return { error: error.message };

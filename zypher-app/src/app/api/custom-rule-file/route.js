@@ -16,7 +16,7 @@ export const POST = async (request) => {
     // Check if user is authenticated
     if (!userId || !role) {
         return NextResponse.json(
-            { error: "Unauthorized" },
+            { error: "Unauthorized: missing x-user-id or x-user-role header" },
             { status: 401 }
         );
     }
@@ -32,7 +32,16 @@ export const POST = async (request) => {
 
     await connectDB();
 
-    const { ruleId, ruleName, ruleStatus, ruleFileContent, ruleOwnerId, requestId, yamlTestFileContent } = await request.json();
+    const payload = await request.json();
+    const { ruleId, ruleName, ruleStatus, ruleFileContent, ruleOwnerId, requestId, yamlTestFileContent } = payload || {};
+
+    // Basic payload validation - return 400 if required fields missing
+    if (!ruleId || !ruleName || !ruleFileContent || !ruleOwnerId) {
+        return NextResponse.json(
+            { error: "Bad Request: ruleId, ruleName, ruleFileContent and ruleOwnerId are required in the request body" },
+            { status: 400 }
+        );
+    }
 
     try {
         //check whether rule metadata is present
@@ -47,7 +56,10 @@ export const POST = async (request) => {
         if (existingRule) {
             // Update existing record
             existingRule.rule_name = ruleName;
-            existingRule.status = ruleStatus;
+            // Only update status if provided to avoid setting undefined
+            if (typeof ruleStatus !== 'undefined' && ruleStatus !== null) {
+                existingRule.status = ruleStatus;
+            }
             existingRule.file_content = ruleFileContent;
             existingRule.rule_owner_id = ruleOwnerId;
             existingRule.request_id = requestId;
@@ -65,7 +77,8 @@ export const POST = async (request) => {
             const customRuleFileDoc = new CustomRuleFile({
                 rule_id: ruleId,
                 rule_name: ruleName,
-                status: ruleStatus,
+                // Default to 'Under development' when status not provided to satisfy required field
+                status: ruleStatus || 'Under development',
                 file_content: ruleFileContent,
                 rule_owner_id: ruleOwnerId,
                 request_id: requestId,
@@ -93,59 +106,75 @@ export const POST = async (request) => {
 
 // Fetch custom rules of a developer
 export const GET = async (request) => {
-    const userId = request.headers.get("x-user-id");
-    const role = request.headers.get("x-user-role");
+    try {
+        const userId = request.headers.get("x-user-id");
+        const role = request.headers.get("x-user-role");
 
-    // Check if user is authenticated
-    if (!userId || !role) {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 }
-        );
-    }
-
-    // Check role-based access
-    const allowedRoles = ['rule-developer', 'rule-maintainer'];
-    if (!allowedRoles.includes(role)) {
-        return NextResponse.json(
-            { error: "Forbidden" },
-            { status: 403 }
-        );
-    }
-
-    await connectDB();
-
-    if (role === 'rule-developer') {
-        try {
-            const customRuleFiles = await CustomRuleFile.find({ rule_developer_id: userId, status: "Under development" })
-                .sort({ createdAt: -1 })
-                .select('_id rule_id rule_name status file_content rule_owner_id request_id yaml_test_file_content createdAt')
-                .lean();
-
+        // Check if user is authenticated
+        if (!userId || !role) {
             return NextResponse.json(
-                { ruleFiles: customRuleFiles },
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // Check role-based access
+        const allowedRoles = ['rule-developer', 'rule-maintainer'];
+        if (!allowedRoles.includes(role)) {
+            return NextResponse.json(
+                { error: "Forbidden" },
+                { status: 403 }
+            );
+        }
+
+        try {
+            await connectDB();
+        } catch (dbError) {
+            console.error('Database connection failed in GET /api/custom-rule-file:', dbError?.message || dbError);
+            // In development allow the app to continue with an empty result (so UI doesn't break)
+            if (process.env.NODE_ENV !== 'production') {
+                return NextResponse.json({ ruleFiles: [], warning: `DB unavailable (dev fallback): ${dbError?.message || dbError}` }, { status: 200 });
+            }
+            // In production rethrow to be handled by outer catch
+            throw dbError;
+        }
+
+        if (role === 'rule-developer') {
+            try {
+                const customRuleFiles = await CustomRuleFile.find({ rule_developer_id: userId, status: "Under development" })
+                    .sort({ createdAt: -1 })
+                    .select('_id rule_id rule_name status file_content rule_owner_id request_id yaml_test_file_content createdAt')
+                    .lean();
+
+                return NextResponse.json(
+                    { ruleFiles: customRuleFiles },
+                    { status: 200 }
+                );
+
+            } catch (error) {
+                console.error("Error fetching custom rule files:", error);
+                return NextResponse.json(
+                    { error: error.message || "Internal server error" },
+                    { status: 500 }
+                );
+            }
+        } else if (role === 'rule-maintainer') {
+            const result = await getRuleFilesByMaintainerForTesting("Under testing");
+            if (result.error) {
+                return NextResponse.json(
+                    { error: result.error || "Internal server error" },
+                    { status: 500 }
+                );
+            }
+            return NextResponse.json(
+                { ruleFiles: result.data },
                 { status: 200 }
             );
-
-        } catch (error) {
-            console.error("Error fetching custom rule files:", error);
-            return NextResponse.json(
-                { error: error.message || "Internal server error" },
-                { status: 500 }
-            );
         }
-    } else if (role === 'rule-maintainer') {
-        const result = await getRuleFilesByMaintainerForTesting("Under testing");
-        if (result.error) {
-            return NextResponse.json(
-                { error: result.error || "Internal server error" },
-                { status: 500 }
-            );
-        }
-        return NextResponse.json(
-            { ruleFiles: result.data },
-            { status: 200 }
-        );
+    } catch (error) {
+        // Catch any unexpected errors and return a JSON body so the client can parse it
+        console.error("Unhandled error in GET /api/custom-rule-file:", error?.stack || error);
+        return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 });
     }
 };
 

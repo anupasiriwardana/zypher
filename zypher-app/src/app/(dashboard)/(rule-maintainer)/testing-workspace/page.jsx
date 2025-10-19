@@ -94,10 +94,14 @@ export default function TestingWorkspacePage() {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
+      // Safely parse JSON responses (server might return empty HTML on redirects/errors)
+      // Move helper to outer scope so other handlers can reuse
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await parseJsonSafely(response) || {};
         const ruleFiles = data.ruleFiles || [];
+
+        
 
         if (ruleFiles.length > 0) {
           const transformedRules = ruleFiles.map((ruleFile) => ({
@@ -131,12 +135,25 @@ export default function TestingWorkspacePage() {
           });
         }
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch rules for testing");
+        const data = await parseJsonSafely(response);
+        const errorMessage = (data && data.error) || response.statusText || `Request failed with status ${response.status}`;
+        throw new Error(errorMessage || "Failed to fetch rules for testing");
       }
     } catch (error) {
       console.error("Error fetching rules for testing:", error);
       setError(error.message || "Failed to load rules for testing");
+    }
+  };
+
+  // Helper: parse response body as JSON but tolerate empty/non-JSON bodies
+  const parseJsonSafely = async (res) => {
+    try {
+      const text = await res.text();
+      if (!text) return null;
+      return JSON.parse(text);
+    } catch (err) {
+      console.warn('Failed to parse JSON response', err);
+      return null;
     }
   };
 
@@ -186,8 +203,9 @@ export default function TestingWorkspacePage() {
           message: "Test file saved successfully!",
         });
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to save test file");
+        const data = await parseJsonSafely(response);
+        const errorMessage = (data && data.error) || response.statusText || `Request failed with status ${response.status}`;
+        throw new Error(errorMessage || "Failed to save test file");
       }
     } catch (error) {
       console.error("Save test error:", error);
@@ -242,8 +260,8 @@ export default function TestingWorkspacePage() {
           message: "Rule test completed successfully!",
         });
       } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || "Failed to run rule test";
+        const data = await parseJsonSafely(response);
+        const errorMessage = (data && data.error) || response.statusText || "Failed to run rule test";
         setTestOutput(
           `❌ Test Error: ${errorMessage}\n\nPlease check the rule implementation and test file content.`
         );
@@ -293,6 +311,16 @@ export default function TestingWorkspacePage() {
         throw new Error(
           publishData.detail || "Failed to publish rule in FastAPI backend"
         );
+        setTimeout(async () => {
+          setSelectedRule(null);
+          setTestFileContent("");
+          setTestOutput("");
+          await fetchRulesForTesting();
+        }, 4000);
+      } else {
+        const data = await parseJsonSafely(response);
+        const errorMessage = (data && data.error) || response.statusText || `Publish failed with status ${response.status}`;
+        throw new Error(errorMessage || "Failed to publish rule");
       }
 
       // 2️⃣ Update MongoDB rule file status
@@ -370,8 +398,9 @@ export default function TestingWorkspacePage() {
           await fetchRulesForTesting();
         }, 4000);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to reject rule");
+        const data = await parseJsonSafely(response);
+        const errorMessage = (data && data.error) || response.statusText || `Reject failed with status ${response.status}`;
+        throw new Error(errorMessage || "Failed to reject rule");
       }
     } catch (error) {
       console.error("Reject error:", error);
