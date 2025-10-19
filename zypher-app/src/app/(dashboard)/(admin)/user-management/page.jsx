@@ -72,7 +72,8 @@ export default function AdminUserManagement() {
   if (!emailInput.trim()) return;
   setAssigning(true);
   try {
-    const dbRole = selectedRole.toLowerCase().replace(" ", "-"); 
+    // Use the explicit mapping for consistency
+    const dbRole = roleMap[selectedRole] || selectedRole.toLowerCase().replace(/\s+/g, "-"); 
     // e.g. "Rule Maintainer" → "rule-maintainer"
 
     const res = await fetch("/api/users", {
@@ -83,7 +84,11 @@ export default function AdminUserManagement() {
 
     const result = await res.json();
     if (result.success) {
-      setAssignedRoles((prev) => ({ ...prev, [selectedRole]: emailInput }));
+      // Ensure we always store arrays of emails per role
+      setAssignedRoles((prev) => ({
+        ...prev,
+        [selectedRole]: [ ...(prev[selectedRole] || []), emailInput ],
+      }));
       setUsers((prev) =>
         prev.map((u) =>
           u.email === emailInput ? { ...u, role: dbRole } : u
@@ -117,6 +122,12 @@ export default function AdminUserManagement() {
           u.email === email ? { ...u, role: "primary-user" } : u
         )
       );
+      // Keep assignedRoles in sync by removing the email from the role list
+      setAssignedRoles((prev) => {
+        const next = { ...prev };
+        next[role] = (next[role] || []).filter((e) => e !== email);
+        return next;
+      });
     }
   } catch (err) {
     console.error("Failed to remove role", err);
@@ -140,7 +151,7 @@ export default function AdminUserManagement() {
               {role}
             </h2>
             <div className="text-md text-[var(--foreground)] mb-4">
-              {assignedRoles[role]?.length > 0 ? (
+              {Array.isArray(assignedRoles[role]) && assignedRoles[role].length > 0 ? (
                 assignedRoles[role].map((email) => (
                   <div key={email} className="flex items-center justify-between mb-1">
                     <span>{email}</span>
