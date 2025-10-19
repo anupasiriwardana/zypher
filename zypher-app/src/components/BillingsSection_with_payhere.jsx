@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Script from 'next/script';
 import clsx from 'clsx';
-// Replace getConfig with direct import of publicRuntimeConfig
 import { 
   CheckCircle, 
   Calendar, 
@@ -14,15 +14,18 @@ import {
   CheckCircle2,
   CreditCard
 } from 'lucide-react';
-// no router needed here
+import { useRouter } from 'next/navigation';
 
 export default function BillingsSection() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pricingPlans, setPricingPlans] = useState([]);
   const [currentPlan, setCurrentPlan] = useState(null);
   const [isYearly, setIsYearly] = useState(false);
   const [toast, setToast] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [isPayhereScriptLoaded, setPayhereScriptLoaded] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   // Toast notification function - moved here to be defined before it's used
@@ -33,6 +36,7 @@ export default function BillingsSection() {
 
   useEffect(() => {
     fetchPricingPlans();
+    fetchPaymentHistory();
   }, []);
 
   const fetchPricingPlans = async () => {
@@ -65,7 +69,9 @@ export default function BillingsSection() {
       // Find the full plan details based on the plan ID from the subscription
       const userPlanId = subscriptionResult.planId;
       const planType = subscriptionResult.planType;
-      const planDetails = plansResult.data?.find(plan => plan.plan_id === userPlanId);
+      const planDetails = plansResult.data?.find(
+        plan => plan.plan_id === userPlanId || plan._id === userPlanId
+      );
       
       if (planDetails) {
         // Update current plan with subscription info
@@ -88,6 +94,29 @@ export default function BillingsSection() {
       console.error('Error fetching plans or subscription:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const fetchPaymentHistory = async () => {
+    try {
+      const response = await fetch('/api/payments/history', {
+        method: 'GET',
+        headers: {
+          'x-user-id': localStorage.getItem('userId') || 'current-user-id',
+          'x-user-role': 'primary-user'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to fetch payment history:', result.error);
+        return;
+      }
+      
+      setPaymentHistory(result.data || []);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
     }
   };
   
@@ -125,6 +154,7 @@ export default function BillingsSection() {
     
     setCurrentPlan({
       id: plan._id,
+      plan_id: plan.plan_id,
       name: plan.planName,
       features: plan.features || [],
       nextBilling: nextBilling,
@@ -194,6 +224,7 @@ export default function BillingsSection() {
       
       return {
         id: plan._id,
+        plan_id: plan.plan_id,
         name: plan.planName,
         price: price,
         features: planFeatures,
@@ -207,156 +238,76 @@ export default function BillingsSection() {
   
   const availablePlans = getAvailablePlans();
 
-  const paymentHistory = [
-    { date: "Jul 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-001" },
-    { date: "Jun 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-002" },
-    { date: "May 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-003" },
-    { date: "Apr 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-004" },
-  ];
-
-  // Separate function to initiate payment (direct form submission flow)
-  const initiatePayment = async (plan, isYearly) => {
-    console.log("Initiating payment for plan:", plan, "isYearly:", isYearly);
+  const handlePlanAction = async (plan) => {
     try {
       setIsProcessingPayment(true);
       
-      // Create a pending payment record
-      console.log("Creating payment record...");
-      const paymentResponse = await fetch('/api/payments/create', {
+      // Determine plan ID to use
+      const planId = plan.plan_id || plan.id;
+      
+      // Create payment record and get PayHere payment data
+      const response = await fetch('/api/payments/create', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-user-id': localStorage.getItem('userId') || 'current-user-id',
+          'x-user-role': 'primary-user'
         },
         body: JSON.stringify({
-          plan_id: plan.plan_id,
+          plan_id: planId,
           isYearly: isYearly
         })
       });
       
-      if (!paymentResponse.ok) {
-        const errorData = await paymentResponse.json();
-        throw new Error(errorData.error || 'Failed to create payment');
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to initiate payment');
       }
       
-      const paymentData = await paymentResponse.json();
-      console.log("Payment record created:", paymentData);
-      
-      if (!paymentData.data) {
-        throw new Error('Invalid payment data received');
+      // Initialize PayHere payment
+      if (window.payhere && isPayhereScriptLoaded) {
+        // Set PayHere configuration for sandbox/live environment
+        const isProduction = process.env.NEXT_PUBLIC_PAYHERE_ENVIRONMENT === 'live';
+        window.payhere.onCompleted = function onCompleted(orderId) {
+          showToast(`Payment completed. Thank you for subscribing to ${plan.name}!`, 'success');
+          setIsProcessingPayment(false);
+          
+          // Refresh data after successful payment
+          setTimeout(() => {
+            fetchPricingPlans();
+            fetchPaymentHistory();
+          }, 2000);
+        };
+        
+        window.payhere.onDismissed = function onDismissed() {
+          showToast('Payment dismissed', 'error');
+          setIsProcessingPayment(false);
+        };
+        
+        window.payhere.onError = function onError(error) {
+          showToast(`Payment error: ${error}`, 'error');
+          setIsProcessingPayment(false);
+        };
+        
+        // Put the payment variables here
+        const payment = result.data;
+        
+        // Show the PayHere payment popup
+        window.payhere.startPayment(payment);
+      } else {
+        throw new Error('PayHere script not loaded properly');
       }
-
-  // Always use direct form submission to PayHere
-  startPayhereCheckoutForm(paymentData.data);
-      return { redirected: true };
     } catch (error) {
-      console.error("Payment initiation error:", error);
-      // If we reached here without falling back, show an error
-      showToast("Payment initiation failed: " + error.message, 'error');
+      console.error('Error initiating payment:', error);
+      showToast(`Failed to initiate payment: ${error.message || 'Unknown error'}`, 'error');
       setIsProcessingPayment(false);
-      throw error;
-    }
-  };
-
-  // Fallback: submit a POST form to PayHere checkout directly
-  const startPayhereCheckoutForm = (paymentConfig) => {
-    try {
-      showToast('Redirecting to secure payment...', 'success');
-      const actionUrl = paymentConfig.checkout_url || 'https://sandbox.payhere.lk/pay/checkout';
-
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = actionUrl;
-      form.style.display = 'none';
-
-      // Do not include helper keys in the form fields
-      const { checkout_url, environment, ...payload } = paymentConfig;
-      Object.entries(payload).forEach(([key, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = String(value ?? '');
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
-    } catch (e) {
-      console.error('Failed to submit PayHere form fallback:', e);
-      showToast('Could not redirect to payment gateway. Please try again.', 'error');
-    }
-  };
-
-  const handlePlanAction = async (planId) => {
-    try {
-      console.log("Plan action triggered for planId:", planId);
-      
-      // Find the plan details
-      const newPlan = pricingPlans.find(plan => 
-        plan._id === planId || plan.id === planId || plan.plan_id === planId
-      );
-      
-      if (!newPlan) {
-        console.error("Selected plan not found. Available plans:", pricingPlans);
-        console.error("Looking for planId:", planId);
-        throw new Error("Selected plan not found");
-      }
-      
-      console.log("Selected plan:", newPlan);
-      
-      const actionType = newPlan.monthly_price > (currentPlan?.monthly_price || 0) ? 'upgrade' : 'downgrade';
-      
-      // For free/default plans, create subscription directly without payment
-      if (newPlan.status === 'default' || newPlan.monthly_price === 0) {
-        console.log("Processing free/default plan...");
-        setIsLoading(true);
-        
-        const response = await fetch('/api/user-plan-subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            plan_id: newPlan.plan_id || newPlan._id, // Use either plan_id or _id
-            isYearly: isYearly
-          })
-        });
-        
-        const data = await response.json();
-        console.log("Free plan subscription response:", data);
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to update subscription');
-        }
-        
-        showToast(`Successfully ${actionType}d to ${newPlan.planName || newPlan.name} plan!`, 'success');
-        
-        // Reset toggle to monthly view
-        setIsYearly(false);
-        
-        // Refresh plans and subscription data
-        fetchPricingPlans();
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      // For paid plans, initiate payment process
-      console.log("Processing paid plan...");
-      await initiatePayment(newPlan, isYearly);
-      
-      // Payment process will handle success and error states
-      // No need to do anything more here as the callbacks will handle UI updates
-      
-    } catch (error) {
-      console.error("Error updating plan:", error);
-      showToast(error.message || 'Failed to update plan', 'error');
-      setIsLoading(false);
     }
   };
 
   const handleViewInvoice = (invoiceId) => {
-    alert(`Viewing invoice: ${invoiceId}. (Simulated)`);
-    // when backend connected, this function would fetch and display invoice details
+    // Implement invoice viewing functionality
+    alert(`Viewing invoice: ${invoiceId}`);
   };
 
   if (isLoading) {
@@ -386,12 +337,49 @@ export default function BillingsSection() {
     );
   }
 
-  // Toast notification function is now defined at the top of the component
+  // Format payment history data
+  const formattedPaymentHistory = paymentHistory.length > 0 ? 
+    paymentHistory.map(payment => {
+      const date = new Date(payment.paymentDate || payment.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const amount = `$${Number(payment.amount).toFixed(2)}`;
+      
+      return {
+        date,
+        amount,
+        plan: payment.planName || 'Unknown Plan',
+        status: payment.status === 'completed' ? 'Paid' : 
+              payment.status === 'pending' ? 'Pending' : 
+              payment.status === 'failed' ? 'Failed' : 'Canceled',
+        invoice: payment.payherePaymentId || payment.payhereOrderId || 'N/A'
+      };
+    }) : 
+    // Use sample data if no payment history available
+    samplePaymentHistory;
+  
+  // Sample payment history data - will be replaced with actual data from API
+  const samplePaymentHistory = [
+    { date: "Jul 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-001" },
+    { date: "Jun 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-002" },
+    { date: "May 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-003" },
+    { date: "Apr 15, 2025", amount: "$29.99", plan: "Pro Plan", status: "Paid", invoice: "INV-004" },
+  ];
   
   return (
     <div className="relative">
-      {/* PayHere SDK will be loaded on-demand in ensurePayhereScriptLoaded() */}
-
+      {/* Load PayHere SDK */}
+      <Script 
+        src={process.env.NEXT_PUBLIC_PAYHERE_ENVIRONMENT === 'live' 
+          ? 'https://www.payhere.lk/lib/payhere.js'
+          : 'https://sandbox.payhere.lk/lib/payhere.js'
+        }
+        onLoad={() => setPayhereScriptLoaded(true)}
+      />
+      
       {/* Toast notification */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 p-4 rounded-lg shadow-md flex items-center gap-2 max-w-md animate-in slide-in-from-top-5 duration-300 ${
@@ -408,7 +396,7 @@ export default function BillingsSection() {
           </button>
         </div>
       )}
-
+      
       {/* Payment Processing Overlay */}
       {isProcessingPayment && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
@@ -430,7 +418,6 @@ export default function BillingsSection() {
           <button
             onClick={() => {
               setIsYearly(!isYearly);
-              // No need to update current plan since it should always show monthly pricing
             }}
             className="relative inline-flex h-6 w-11 items-center rounded-full bg-[var(--input-bg)] border border-[var(--border-input)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:ring-offset-2"
           >
@@ -540,7 +527,7 @@ export default function BillingsSection() {
               ))}
             </ul>
             <button
-              onClick={() => handlePlanAction(plan.id)}
+              onClick={() => handlePlanAction(plan)}
               disabled={isProcessingPayment}
               className={clsx(
                 "inline-flex items-center justify-center gap-2 border-2 px-6 py-3 rounded-full font-bold transition-all duration-300 text-base mt-auto",
@@ -574,27 +561,36 @@ export default function BillingsSection() {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Amount</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Plan</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Invoice</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Receipt</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-input)]">
-            {paymentHistory.map((item, index) => (
+            {formattedPaymentHistory.map((item, index) => (
               <tr key={index} className="hover:bg-[var(--hover-bg)] transition-colors duration-200">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{item.date}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{item.amount}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">{item.plan}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", item.status === 'Paid' ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400')}>
+                  <span className={clsx("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", 
+                    item.status === 'Paid' ? 'bg-green-600/20 text-green-400' : 
+                    item.status === 'Pending' ? 'bg-yellow-600/20 text-yellow-400' :
+                    'bg-red-600/20 text-red-400'
+                  )}>
                     {item.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleViewInvoice(item.invoice)}
-                    className="text-[var(--brand-yellow)] hover:underline flex items-center gap-1"
-                  >
-                    <FileText size={14} /> {item.invoice}
-                  </button>
+                  {item.status === 'Paid' && (
+                    <button
+                      onClick={() => handleViewInvoice(item.invoice)}
+                      className="text-[var(--brand-yellow)] hover:underline flex items-center gap-1"
+                    >
+                      <FileText size={14} /> {item.invoice}
+                    </button>
+                  )}
+                  {item.status !== 'Paid' && (
+                    <span className="text-[var(--text-secondary)]">--</span>
+                  )}
                 </td>
               </tr>
             ))}

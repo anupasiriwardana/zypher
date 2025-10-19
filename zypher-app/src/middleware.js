@@ -23,6 +23,7 @@ export async function middleware(req) {
     //API routes
     "/api/auth",  // Auth routes
     "/api/pricing-plan-landing-page", // Public pricing plans
+    "/api/payments/notify", // Payment notifications
   ];
 
   const isExcluded =
@@ -82,6 +83,7 @@ export async function middleware(req) {
     '/api/custom-rule-request-start-test': ['rule-maintainer'],
     '/api/pricing-plan': ['manager', 'primary-user'],
     '/api/user-plan-subscribe': ['primary-user'],
+    '/api/payments/create': ['primary-user'],
   };
 
   // Find the most specific matching route

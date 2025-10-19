@@ -16,6 +16,10 @@ const SubscriptionSchema = new mongoose.Schema({
         enum: ["active", "canceled", "paused"], 
         default: "active" 
     },
+    paymentId: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "Payment"
+     },
     startDate: { 
         type: Date, 
         default: Date.now 

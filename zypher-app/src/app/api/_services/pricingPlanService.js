@@ -66,3 +66,24 @@ export const getDefaultPlan = async() => {
         };
     }
 };
+
+export const getPlanByPlanId = async(planId) => {
+    try{
+        await connectDB();
+        const plan = await PricingPlan.findOne({ plan_id: planId })
+            .select('_id plan_id planName monthly_price yearly_price scanLimit allowCustomRuleRequests features status createdAt updatedAt')
+            .lean();
+        
+        if (!plan) {
+            throw new Error("Plan not found");
+        }
+        return { 
+            success: true, 
+            data: plan 
+        };
+    }catch (error) {
+        return { 
+            error: error.message || "Internal server error"
+        };
+    }
+};

@@ -29,7 +29,7 @@ export const POST = async (request) => {
 
     try{
         await connectDB();
-        const { plan_id, isYearly } = await request.json();
+        const { plan_id, isYearly, payment_id } = await request.json();
 
         //check is selected plan is default plan
         const defaultPlan = await getDefaultPlan();
@@ -78,20 +78,29 @@ export const POST = async (request) => {
         }
         const { scanLimit, allowCustomRuleRequests } = selectedPlanLimits.data;
 
+        // For paid plans with no payment ID, create as paused
+        const status = plan_id === defaultPlan.data.plan_id ? 'active' : 'paused';
+        
         const userSubscription = await createUserSubscription(
             userId, 
             plan_id,
             isYearly,
             scanLimit,
-            allowCustomRuleRequests
+            allowCustomRuleRequests,
+            payment_id,
+            status // Pass explicit status
         );
+        
         if(userSubscription.error){
             throw new Error(userSubscription.error);
         }
+        
         return NextResponse.json(
             { 
                 success: true,
-                message: "User Subscription created successfully" 
+                message: payment_id 
+                    ? "User subscription created and will be activated upon payment completion" 
+                    : "User subscription created successfully"
             },
             { status: 201 }
         );        
