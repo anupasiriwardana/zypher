@@ -47,6 +47,7 @@ const FileScanResultSchema = new mongoose.Schema({
     },
     vulnerabilityScan: scanSectionSchema,
     bestPracticesScan: scanSectionSchema,
+    customRuleScan: scanSectionSchema,
     createdAt: { type: Date, default: Date.now }
 });
 

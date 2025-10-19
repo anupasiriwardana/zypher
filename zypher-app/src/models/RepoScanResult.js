@@ -52,6 +52,24 @@ const vulnerabilityStatsSchema = new mongoose.Schema({
     risk_factor: String
 }, { _id: false });
 
+// customRuleStatsSchema can be added similarly if needed
+const customRuleStatsSchema = new mongoose.Schema({
+    scanned_files: Number,
+    total_findings: Number,
+    critical: Number,
+    high: Number,
+    medium: Number,
+    low: Number,
+    cust_score: Number,
+    cust_per_severity: {
+        CRITICAL: Number,
+        HIGH: Number,
+        MEDIUM: Number,
+        LOW: Number
+    },
+    risk_factor: String
+}, { _id: false });
+
 const RepoScanResultSchema = new mongoose.Schema({
     user_id : {
         type: String,
@@ -72,6 +90,12 @@ const RepoScanResultSchema = new mongoose.Schema({
         status: String,
         results: [fileResultSchema],
         stats: vulnerabilityStatsSchema
+    },
+
+    customRuleScan: {
+        status: String,
+        results: [fileResultSchema],
+        stats: customRuleStatsSchema
     },
 
     createdAt: { type: Date, default: Date.now }

@@ -1,5 +1,5 @@
 from typing import List, Dict
-from models.vulnerability import Finding
+from models.customRule import Finding
 from collections import defaultdict
 
 class PipelineScoreCalculator:

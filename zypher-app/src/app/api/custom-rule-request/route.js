@@ -25,7 +25,7 @@ export const POST = async (request) => {
   }
 
   // Check role-based access
-  const allowedRoles = ['primary-user'];
+  const allowedRoles = ['primary-user', 'rule-maintainer', 'rule-developer'];
   if (!allowedRoles.includes(role)) {
     return NextResponse.json(
       { error: "Forbidden" },
@@ -35,7 +35,7 @@ export const POST = async (request) => {
 
   await connectDB();
 
-  const { rule_name, rule_description, suggested_severity, sample_code } = await request.json();
+  const { rule_name, rule_description, suggested_severity, sample_code} = await request.json();
 
   try {
     const customRuleRequestDoc = new CustomRuleRequest({
@@ -46,7 +46,7 @@ export const POST = async (request) => {
       status: "Pending Review",
       user_id: userId
     });
-
+    // console.log("Saving custom rule request:", customRuleRequestDoc);
     await customRuleRequestDoc.save();
 
     return NextResponse.json(

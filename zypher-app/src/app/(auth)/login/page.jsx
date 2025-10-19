@@ -100,7 +100,7 @@ export default function LoginPage() {
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }));
+    })); 
 
     // Clear error when user starts typing
     if (errors[name]) {
