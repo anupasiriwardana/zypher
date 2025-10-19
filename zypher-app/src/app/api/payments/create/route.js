@@ -44,7 +44,7 @@ export async function POST(request) {
 
         // Calculate amount based on billing period
         const amount = isYearly ? plan.yearly_price : plan.monthly_price;
-        const currency = (process.env.PAYHERE_CURRENCY || 'LKR').toUpperCase();
+        const currency = (process.env.PAYHERE_CURRENCY || 'USD').toUpperCase();
 
         // Create unique order ID
         const orderId = generateOrderId(userId);

@@ -13,7 +13,7 @@ export const generatePayhereHash = (paymentData) => {
     // PayHere expected algorithm:
     // md5( merchant_id + order_id + amount(2dp) + currency + md5(merchant_secret).toUpperCase() ).toUpperCase()
     const amt = Number(amount).toFixed(2);
-    const cur = String(currency || 'LKR').toUpperCase();
+    const cur = String(currency || 'USD').toUpperCase();
     const secretHash = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
 
     const hashString = `${merchantId}${orderId}${amt}${cur}${secretHash}`;
