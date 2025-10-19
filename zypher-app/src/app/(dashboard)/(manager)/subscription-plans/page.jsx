@@ -1,20 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit, Save, X, PlusCircle, Trash2, Tag, Calendar, Gift, FileText, CheckCircle, DollarSign } from 'lucide-react';
 import clsx from 'clsx';
-
-// --- Mock Data and Utilities ---
-
-const initialPlans = [
-  { id: 1, name: "Basic Tier", price: 9.99, discount: 0, benefits: ["10GB Storage", "Basic Support"], created: "2023-01-01", notes: "Entry-level plan for individuals." },
-  { id: 2, name: "Pro Plus", price: 49.99, discount: 5, benefits: ["1TB Storage", "Priority Support", "Advanced Analytics"], created: "2023-03-15", notes: "Best for growing teams." },
-  { id: 3, name: "Enterprise Custom", price: 999.00, discount: 15, benefits: ["Unlimited Storage", "Dedicated Account Manager", "SLA Guarantee"], created: "2023-06-20", notes: "Custom pricing, billed annually." },
-];
-
-const generateId = () => Date.now();
-
-// --- Helper Components ---
 
 // A visually distinct button for action
 const ActionButton = ({ onClick, children, icon: Icon, className = '', color = 'yellow' }) => (
@@ -44,14 +32,14 @@ const PlanEditModal = ({ plan, onClose, onSave, onDelete }) => {
     setEditedPlan(prev => ({ ...prev, [name]: name === 'price' || name === 'discount' ? parseFloat(value) || 0 : value }));
   };
 
-  const handleBenefitsChange = (index, value) => {
-    const newBenefits = [...editedPlan.benefits];
-    newBenefits[index] = value;
-    setEditedPlan(prev => ({ ...prev, benefits: newBenefits.filter(b => b.trim() !== '') }));
+  const handlefeaturesChange = (index, value) => {
+    const newfeatures = [...editedPlan.features];
+    newfeatures[index] = value;
+    setEditedPlan(prev => ({ ...prev, features: newfeatures.filter(b => b.trim() !== '') }));
   };
 
   const addBenefit = () => {
-    setEditedPlan(prev => ({ ...prev, benefits: [...prev.benefits, ''] }));
+    setEditedPlan(prev => ({ ...prev, features: [...prev.features, ''] }));
   };
 
   const saveChanges = () => {
@@ -125,15 +113,15 @@ const PlanEditModal = ({ plan, onClose, onSave, onDelete }) => {
               />
           </label>
 
-          {/* Benefits */}
+          {/* features */}
           <div className="border border-[var(--border-input)] p-4 rounded-xl space-y-3">
-            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><CheckCircle size={16} />Benefits</span>
-            {editedPlan.benefits.map((benefit, index) => (
+            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><CheckCircle size={16} />features</span>
+            {editedPlan.features.map((benefit, index) => (
               <div key={index} className="flex items-center gap-2">
                 <input
                   type="text"
                   value={benefit}
-                  onChange={(e) => handleBenefitsChange(index, e.target.value)}
+                  onChange={(e) => handlefeaturesChange(index, e.target.value)}
                   placeholder={`Benefit ${index + 1}`}
                   className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-2 rounded-lg"
                 />
@@ -209,7 +197,7 @@ const PlanCard = ({ plan, onEdit }) => {
     <div className="bg-[var(--background-light)] p-6 rounded-xl shadow-lg border border-[var(--border-input)] flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] hover:shadow-yellow-500/10">
       <div>
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-2xl font-bold text-[var(--brand-yellow)]">{plan.name}</h3>
+          <h3 className="text-2xl font-bold text-[var(--brand-yellow)]">{plan.planName}</h3>
           <button 
             onClick={() => onEdit(plan)} 
             className="text-[var(--text-secondary)] hover:text-[var(--brand-yellow)] transition p-2 rounded-full hover:bg-[var(--hover-bg)]"
@@ -220,37 +208,57 @@ const PlanCard = ({ plan, onEdit }) => {
         </div>
         
         <div className="mb-4">
-          {plan.discount > 0 ? (
-            <div className="flex items-end gap-2">
-              <p className="text-4xl font-extrabold text-[var(--foreground)]">${finalPrice.toFixed(2)}</p>
-              <p className="text-lg text-red-400 line-through">${plan.price.toFixed(2)}</p>
-              <span className="text-sm font-semibold text-green-400 bg-green-900/40 px-2 py-0.5 rounded-full ml-auto">
-                {plan.discount}% OFF
-              </span>
-            </div>
-          ) : (
-            <p className="text-4xl font-extrabold text-[var(--foreground)]">${plan.price.toFixed(2)}</p>
-          )}
-          <p className="text-sm text-[var(--text-secondary)] mt-1">per month</p>
-        </div>
+  {plan.discount > 0 ? (
+    <div className="flex items-end gap-2">
+      <p className="text-4xl font-extrabold text-[var(--foreground)]">
+        ${finalPrice.toFixed(2)}
+      </p>
+      <p className="text-lg text-red-400 line-through">
+        ${plan.monthly_price.toFixed(2)}
+      </p>
+      <span className="text-sm font-semibold text-green-400 bg-green-900/40 px-2 py-0.5 rounded-full ml-auto">
+        {plan.discount}% OFF
+      </span>
+    </div>
+  ) : plan.monthly_price === 0 ? (
+    <p className="text-4xl font-extrabold text-[var(--foreground)]">Free</p>
+  ) : (
+    <p className="text-4xl font-extrabold text-[var(--foreground)]">
+      ${plan.monthly_price.toFixed(2)}
+    </p>
+  )}
+  
+  <p className="text-sm text-[var(--text-secondary)] mt-1">per month</p>
+</div>
 
         <ul className="space-y-2 mb-6">
-          {plan.benefits.slice(0, 3).map((benefit, index) => (
-            <li key={index} className="flex items-center text-[var(--foreground)] text-sm">
-              <CheckCircle size={16} className="text-green-400 mr-2 flex-shrink-0" />
-              {benefit}
-            </li>
-          ))}
-          {plan.benefits.length > 3 && (
-            <li className="text-[var(--text-secondary)] text-xs italic">
-              +{plan.benefits.length - 3} more benefits...
-            </li>
-          )}
-        </ul>
+      {[
+        ...plan.features.slice(0, 3),
+        ...(plan.allowCustomRuleRequests ? ["Custom rule requests allowed"] : []),
+        ...(plan.scanLimit
+          ? plan.scanLimit === -1
+            ? ["Unlimited scans per day"]
+            : [`Up to ${plan.scanLimit} scans per day`]
+          : []),
+      ].map((benefit, index) => (
+        <li key={index} className="flex items-center text-[var(--foreground)] text-sm">
+          <CheckCircle size={16} className="text-green-400 mr-2 flex-shrink-0" />
+          {benefit}
+        </li>
+      ))}
+
+      {plan.features.length > 3 && (
+        <li className="text-[var(--text-secondary)] text-xs italic">
+          +{plan.features.length - 3} more features...
+        </li>
+      )}
+    </ul>
+
+
       </div>
 
       <p className="text-xs text-[var(--text-secondary)] border-t border-[var(--border-input)] pt-3 mt-4">
-        Created: {plan.created}
+        Created: {new Date(plan.createdAt).toLocaleDateString()}
       </p>
     </div>
   );
@@ -258,58 +266,82 @@ const PlanCard = ({ plan, onEdit }) => {
 
 // --- 3. Add New Plan Form Component ---
 
-const AddNewPlanForm = ({ onAddPlan }) => {
+const AddNewPlanForm = ({ onAddPlan, existingPlans }) => {
     const [newPlan, setNewPlan] = useState({ 
         name: '', 
-        price: '', 
-        discount: 0, 
-        benefits: ['', ''], 
-        notes: '' 
+        monthly_price: '', 
+        yearly_discount: 0, 
+        features: ['', ''], 
+        notes: '', 
+        allowCustomRuleRequests: false,
+        scanLimit: 2
     });
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setNewPlan(prev => ({ 
             ...prev, 
-            [name]: name === 'price' || name === 'discount' ? parseFloat(value) || (value === '' ? '' : 0) : value 
+            [name]: type === 'checkbox' ? checked : (name === 'monthly_price' || name === 'yearly_discount' || name === 'scanLimit' ? parseFloat(value) || 0 : value)
         }));
     };
 
-    const handleBenefitChange = (index, value) => {
-        const newBenefits = [...newPlan.benefits];
-        newBenefits[index] = value;
-        setNewPlan(prev => ({ ...prev, benefits: newBenefits }));
+    const handleFeatureChange = (index, value) => {
+        const newFeatures = [...newPlan.features];
+        newFeatures[index] = value;
+        setNewPlan(prev => ({ ...prev, features: newFeatures }));
     };
 
-    const addBenefitField = () => {
-        setNewPlan(prev => ({ ...prev, benefits: [...prev.benefits, ''] }));
-    };
-    
-    const removeBenefitField = (index) => {
-        const newBenefits = newPlan.benefits.filter((_, i) => i !== index);
-        setNewPlan(prev => ({ ...prev, benefits: newBenefits.length > 0 ? newBenefits : [''] }));
+    const addFeatureField = () => {
+        setNewPlan(prev => ({ ...prev, features: [...prev.features, ''] }));
     };
 
+    const removeFeatureField = (index) => {
+        const newFeatures = newPlan.features.filter((_, i) => i !== index);
+        setNewPlan(prev => ({ ...prev, features: newFeatures.length > 0 ? newFeatures : [''] }));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!newPlan.name || !newPlan.price || newPlan.price <= 0) {
-            console.error("Plan name and price are required.");
+        if (!newPlan.name || !newPlan.monthly_price || newPlan.monthly_price <= 0) {
+            console.error("Plan name and monthly price are required.");
             return;
         }
 
+        const planCount = existingPlans.length;
+        const planId = `plan${planCount + 1}`;
+
+        const monthlyPrice = parseFloat(newPlan.monthly_price);
+        const yearlyPrice = monthlyPrice * 12 * (1 - (newPlan.yearly_discount / 100));
+
+        const defaultFeatures = ["Downloadable Scan Reports", "Access to Knowledge Base"];
+        const finalFeatures = [...defaultFeatures, ...newPlan.features.filter(f => f.trim() !== '')];
+
         const planToAdd = {
-            id: generateId(),
-            ...newPlan,
-            price: parseFloat(newPlan.price),
-            discount: parseInt(newPlan.discount),
-            benefits: newPlan.benefits.filter(b => b.trim() !== ''),
-            created: new Date().toISOString().split('T')[0],
+            plan_id: planId,
+            planName: newPlan.name,
+            monthly_price: monthlyPrice,
+            yearly_price: yearlyPrice,
+            discount: newPlan.yearly_discount,
+            allowCustomRuleRequests: newPlan.allowCustomRuleRequests,
+            scanLimit: newPlan.scanLimit,
+            features: finalFeatures,
+            notes: newPlan.notes,
+            status: "default",
+            createdAt: new Date().toISOString()
         };
 
         onAddPlan(planToAdd);
+
         // Reset form
-        setNewPlan({ name: '', price: '', discount: 0, benefits: ['', ''], notes: '' });
+        setNewPlan({ 
+            name: '', 
+            monthly_price: '', 
+            yearly_discount: 0, 
+            features: ['', ''], 
+            notes: '', 
+            allowCustomRuleRequests: false,
+            scanLimit: 2
+        });
     };
 
     return (
@@ -317,8 +349,9 @@ const AddNewPlanForm = ({ onAddPlan }) => {
             <h2 className="text-2xl font-bold text-[var(--brand-yellow)] mb-6 flex items-center gap-2 border-b border-[var(--border-input)] pb-3">
                 <PlusCircle size={24} /> Add New Subscription Plan
             </h2>
+
             <form onSubmit={handleSubmit} className="space-y-4">
-                
+                {/* Plan Name, Monthly Price, Yearly Discount */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <label className="block">
                         <span className="text-sm font-medium text-[var(--text-secondary)]">Plan Name *</span>
@@ -333,11 +366,11 @@ const AddNewPlanForm = ({ onAddPlan }) => {
                         />
                     </label>
                     <label className="block">
-                        <span className="text-sm font-medium text-[var(--text-secondary)]">Price ($) *</span>
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Monthly Price ($) *</span>
                         <input
                             type="number"
-                            name="price"
-                            value={newPlan.price}
+                            name="monthly_price"
+                            value={newPlan.monthly_price}
                             onChange={handleChange}
                             step="0.01"
                             min="0.01"
@@ -347,11 +380,11 @@ const AddNewPlanForm = ({ onAddPlan }) => {
                         />
                     </label>
                     <label className="block">
-                        <span className="text-sm font-medium text-[var(--text-secondary)]">Discount (%)</span>
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Yearly Discount (%)</span>
                         <input
                             type="number"
-                            name="discount"
-                            value={newPlan.discount}
+                            name="yearly_discount"
+                            value={newPlan.yearly_discount}
                             onChange={handleChange}
                             min="0"
                             max="100"
@@ -361,29 +394,57 @@ const AddNewPlanForm = ({ onAddPlan }) => {
                     </label>
                 </div>
 
+                {/* Scan Limit & Custom Rule Toggle */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="block">
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Scans per Day</span>
+                        <input
+                            type="number"
+                            name="scanLimit"
+                            value={newPlan.scanLimit}
+                            onChange={handleChange}
+                            min="-1"
+                            placeholder="-1 for unlimited"
+                            className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg focus:ring-2 focus:ring-[var(--brand-yellow)]"
+                        />
+                    </label>
+                    <label className="flex items-center gap-2 mt-6 md:mt-0">
+                        <input
+                            type="checkbox"
+                            name="allowCustomRuleRequests"
+                            checked={newPlan.allowCustomRuleRequests}
+                            onChange={handleChange}
+                            className="h-5 w-5 text-[var(--brand-yellow)] border-[var(--border-input)] rounded focus:ring-2 focus:ring-[var(--brand-yellow)]"
+                        />
+                        <span className="text-[var(--text-secondary)]">Allow Custom Rule Requests</span>
+                    </label>
+                </div>
+
+                {/* Features */}
                 <div className="space-y-2 border border-[var(--border-input)] p-4 rounded-xl">
-                    <span className="text-sm font-medium text-[var(--text-secondary)] block">Benefits</span>
-                    {newPlan.benefits.map((benefit, index) => (
+                    <span className="text-sm font-medium text-[var(--text-secondary)] block">Features</span>
+                    {newPlan.features.map((feature, index) => (
                         <div key={index} className="flex items-center gap-2">
                             <input
                                 type="text"
-                                value={benefit}
-                                onChange={(e) => handleBenefitChange(index, e.target.value)}
-                                placeholder={`Benefit ${index + 1}`}
+                                value={feature}
+                                onChange={(e) => handleFeatureChange(index, e.target.value)}
+                                placeholder={`Feature ${index + 1}`}
                                 className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-2 rounded-lg"
                             />
-                            {newPlan.benefits.length > 1 && (
-                                <button type="button" onClick={() => removeBenefitField(index)} className="text-red-500 hover:text-red-400 transition p-1">
+                            {newPlan.features.length > 1 && (
+                                <button type="button" onClick={() => removeFeatureField(index)} className="text-red-500 hover:text-red-400 transition p-1">
                                     <X size={20} />
                                 </button>
                             )}
                         </div>
                     ))}
-                    <button type="button" onClick={addBenefitField} className="flex items-center gap-1 text-[var(--brand-yellow)] hover:text-yellow-500 transition text-sm pt-2">
-                        <PlusCircle size={16} /> Add Another Benefit
+                    <button type="button" onClick={addFeatureField} className="flex items-center gap-1 text-[var(--brand-yellow)] hover:text-yellow-500 transition text-sm pt-2">
+                        <PlusCircle size={16} /> Add Another Feature
                     </button>
                 </div>
-                
+
+                {/* Notes */}
                 <label className="block">
                     <span className="text-sm font-medium text-[var(--text-secondary)]">Notes</span>
                     <textarea
@@ -407,53 +468,103 @@ const AddNewPlanForm = ({ onAddPlan }) => {
 // --- 4. Main Page Component ---
 
 export default function ManagerPricingPage() {
-  const [plans, setPlans] = useState(initialPlans);
+  const [plans, setPlans] = useState([]);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleOpenEdit = (plan) => {
-    setEditingPlan(plan);
+  // 🔹 Fetch plans on mount
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await fetch("/api/pricing-plans");
+        if (!res.ok) throw new Error("Failed to fetch plans");
+        const data = await res.json();
+        setPlans(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  // 🔹 Add new plan (POST) — use /api/pricing-plans
+  const handleAddPlan = async (newPlan) => {
+    try {
+      const res = await fetch("/api/pricing-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPlan),
+      });
+      if (!res.ok) throw new Error("Failed to add plan");
+      const created = await res.json();
+      setPlans((prev) => [...prev, created]);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleCloseEdit = () => {
-    setEditingPlan(null);
+  // 🔹 Update plan (PUT) — use /api/pricing-plans and robust id detection
+  const handleSavePlan = async (updatedPlan) => {
+    try {
+      const id = updatedPlan._id || updatedPlan.plan_id || updatedPlan.id;
+      if (!id) throw new Error("Missing plan id for update");
+      const res = await fetch(`/api/pricing-plans/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPlan),
+      });
+      if (!res.ok) throw new Error("Failed to update plan");
+      const data = await res.json();
+      setPlans((prev) => prev.map((p) => {
+        const pId = p._id || p.plan_id || p.id;
+        const dId = data._id || data.plan_id || data.id;
+        return pId === dId ? data : p;
+      }));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleSavePlan = (updatedPlan) => {
-    setPlans(plans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
-  };
-  
-  const handleAddPlan = (newPlan) => {
-    setPlans([...plans, newPlan]);
-  };
-  
-  const handleDeletePlan = (planId) => {
-    setPlans(plans.filter(p => p.id !== planId));
+  // 🔹 Delete plan (DELETE) — use /api/pricing-plans and robust id handling
+  const handleDeletePlan = async (id) => {
+    try {
+      const planId = id;
+      if (!planId) throw new Error("Missing plan id for delete");
+      const res = await fetch(`/api/pricing-plans/${planId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete plan");
+      setPlans((prev) => prev.filter((p) => {
+        const pId = p._id || p.plan_id || p.id;
+        return pId !== planId;
+      }));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
+  if (loading) return <p>Loading plans...</p>;
 
   return (
     <div className="min-h-screen">
       <h1 className="text-4xl font-extrabold text-[var(--foreground)] mb-8">
         Pricing Plan Management
       </h1>
-      
-      {/* Plan Cards */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plans.map(plan => (
-          <PlanCard key={plan.id} plan={plan} onEdit={handleOpenEdit} />
+        {plans.map((plan) => (
+          <PlanCard key={plan._id || plan.plan_id || plan.id} plan={plan} onEdit={setEditingPlan} />
         ))}
       </div>
 
-      {/* Add New Plan Form */}
-      <AddNewPlanForm onAddPlan={handleAddPlan} />
+      <AddNewPlanForm onAddPlan={handleAddPlan} existingPlans={plans} />
 
-      {/* Edit Modal */}
       {editingPlan && (
-        <PlanEditModal 
-          plan={editingPlan} 
-          onClose={handleCloseEdit} 
-          onSave={handleSavePlan} 
-          onDelete={handleDeletePlan}
+        <PlanEditModal
+          plan={editingPlan}
+          onClose={() => setEditingPlan(null)}
+          onSave={handleSavePlan}
+          onDelete={(id) => handleDeletePlan(id)}
         />
       )}
     </div>
