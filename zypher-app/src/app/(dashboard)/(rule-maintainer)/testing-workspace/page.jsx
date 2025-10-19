@@ -293,7 +293,7 @@ export default function TestingWorkspacePage() {
       });
       return;
     }
-
+  
     try {
       // 1️⃣ Call backend FastAPI to publish the rule
       const publishResponse = await fetch("/api/publish-custom-rule", {
@@ -304,25 +304,15 @@ export default function TestingWorkspacePage() {
           collection: selectedCategory,
         }),
       });
-
+  
       const publishData = await publishResponse.json();
-
+  
       if (!publishResponse.ok) {
         throw new Error(
           publishData.detail || "Failed to publish rule in FastAPI backend"
         );
-        setTimeout(async () => {
-          setSelectedRule(null);
-          setTestFileContent("");
-          setTestOutput("");
-          await fetchRulesForTesting();
-        }, 4000);
-      } else {
-        const data = await parseJsonSafely(response);
-        const errorMessage = (data && data.error) || response.statusText || `Publish failed with status ${response.status}`;
-        throw new Error(errorMessage || "Failed to publish rule");
       }
-
+  
       // 2️⃣ Update MongoDB rule file status
       const updateResponse = await fetch("/api/custom-rule-file-publish", {
         method: "PATCH",
@@ -332,21 +322,21 @@ export default function TestingWorkspacePage() {
           requestStatus: "Successfully Published",
         }),
       });
-
+  
       const updateData = await updateResponse.json();
-
+  
       if (!updateResponse.ok) {
         throw new Error(
           updateData.error || "Failed to update rule status in database"
         );
       }
-
+  
       // ✅ Both steps successful
       setSaveFeedback({
         type: "success",
         message: `Rule "${selectedRule.name}" has been approved and published successfully!`,
       });
-
+  
       // Reset after 4 seconds
       setTimeout(async () => {
         setSelectedRule(null);

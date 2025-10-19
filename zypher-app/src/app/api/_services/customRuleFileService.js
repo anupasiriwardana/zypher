@@ -147,7 +147,7 @@ export const updateRuleFileStatusByRuleMaintainer = async (ruleId, status, categ
         rule_id: ruleId,
         collection:
           category?.toLowerCase() === "bestpractice"
-            ? "bestPractise"
+            ? "bestPractice"
             : category?.toLowerCase() === "vulnerability"
             ? "vulnerability"
             : "custom",
