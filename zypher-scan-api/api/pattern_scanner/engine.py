@@ -8,27 +8,32 @@ class ScannerEngine:
     def __init__(self):
         self.parser = PipelineParser()
         self.rules = load_rules()
-        print(f"Loaded {len(self.rules)} Security Pattern rules")
+
+        # Only load the 7 CI/CD pattern rules
+        self.rules = [
+            rule for rule in self.rules if rule.METADATA["rule_id"].startswith("CICD-PATT-")
+        ]
+
+        print(f"Loaded {len(self.rules)} CI/CD Pattern Rules:")
         for rule in self.rules:
             print(f" - {rule.__class__.__name__}")
 
-    def scan_content(self, file_dict: Dict[str, str]) -> List[Finding]:
+    def scan_all_files(self, file_dict: Dict[str, str]) -> List[Finding]:
         """
-        Scans all files collectively, avoiding redundant pattern scans.
-        file_dict = { file_path: file_content, ... }
+        Optimized scanning for 7 CI/CD Security Pattern rules.
+        Scans across all files collectively, skipping redundant checks.
         """
         findings = []
         parsed_files = {}
 
-        # Step 1: Parse all YAMLs first
+        # === STEP 1: Pre-parse all YAMLs once ===
         for file_path, content in file_dict.items():
             try:
                 pipeline_data, file_lines = self.parser.parse_content(content)
-                pipeline_type = self.parser.detect_pipeline_type(pipeline_data)
                 parsed_files[file_path] = {
                     "data": pipeline_data,
                     "lines": file_lines,
-                    "type": pipeline_type
+                    "filename": os.path.basename(file_path).lower(),
                 }
             except Exception as e:
                 findings.append(Finding(
@@ -38,52 +43,81 @@ class ScannerEngine:
                     line_number=0,
                     filepath=file_path,
                     snippet="",
-                    recommendation="Check YAML syntax and try again"
+                    recommendation="Check YAML syntax and try again",
+                    confidence="LOW"
                 ))
 
-        # Step 2: Smart rule scanning control flags
-        sast_found = False
-        precommit_sast_found = False
-        lint_found = False
+        # === STEP 2: Context flags ===
+        context_flags = {
+            "pre_commit_sast": False,
+            "build_time_sast": False,
+            "lint_pattern": False,
+            "secrets_detection": False,
+            "artifact_signing": False,
+            "credential_hygiene": False,
+            "push_branch_sast": False
+        }
 
-        # Step 3: Intelligent scanning logic
+        # === STEP 3: Optimized scanning logic ===
         for file_path, parsed in parsed_files.items():
+            filename = parsed["filename"]
             pipeline_data = parsed["data"]
             file_lines = parsed["lines"]
 
-            # Recognize special files
-            filename = os.path.basename(file_path).lower()
             is_precommit = filename == ".pre-commit-config.yaml"
-            is_ci_file = any(x in filename for x in ["ci", "build", "pipeline", "github", "gitlab"])
+            is_ci_cd_file = any(x in filename for x in ["ci", "build", "pipeline", "gitlab", "github", "azure"])
 
             for rule in self.rules:
-                rule_name = rule.__class__.__name__.lower()
+                rule_id = rule.METADATA["rule_id"]
 
-                # Skip redundant scans
-                if "precommitsast" in rule_name and precommit_sast_found:
+                # --- Skip logic based on context ---
+                if rule_id == "CICD-PATT-001" and context_flags["pre_commit_sast"]:
                     continue
-                if "buildtimesast" in rule_name and sast_found:
+                if rule_id == "CICD-PATT-002" and context_flags["push_branch_sast"]:
                     continue
-                if "linter" in rule_name and lint_found:
+                if rule_id == "CICD-PATT-003" and context_flags["build_time_sast"]:
+                    continue
+                if rule_id == "CICD-PATT-004" and context_flags["lint_pattern"]:
+                    continue
+                if rule_id == "CICD-PATT-005" and context_flags["artifact_signing"]:
+                    continue
+                if rule_id == "CICD-PATT-006" and context_flags["credential_hygiene"]:
+                    continue
+                if rule_id == "CICD-PATT-007" and context_flags["secrets_detection"]:
                     continue
 
+                # --- File relevance filtering ---
+                if rule_id == "CICD-PATT-001" and not is_precommit:
+                    continue  # Pre-commit SAST should only check .pre-commit-config.yaml
+                if rule_id != "CICD-PATT-001" and not is_ci_cd_file:
+                    continue  # Other patterns only for CI/CD configs
+
+                # --- Execute rule scan ---
                 rule_findings = rule.scan(pipeline_data, file_lines, file_path)
+                findings.extend(rule_findings)
+
+                # --- Update context flags if rule triggered ---
                 if rule_findings:
-                    findings.extend(rule_findings)
+                    if rule_id == "CICD-PATT-001":
+                        context_flags["pre_commit_sast"] = True
+                    elif rule_id == "CICD-PATT-002":
+                        context_flags["push_branch_sast"] = True
+                    elif rule_id == "CICD-PATT-003":
+                        context_flags["build_time_sast"] = True
+                    elif rule_id == "CICD-PATT-004":
+                        context_flags["lint_pattern"] = True
+                    elif rule_id == "CICD-PATT-005":
+                        context_flags["artifact_signing"] = True
+                    elif rule_id == "CICD-PATT-006":
+                        context_flags["credential_hygiene"] = True
+                    elif rule_id == "CICD-PATT-007":
+                        context_flags["secrets_detection"] = True
 
-                    # Update discovery flags if rule was successfully triggered
-                    if "precommitsast" in rule_name and any("sast" in f.description.lower() for f in rule_findings):
-                        precommit_sast_found = True
-                    if "buildtimesast" in rule_name and any("sast" in f.description.lower() for f in rule_findings):
-                        sast_found = True
-                    if "linter" in rule_name and any("lint" in f.description.lower() for f in rule_findings):
-                        lint_found = True
+        # === STEP 4: Summary ===
+        print("\n✅ Scan Summary (7 Pattern Rules):")
+        for k, v in context_flags.items():
+            print(f" - {k.replace('_', ' ').title()}: {'✔ Found' if v else '❌ Missing'}")
 
-        # Step 4: Post-scan summary (optional)
-        print("✅ Scan summary:")
-        print(f" - Pre-commit SAST rule triggered: {precommit_sast_found}")
-        print(f" - Build-time SAST rule triggered: {sast_found}")
-        print(f" - Linter rule triggered: {lint_found}")
-        print(f" - Total findings: {len(findings)}")
+        print(f"\nTotal Findings: {len(findings)}\n")
 
         return findings

@@ -2,37 +2,33 @@ from fastapi import APIRouter, HTTPException
 from models.scan_input import RepoRequest
 from pattern_scanner.engine import ScannerEngine
 from pattern_scanner.scoreCalculator import PipelineScoreCalculator
+from models.vulnerability import Finding
+from typing import List, Dict
 import httpx
 import os
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from models.vulnerability import Finding
-from typing import List
 
 router = APIRouter(
     prefix='/pattern-scan',
-    tags=['scan for vulnerabilities']
+    tags=['scan for patterns']
 )
 
-# Initialize scanner once
+# Initialize scanner and calculator
 scanner = ScannerEngine()
 scoreCalculator = PipelineScoreCalculator()
 
+# Thread pool for parallel file downloads
+executor = ThreadPoolExecutor(max_workers=6)
 
-# Thread pool for scanning
-executor = ThreadPoolExecutor(max_workers=4)
-
-# Load GitHub token from environment
+# GitHub token
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 if not GITHUB_TOKEN:
     raise RuntimeError("Missing GITHUB_TOKEN in environment variables")
 
-def sync_scan(content: str, file_path: str) -> List[Finding]:
-    """Wrapper for synchronous scanning"""
-    return scanner.scan_content(content, file_path)
 
 async def get_file_content(client: httpx.AsyncClient, download_url: str) -> str:
-    """Fetch raw file content from GitHub"""
+    """Fetch raw file content from GitHub."""
     try:
         response = await client.get(
             download_url,
@@ -44,44 +40,33 @@ async def get_file_content(client: httpx.AsyncClient, download_url: str) -> str:
         )
         response.raise_for_status()
         return response.text
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"GitHub API error: {e.response.text}"
-        )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error fetching file content: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error fetching file content: {str(e)}")
+
 
 @router.post("/")
 async def scan_repo(repo_request: RepoRequest):
+    """
+    Scan all YAML files in a GitHub repository for the 7 CI/CD Security Patterns.
+    """
     try:
-        # Validate and extract owner/repo from URL
+        # === STEP 1: Validate repo URL ===
         repo_url = repo_request.repo_url.strip()
         if not repo_url.startswith("https://github.com/"):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid GitHub URL format. Must start with 'https://github.com/'"
-            )
-        
+            raise HTTPException(status_code=400, detail="Invalid GitHub URL. Must start with https://github.com/")
+
         repo_path = repo_url.replace("https://github.com/", "").rstrip("/")
         parts = repo_path.split("/")
         if len(parts) < 2:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid GitHub repository path. Format: https://github.com/owner/repo"
-            )
-        
+            raise HTTPException(status_code=400, detail="Invalid GitHub repository path.")
         owner, repo = parts[0], parts[1]
-        
+
         async with httpx.AsyncClient() as client:
-            async def fetch_and_scan_files(path: str = "") -> List[dict]:
-                """Recursively fetch and scan YAML files in a GitHub repo"""
-                # Build GitHub API URL for contents
+            async def fetch_files_recursively(path: str = "") -> Dict[str, str]:
+                """
+                Recursively fetch YAML files and return {path: content}.
+                """
                 api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-                
                 try:
                     response = await client.get(
                         api_url,
@@ -95,85 +80,75 @@ async def scan_repo(repo_request: RepoRequest):
                     response.raise_for_status()
                     items = response.json()
                 except httpx.HTTPStatusError as e:
-                    raise HTTPException(
-                        status_code=e.response.status_code,
-                        detail=f"GitHub API error: {e.response.text}"
-                    )
-                
-                yaml_files = []
-                
-                for item in items:
-                    if not isinstance(item, dict):
-                        continue
-                        
+                    raise HTTPException(status_code=e.response.status_code, detail=f"GitHub API error: {e.response.text}")
+
+                all_files = {}
+
+                async def handle_item(item):
                     item_type = item.get("type")
                     item_name = item.get("name", "")
                     item_path = item.get("path", "")
 
-                    if item_type == "file" and item_name.lower().endswith(('.yml', '.yaml')):
+                    if item_type == "file" and item_name.lower().endswith((".yml", ".yaml")):
                         content = await get_file_content(client, item.get("download_url"))
                         if content:
-                            # Run scanner in thread pool
-                            findings = await asyncio.get_event_loop().run_in_executor(
-                                executor, 
-                                sync_scan, 
-                                content, 
-                                item_path
-                            )
-                            
-                            # Maintain existing fields + add findings
-                            yaml_files.append({
-                                "path": item_path,
-                                "download_url": item.get("download_url"),
-                                "html_url": item.get("html_url"),
-                                "findings": [f.dict() for f in findings]
-                            })
+                            all_files[item_path] = content
                     elif item_type == "dir":
-                        sub_files = await fetch_and_scan_files(item_path)
-                        yaml_files.extend(sub_files)
-                
-                return yaml_files
+                        sub_files = await fetch_files_recursively(item_path)
+                        all_files.update(sub_files)
 
-            # Start scanning from root directory
-            results = await fetch_and_scan_files()
-            
-            # Calculate overall statistics
-            total_findings = sum(len(file["findings"]) for file in results)
-            score = scoreCalculator.calculate([Finding(**finding) for file in results for finding in file["findings"]])
-            severity_counts = {
-                "CRITICAL": 0,
-                "HIGH": 0,
-                "MEDIUM": 0,
-                "LOW": 0
-            }
-            
-            for file in results:
-                for finding in file["findings"]:
-                    severity = finding["severity"]
-                    if severity in severity_counts:
-                        severity_counts[severity] += 1
-            
+                # Fetch in parallel
+                await asyncio.gather(*(handle_item(item) for item in items if isinstance(item, dict)))
+                return all_files
+
+            # === STEP 2: Fetch all YAMLs once ===
+            all_yaml_files = await fetch_files_recursively()
+
+            if not all_yaml_files:
+                raise HTTPException(status_code=404, detail="No YAML configuration files found in this repository.")
+
+            # === STEP 3: Run the optimized scanner on all files together ===
+            loop = asyncio.get_event_loop()
+            findings = await loop.run_in_executor(executor, lambda: scanner.scan_all_files(all_yaml_files))
+
+            # === STEP 4: Organize results per file ===
+            results = []
+            for file_path, content in all_yaml_files.items():
+                file_findings = [f.dict() for f in findings if f.filepath == file_path]
+                results.append({
+                    "path": file_path,
+                    "findings": file_findings
+                })
+
+            # === STEP 5: Compute statistics ===
+            total_findings = sum(len(f["findings"]) for f in results)
+            all_findings_flat = [Finding(**finding) for f in results for finding in f["findings"]]
+
+            score = scoreCalculator.calculate(all_findings_flat)
+            severity_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+
+            for f in all_findings_flat:
+                if f.severity in severity_counts:
+                    severity_counts[f.severity] += 1
+
             return {
                 "status": "success",
                 "repo_url": repo_url,
-                "results": results,
                 "stats": {
-                    "scanned_files": len(results),
+                    "scanned_files": len(all_yaml_files),
                     "total_findings": total_findings,
                     "critical": severity_counts["CRITICAL"],
                     "high": severity_counts["HIGH"],
                     "medium": severity_counts["MEDIUM"],
                     "low": severity_counts["LOW"],
-                    "vuln score": score["final_score"],
-                    "vuln per_severity": score["per_severity"],
+                    "vuln_score": score["final_score"],
+                    "per_severity": score["per_severity"],
                     "risk_factor": score["risk_factor"]
-                }
+                },
+                "results": results
             }
-        
+
     except HTTPException as he:
         raise he
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
