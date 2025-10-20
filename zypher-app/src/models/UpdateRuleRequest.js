@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 
 const { Schema, Types } = mongoose;
 
-const customRuleRequestSchema = new Schema({
-    rule_id: {
+const UpdateRuleRequestSchema = new Schema({
+    ruleId: {
         type: String,
-        default: null,
+        required: true
     },
     name: {
         type: String,
@@ -58,4 +58,4 @@ const customRuleRequestSchema = new Schema({
     timestamps: true
 });
 
-export default mongoose.models.CustomRuleRequest || mongoose.model("CustomRuleRequest", customRuleRequestSchema);
+export default mongoose.models.CustomRuleRequest || mongoose.model("CustomRuleRequest", UpdateRuleRequestSchema);
