@@ -12,7 +12,7 @@ class ScannerEngine:
         for rule in self.rules:
             print(f" - {rule.__class__.__name__}")
 
-    def scan_all_files(self, file_dict: Dict[str, str]) -> List[Finding]:
+    def scan_content(self, file_dict: Dict[str, str]) -> List[Finding]:
         """
         Scans all files collectively, avoiding redundant pattern scans.
         file_dict = { file_path: file_content, ... }
