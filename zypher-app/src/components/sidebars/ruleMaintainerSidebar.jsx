@@ -90,16 +90,27 @@ export default function RuleMaintainerSidebar() {
         }
       `}</style>
 
-      <aside className="h-screen w-24 md:w-28 bg-[var(--background)] border-r border-[var(--border-input)] flex flex-col items-center py-4 fixed left-0 top-0 z-50 transition-all duration-300">
-
+      <aside
+        className="
+          fixed top-0 left-0
+          h-screen
+          w-20 md:w-28
+          bg-[var(--background)]
+          border-r border-[var(--border-input)]
+          flex flex-col items-center
+          pb-8 z-50
+          transition-all duration-300
+        "
+      >  
+     
         <Link href="/view-requests" className="flex items-center justify-center w-16 h-16 rounded-xl mb-10 group relative overflow-hidden">
             <div/>
             
             <Image
               src="/Images/zypher.png"
               alt="Zypher Logo"
-              width={36}
-              height={36}
+              width={24}
+              height={24}
               className="relative z-10 object-contain"
             />
         </Link>
@@ -124,7 +135,7 @@ export default function RuleMaintainerSidebar() {
                
 
                 <Icon
-                  size={30} 
+                  size={26} 
                   className={clsx(
                     "transition-colors duration-300 relative z-10",
                     isActive

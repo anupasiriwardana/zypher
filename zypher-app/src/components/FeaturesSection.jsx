@@ -39,7 +39,7 @@ const features = [
 export default function FeaturesSection() {
   return (
     <section className={`min-h-[80vh] flex flex-col items-center justify-center text-center px-4 ${lexend.className}`}>
-      <div className="h-12 px-6 py-4 bg-transparent rounded-full outline outline-1 outline-offset-[-1px] outline-neutral-700 flex justify-center items-center">
+      <div className="h-12 px-6 py-4 bg-transparent rounded-full outline-1 outline-offset-[-1px] outline-neutral-700 flex justify-center items-center">
         <div className="inline-flex items-center gap-5">
           <div className="w-6 h-6 relative">
             <Star className="w-5 h-5" />            
