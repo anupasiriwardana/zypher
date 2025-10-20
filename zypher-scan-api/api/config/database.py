@@ -25,4 +25,4 @@ educator_queue_collection = db["educator_queue"]
 knowledge_base_request_collection = db["knowledgebaserequests"]
 custom_rule_request_collection = db["customrulerequests"]
 past_version_rule_collection = db["pastVersionRules"]
-
+security_pattern_rule_collection = db["securityPatternRule"]

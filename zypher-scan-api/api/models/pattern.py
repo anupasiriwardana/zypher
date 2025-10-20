@@ -1,16 +1,16 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List
 
-class Vulnerability_Rule_File(BaseModel):
+class Pattern_Rule_File(BaseModel):
     rule_id : str
     rule_name : str
     status : str  # active, inactive
     file_content : str
+    jo_principle: List[str]
 
 class Finding(BaseModel):
     rule_id: str
     severity: str
-    action: Optional[str] = "Ignore"
     description: str
     line_number: int
     filepath: str
