@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class Vulnerability_Rule_File(BaseModel):
     rule_id : str
@@ -9,7 +10,7 @@ class Vulnerability_Rule_File(BaseModel):
 class Finding(BaseModel):
     rule_id: str
     severity: str
-    action: str  # e.g., "ignore", "fix", "review"
+    action: Optional[str] = "Ignore"
     description: str
     line_number: int
     filepath: str
