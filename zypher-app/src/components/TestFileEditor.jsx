@@ -37,7 +37,7 @@ const TestFileEditor = ({
   }
 
   return (
-    <div className="flex flex-col h-full min-w-0 overflow-hidden">
+    <div className="flex flex-col min-w-0 overflow-hidden h-full">
       {/* Header with rule info and view toggle */}
       <div className="flex items-center justify-between mb-4 p-4 bg-[var(--card-bg)] rounded-lg border border-[var(--border-input)]">
         <div className="min-w-0 flex-1">
@@ -110,10 +110,11 @@ const TestFileEditor = ({
                 </button>
               </div>
             </div>
-            <div className="flex-1 border border-[var(--border-input)] rounded-lg overflow-hidden min-h-0">
+            <div className="flex-1 border border-[var(--border-input)] rounded-lg overflow-hidden min-h-0 max-w-70%">
               <Editor
                 key={`test-${selectedRule?.id || 'default'}`}
                 height="100%"
+                width="73%"
                 language="yaml"
                 value={testFileContent}
                 onChange={(value) => setTestFileContent(value || '')}
@@ -147,6 +148,7 @@ const TestFileEditor = ({
               <Editor
                 key={`rule-${selectedRule?.id || 'default'}`}
                 height="100%"
+                width="73%"
                 language="python"
                 value={ruleFileContent}
                 theme="vs-dark"
