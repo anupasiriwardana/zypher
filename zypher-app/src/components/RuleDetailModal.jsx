@@ -14,7 +14,7 @@ import {
   Loader2,
   Send,
 } from "lucide-react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import NewRuleRequestModal from "@/app/(dashboard)/(rule-maintainer)/custom-rules/newRule";
 
