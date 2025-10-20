@@ -563,6 +563,7 @@ export default function PasteUrlPageContent() {
                 ); // Get highest severity for the file
 
                 return (
+                  
                   <div
                     key={fileIndex}
                     className="bg-[var(--input-bg)] p-6 rounded-lg border border-[var(--border-input)] shadow-inner"
@@ -579,7 +580,7 @@ export default function PasteUrlPageContent() {
                             <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300">
                               {fileResult.findings.length} findings
                             </span>
-                            <SeverityBadge severity={fileHighestSeverity} />
+                            <SeverityBadge severity={scanType === "pattern-scan" ? undefined : fileHighestSeverity} />
                           </>
                         )}
                       </h4>
@@ -617,7 +618,8 @@ export default function PasteUrlPageContent() {
                                     </span>
                                   </p>
                                   <SeverityBadge
-                                    severity={findingsForRule[0].severity}
+                                  // dont display the severity badge for pattern scans
+                                    severity={scanType === "pattern-scan" ? undefined : findingsForRule[0].severity}
                                   />
                                 </div>
 
