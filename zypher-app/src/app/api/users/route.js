@@ -1,23 +1,25 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import connectDB from "@/utils/db";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
-// Lazy initialize Resend to avoid build-time errors when API key is absent
-const RESEND_FROM = process.env.RESEND_FROM || "Zypher Admin <onboarding@resend.dev>";
-function getResend() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return null;
-  return new Resend(key);
-}
+// Nodemailer transporter using Gmail
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER, // your Gmail
+    pass: process.env.GMAIL_PASS, // app password
+  },
+});
 
 // Generate a random password for new users
 function generatePassword() {
   return crypto.randomBytes(6).toString("base64").replace(/[+/]/g, "A1");
 }
 
+// 🟢 POST → Create new user or update role
 export async function POST(req) {
   try {
     await connectDB();
@@ -26,16 +28,12 @@ export async function POST(req) {
     console.log("➡️ Incoming request to assign role:", email, role);
 
     if (!email || !role) {
-      return NextResponse.json(
-        { error: "Email and role are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
     }
 
-    // Check if the user already exists
     let user = await User.findOne({ email });
 
-    // 🟢 CASE 1: New User → Create and attempt to send credentials
+    // 🆕 CASE 1: New user
     if (!user) {
       console.log("🆕 Creating new user:", email);
 
@@ -44,26 +42,15 @@ export async function POST(req) {
 
       user = await User.create({ email, password: hashedPassword, role });
 
-      // Send credentials email (best-effort with explicit error reporting)
-      const resend = getResend();
-      if (!resend) {
-        console.error("❗ RESEND_API_KEY is missing. Skipping email send.");
-        return NextResponse.json({
-          success: true,
-          emailSent: false,
-          message: "New user created, but email was not sent (missing RESEND_API_KEY).",
-          user,
-        });
-      }
-
-      const { data: sendData, error: sendError } = await resend.emails.send({
-        from: RESEND_FROM,
-        to: email,
-        subject: "Your Guardian Account Credentials",
-        html: `
-          <table style="width:100%; font-family:Arial, sans-serif; background-color:#f9f9f9; padding:20px;">
-            <tr>
-              <td>
+      // Send credentials email
+      try {
+        await transporter.sendMail({
+          from: `"Zypher Admin" <${process.env.GMAIL_USER}>`,
+          to: email,
+          subject: "Your Guardian Account Credentials",
+          html: `
+            <table style="width:100%; font-family:Arial, sans-serif; background-color:#f9f9f9; padding:20px;">
+              <tr><td>
                 <table style="max-width:600px; margin:0 auto; background-color:#fff; padding:30px; border-radius:10px;">
                   <tr>
                     <td style="text-align:center;">
@@ -74,12 +61,11 @@ export async function POST(req) {
                   <tr>
                     <td>
                       <p>Hi <b>${email}</b>,</p>
-                      <p>You have been assigned the role <b>${role}</b> on the Zypher platform.</p>
-                      <p><b>Email:</b> ${email}<br/>
-                        <b>Password:</b> ${plainPassword}</p>
+                      <p>You have been assigned the role <b>${role}</b> on Zypher.</p>
+                      <p><b>Email:</b> ${email}<br/><b>Password:</b> ${plainPassword}</p>
                       <p style="text-align:center;">
                         <a href="https://zypher.com/login" 
-                          style="display:inline-block; padding:12px 25px; background-color:#1E90FF; color:#fff; border-radius:5px; text-decoration:none;">
+                           style="display:inline-block; padding:12px 25px; background-color:#1E90FF; color:#fff; border-radius:5px; text-decoration:none;">
                           Log in to Zypher
                         </a>
                       </p>
@@ -92,24 +78,21 @@ export async function POST(req) {
                     </td>
                   </tr>
                 </table>
-              </td>
-            </tr>
-          </table>
-          `
-      });
-
-      if (sendError) {
-        console.error("❌ Failed to send credentials email:", sendError);
+              </td></tr>
+            </table>
+          `,
+        });
+        console.log("📧 Credentials email sent to:", email);
+      } catch (err) {
+        console.error("❌ Failed to send credentials email:", err);
         return NextResponse.json({
           success: true,
           emailSent: false,
-          emailError: sendError.message || "Unknown send error",
+          emailError: err.message || "Unknown send error",
           message: "New user created, but failed to send credentials email.",
           user,
         });
       }
-
-      console.log("📧 Credentials email sent to:", email, "id:", sendData?.id);
 
       return NextResponse.json({
         success: true,
@@ -121,44 +104,32 @@ export async function POST(req) {
 
     // 🟡 CASE 2: Existing User → Update role + notify
     console.log("🔄 Updating existing user role:", email);
-
     user.role = role;
     await user.save();
 
-    const resend = getResend();
-    if (!resend) {
-      console.error("❗ RESEND_API_KEY is missing. Skipping role update email.");
-      return NextResponse.json({
-        success: true,
-        emailSent: false,
-        message: "User role updated, but email was not sent (missing RESEND_API_KEY).",
-        user,
+    // Send role update email
+    try {
+      await transporter.sendMail({
+        from: `"Zypher Admin" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: "Your Role Has Been Updated",
+        html: `
+          <p>Hello,</p>
+          <p>Your role has been updated to <b>${role}</b> on Zypher.</p>
+          <p>If you did not request this change, please contact an administrator immediately.</p>
+        `,
       });
-    }
-
-    const { data: updSendData, error: updSendError } = await resend.emails.send({
-      from: RESEND_FROM,
-      to: email,
-      subject: "Your Role Has Been Updated",
-      html: `
-        <p>Hello,</p>
-        <p>Your role has been updated to <b>${role}</b> on Zypher.</p>
-        <p>If you did not request this change, please contact an administrator immediately.</p>
-      `,
-    });
-
-    if (updSendError) {
-      console.error("❌ Failed to send role update email:", updSendError);
+      console.log("📧 Role update email sent to:", email);
+    } catch (err) {
+      console.error("❌ Failed to send role update email:", err);
       return NextResponse.json({
         success: true,
         emailSent: false,
-        emailError: updSendError.message || "Unknown send error",
+        emailError: err.message || "Unknown send error",
         message: "User role updated, but failed to send notification email.",
         user,
       });
     }
-
-    console.log("📧 Role update email sent to:", email, "id:", updSendData?.id);
 
     return NextResponse.json({
       success: true,
@@ -166,14 +137,13 @@ export async function POST(req) {
       message: "Existing user role updated and notification sent.",
       user,
     });
+
   } catch (error) {
     console.error("❌ Error in user role management:", error);
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to process request" }, { status: 500 });
   }
 }
+
 
 // Fetch all users
 export async function GET() {
