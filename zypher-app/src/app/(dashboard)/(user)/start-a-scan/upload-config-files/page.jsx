@@ -201,7 +201,6 @@ export default function UploadConfigPageContent() {
       // console.log('Scan results:', data);
 
     } catch (error) {
-      console.error('Scan error:', error.message);
       setScanResult('failure');
       setParseError(error.message);
     } finally {
@@ -428,7 +427,7 @@ export default function UploadConfigPageContent() {
             <div className="flex flex-col items-center justify-center w-full h-full">
               {parseError && (
                 <div className="mb-4 p-4 bg-red-600/20 text-red-400 rounded-lg w-full max-w-2xl">
-                  <p className="font-medium">Parse Error:</p>
+                  <p className="font-medium">Error:</p>
                   <p>{parseError}</p>
                 </div>
               )}

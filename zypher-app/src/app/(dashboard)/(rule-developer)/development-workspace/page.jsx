@@ -895,7 +895,7 @@ class ${className}(BaseRule):
       </div>
 
       {/* Main Workspace Area */}
-      <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-200px)]">
+      <div className="flex flex-col md:flex-row gap-4 ">
         <RuleExplorer
           rulesInDev={rulesInDev}
           searchTerm={searchTerm}

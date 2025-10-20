@@ -22,10 +22,19 @@
   }
 }
 
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
+.scaled-content {
+  transform: scale(0.8);
+  transform-origin: top left;
+ width: calc(100%/0.8);   /* instead of calc(100% / 0.8) */
+  height: 125vh;
+  overflow: visible;
+}
 

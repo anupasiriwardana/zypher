@@ -22,6 +22,8 @@ export async function middleware(req) {
 
     //API routes
     "/api/auth",  // Auth routes
+    "/api/pricing-plan-landing-page", // Public pricing plans
+    "/api/payments/notify", // Payment notifications
   ];
 
   const isExcluded =
@@ -60,7 +62,14 @@ export async function middleware(req) {
     '/educator-requests': ['educator'],
     '/educator-settings': ['educator'],
 
+    //dashboard routes -> manager
+    '/subscription-plans': ['manager'],
+    '/income-analytics': ['manager'],
+
     // Dashboard routes -> admin
+    'admin-settings': ['admin'],
+    'analytics': ['admin'],
+    'user-management': ['admin'],
 
     // API routes
     '/api/scan-tool': ['primary-user'],
@@ -76,6 +85,13 @@ export async function middleware(req) {
     '/api/custom-rule-file-publish': ['rule-maintainer'],
     '/api/custom-rule-request-start-test': ['rule-maintainer'],
     '/api/active-rules': ['rule-maintainer'],
+    '/api/pricing-plan': ['manager', 'primary-user'],
+    '/api/user-plan-subscribe': ['primary-user'],
+    '/api/payments/create': ['primary-user'],
+    '/api/payments/history': ['primary-user'],
+    '/api/user-activity': ['primary-user'],
+    '/api/knowledgeBaseRequests': ['educator'],
+    '/api/knowledgeBase': ['educator', 'primary-user'],
   };
 
   // Find the most specific matching route
