@@ -85,6 +85,7 @@ export async function middleware(req) {
     '/api/user-plan-subscribe': ['primary-user'],
     '/api/payments/create': ['primary-user'],
     '/api/payments/history': ['primary-user'],
+    '/api/user-activity': ['primary-user'],
   };
 
   // Find the most specific matching route
