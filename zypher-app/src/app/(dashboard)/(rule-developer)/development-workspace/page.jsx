@@ -1,27 +1,30 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Lexend } from 'next/font/google';
-import clsx from 'clsx';
-import RuleExplorer from '@/components/RuleExplorer';
-import CodeEditor from '@/components/CodeEditor';
-import {
-  Code, 
-  AlertCircle,
-  Loader2
-} from 'lucide-react';
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Lexend } from "next/font/google";
+import clsx from "clsx";
+import RuleExplorer from "@/components/RuleExplorer";
+import CodeEditor from "@/components/CodeEditor";
+import { Code, AlertCircle, Loader2 } from "lucide-react";
 
 const lexend = Lexend({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 // Helper function to convert string to camelCase for class names
-const toCamelCase = str => str.replace(/(?:^|\s|_|-)([a-zA-Z])/g, (m, c) => c ? c.toUpperCase() : '').replace(/\s|_|-/g, '').replace(/^([A-Z])/, (m, c) => c.toLowerCase());
+const toCamelCase = (str) =>
+  str
+    .replace(/(?:^|\s|_|-)([a-zA-Z])/g, (m, c) => (c ? c.toUpperCase() : ""))
+    .replace(/\s|_|-/g, "")
+    .replace(/^([A-Z])/, (m, c) => c.toLowerCase());
 
 // Helper function to convert string to PascalCase for class names
-const toPascalCase = str => str.replace(/(?:^|\s|_|-)([a-zA-Z])/g, (m, c) => c ? c.toUpperCase() : '').replace(/\s|_|-/g, '');
+const toPascalCase = (str) =>
+  str
+    .replace(/(?:^|\s|_|-)([a-zA-Z])/g, (m, c) => (c ? c.toUpperCase() : ""))
+    .replace(/\s|_|-/g, "");
 
 // Default test.yml template
 const initialTestYml = `# Example CI/CD pipeline config
@@ -48,47 +51,46 @@ jobs:
 const generateRuleId = (ruleRequest, type) => {
   if (ruleRequest.rule_id) return ruleRequest.rule_id; // Use existing ruleId if present
 
-  
-
   const timestamp = Date.now().toString().slice(-4);
-  if (type === 'Vulnerability') return `CICD-CUST-${ruleRequest._id || timestamp}`;
-  if (type === 'Best Practice') return `CICD-CUST-${ruleRequest._id || timestamp}`;
-  if (type === 'custom') return `CICD-CUST-${ruleRequest._id || timestamp}`;
+  if (type === "Vulnerability")
+    return `CICD-CUST-${ruleRequest._id || timestamp}`;
+  if (type === "Best Practice")
+    return `CICD-CUST-${ruleRequest._id || timestamp}`;
+  if (type === "custom") return `CICD-CUST-${ruleRequest._id || timestamp}`;
 };
 
 export default function DevelopmentWorkspacePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // State management
   const [rulesInDev, setRulesInDev] = useState([]);
   const [selectedRuleId, setSelectedRuleId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [ruleRequestData, setRuleRequestData] = useState(null);
-  
+
   // Loading and feedback states
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
-  
+
   // Form states
   const [metadataForm, setMetadataForm] = useState(null);
-  
+
   // Test console states
-  const [testOutput, setTestOutput] = useState('');
+  const [testOutput, setTestOutput] = useState("");
   const [isTesting, setIsTesting] = useState(false);
-  
+
   // Mark as ready for testing state
   const [isMarkingReady, setIsMarkingReady] = useState(false);
-
 
   // Auto-dismiss save feedback after timeout (5 seconds for success, 8 seconds for errors)
   useEffect(() => {
     if (saveFeedback) {
-      const timeout = saveFeedback.type === 'success' ? 5000 : 8000; // Longer timeout for errors
+      const timeout = saveFeedback.type === "success" ? 5000 : 8000; // Longer timeout for errors
       const timer = setTimeout(() => setSaveFeedback(null), timeout);
       return () => clearTimeout(timer);
     }
@@ -96,30 +98,34 @@ export default function DevelopmentWorkspacePage() {
 
   // Fetch rule request details when ruleRequestId is provided, otherwise fetch existing rules
   useEffect(() => {
-    const ruleRequestId = searchParams.get('ruleRequestId');
-    const ruleType = searchParams.get('ruleType');
+    const ruleRequestId = searchParams.get("ruleRequestId");
+    const ruleType = searchParams.get("ruleType");
 
     const initializeWorkspace = async () => {
       if (ruleRequestId) {
         // First fetch existing rules to check if there's already a rule for this request
         const existingRules = await fetchExistingRules(false, true); // Pass returnRules=true to get rules array
-        
+
         // Check if there's already a rule with this request ID
-        const existingRule = existingRules?.find(rule => rule.originalRequestId === ruleRequestId);
-        
+        const existingRule = existingRules?.find(
+          (rule) => rule.originalRequestId === ruleRequestId
+        );
+
         if (existingRule) {
           // Rule already exists for this request, set it in state and select it
           setRulesInDev(existingRules); // Set all existing rules in state
           setSelectedRuleId(existingRule.id);
           if (existingRule.files.length > 0) {
             // Try to select metadata.json first, otherwise select the first file
-            const metadataFile = existingRule.files.find(f => f.name === 'metadata.json');
+            const metadataFile = existingRule.files.find(
+              (f) => f.name === "metadata.json"
+            );
             setSelectedFile(metadataFile || existingRule.files[0]);
           }
           setIsLoading(false); // Important: Set loading to false
-          setSaveFeedback({ 
-            type: 'info', 
-            message: `Found existing rule for this request: "${existingRule.name}". Continue development from where you left off.` 
+          setSaveFeedback({
+            type: "info",
+            message: `Found existing rule for this request: "${existingRule.name}". Continue development from where you left off.`,
           });
         } else {
           // No existing rule found, initialize from rule request
@@ -138,7 +144,7 @@ export default function DevelopmentWorkspacePage() {
 
   // Update metadata form when selectedFile changes
   useEffect(() => {
-    if (selectedFile && selectedFile.name === 'metadata.json') {
+    if (selectedFile && selectedFile.name === "metadata.json") {
       try {
         setMetadataForm(JSON.parse(selectedFile.content));
       } catch {
@@ -150,36 +156,42 @@ export default function DevelopmentWorkspacePage() {
   }, [selectedFile]);
 
   // Fetch existing rule files from API
-  const fetchExistingRules = async (appendToExisting = false, returnRules = false) => {
+  const fetchExistingRules = async (
+    appendToExisting = false,
+    returnRules = false
+  ) => {
     try {
       if (!appendToExisting && !returnRules) {
         setIsLoading(true);
         setError(null);
       }
 
-      const response = await fetch('/api/custom-rule-file', {
-        method: 'GET',
+      const response = await fetch("/api/custom-rule-file", {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (response.ok) {
         const data = await response.json();
         const ruleFiles = data.ruleFiles || [];
-        
+
         if (ruleFiles.length > 0) {
           // Convert rule files to the expected format and fetch metadata for each
           const rulesWithFiles = await Promise.all(
             ruleFiles.map(async (ruleFile) => {
               try {
                 // Fetch metadata for this rule
-                const metadataResponse = await fetch(`/api/custom-rule-metadata/${ruleFile.rule_id}`, {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                });
+                const metadataResponse = await fetch(
+                  `/api/custom-rule-metadata/${ruleFile.rule_id}`,
+                  {
+                    method: "GET",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
 
                 let metadata = null;
                 if (metadataResponse.ok) {
@@ -188,93 +200,106 @@ export default function DevelopmentWorkspacePage() {
                 }
 
                 // Create the rule structure with files
-                const pythonFileName = `${toCamelCase(ruleFile.rule_name || 'CustomRule')}.py`;
-                
+                const pythonFileName = `${toCamelCase(
+                  ruleFile.rule_name || "CustomRule"
+                )}.py`;
+
                 // Create metadata content (from database if available, otherwise create default)
-                const metadataContent = metadata ? {
-                  rule_id: metadata.rule_id,
-                  name: metadata.rule_name,
-                  description: metadata.description,
-                  severity: metadata.severity,
-                  remediation: metadata.remediation || '',
-                  type: 'Custom Rule',
-                  original_request_id: metadata.request_id
-                } : {
-                  rule_id: ruleFile.rule_id,
-                  name: ruleFile.rule_name || 'Unnamed Rule',
-                  description: 'No description available',
-                  severity: 'Medium',
-                  remediation: '',
-                  type: 'Custom Rule',
-                  original_request_id: ruleFile.request_id
-                };
+                const metadataContent = metadata
+                  ? {
+                      rule_id: metadata.rule_id,
+                      name: metadata.rule_name,
+                      description: metadata.description,
+                      severity: metadata.severity,
+                      remediation: metadata.remediation || "",
+                      type: "Custom Rule",
+                      original_request_id: metadata.request_id,
+                    }
+                  : {
+                      rule_id: ruleFile.rule_id,
+                      name: ruleFile.rule_name || "Unnamed Rule",
+                      description: "No description available",
+                      severity: "Medium",
+                      remediation: "",
+                      type: "Custom Rule",
+                      original_request_id: ruleFile.request_id,
+                    };
 
                 const files = [
                   {
                     name: pythonFileName,
-                    language: 'python',
-                    content: ruleFile.file_content || '# No Python content available'
+                    language: "python",
+                    content:
+                      ruleFile.file_content || "# No Python content available",
                   },
                   {
-                    name: 'test.yml',
-                    language: 'yaml',
-                    content: ruleFile.yaml_test_file_content || initialTestYml
+                    name: "test.yml",
+                    language: "yaml",
+                    content: ruleFile.yaml_test_file_content || initialTestYml,
                   },
                   {
-                    name: 'metadata.json',
-                    language: 'json',
-                    content: JSON.stringify(metadataContent, null, 2)
-                  }
+                    name: "metadata.json",
+                    language: "json",
+                    content: JSON.stringify(metadataContent, null, 2),
+                  },
                 ];
 
                 return {
                   id: ruleFile.rule_id,
                   name: ruleFile.rule_name,
-                  type: 'Custom Rule',
-                  status: ruleFile.status || 'Under Development',
+                  type: "Custom Rule",
+                  status: ruleFile.status || "Under Development",
                   originalRequestId: ruleFile.request_id,
                   ruleOwnerId: ruleFile.rule_owner_id, // Store the rule owner ID
                   databaseId: ruleFile._id,
-                  files: files
+                  files: files,
                 };
               } catch (error) {
-                console.error(`Error processing rule ${ruleFile.rule_id}:`, error);
+                console.error(
+                  `Error processing rule ${ruleFile.rule_id}:`,
+                  error
+                );
                 // Return a basic rule structure even if metadata fetch fails
                 const fallbackMetadata = {
                   rule_id: ruleFile.rule_id,
-                  name: ruleFile.rule_name || 'Unnamed Rule',
-                  description: 'No description available',
-                  severity: 'Medium',
-                  remediation: '',
-                  type: 'Custom Rule',
-                  original_request_id: ruleFile.request_id
+                  name: ruleFile.rule_name || "Unnamed Rule",
+                  description: "No description available",
+                  severity: "Medium",
+                  remediation: "",
+                  type: "Custom Rule",
+                  original_request_id: ruleFile.request_id,
                 };
 
                 return {
                   id: ruleFile.rule_id,
-                  name: ruleFile.rule_name || 'Unnamed Rule',
-                  type: 'Custom Rule',
-                  status: ruleFile.status || 'Under Development',
+                  name: ruleFile.rule_name || "Unnamed Rule",
+                  type: "Custom Rule",
+                  status: ruleFile.status || "Under Development",
                   originalRequestId: ruleFile.request_id,
                   ruleOwnerId: ruleFile.rule_owner_id, // Store the rule owner ID
                   databaseId: ruleFile._id,
                   files: [
                     {
-                      name: `${toCamelCase(ruleFile.rule_name || 'CustomRule')}.py`,
-                      language: 'python',
-                      content: ruleFile.file_content || '# No Python content available'
+                      name: `${toCamelCase(
+                        ruleFile.rule_name || "CustomRule"
+                      )}.py`,
+                      language: "python",
+                      content:
+                        ruleFile.file_content ||
+                        "# No Python content available",
                     },
                     {
-                      name: 'test.yml',
-                      language: 'yaml',
-                      content: ruleFile.yaml_test_file_content || initialTestYml
+                      name: "test.yml",
+                      language: "yaml",
+                      content:
+                        ruleFile.yaml_test_file_content || initialTestYml,
                     },
                     {
-                      name: 'metadata.json',
-                      language: 'json',
-                      content: JSON.stringify(fallbackMetadata, null, 2)
-                    }
-                  ]
+                      name: "metadata.json",
+                      language: "json",
+                      content: JSON.stringify(fallbackMetadata, null, 2),
+                    },
+                  ],
                 };
               }
             })
@@ -287,40 +312,47 @@ export default function DevelopmentWorkspacePage() {
 
           if (appendToExisting) {
             // Filter out duplicates and append to existing rules
-            setRulesInDev(prevRules => {
-              const existingIds = new Set(prevRules.map(rule => rule.id));
-              const newRules = rulesWithFiles.filter(rule => !existingIds.has(rule.id));
+            setRulesInDev((prevRules) => {
+              const existingIds = new Set(prevRules.map((rule) => rule.id));
+              const newRules = rulesWithFiles.filter(
+                (rule) => !existingIds.has(rule.id)
+              );
               return [...prevRules, ...newRules];
             });
           } else {
             // Replace all rules (when no ruleRequestId)
             setRulesInDev(rulesWithFiles);
-            
+
             // Auto-select the first rule if available
             if (rulesWithFiles.length > 0) {
               setSelectedRuleId(rulesWithFiles[0].id);
               if (rulesWithFiles[0].files.length > 0) {
                 // Try to select metadata.json first, otherwise select the first file
-                const metadataFile = rulesWithFiles[0].files.find(f => f.name === 'metadata.json');
+                const metadataFile = rulesWithFiles[0].files.find(
+                  (f) => f.name === "metadata.json"
+                );
                 setSelectedFile(metadataFile || rulesWithFiles[0].files[0]);
               }
             }
           }
-          
+
           if (!appendToExisting && !returnRules) {
-            setSaveFeedback({ 
-              type: 'success', 
-              message: `Loaded ${rulesWithFiles.length} existing rule${rulesWithFiles.length > 1 ? 's' : ''}.` 
+            setSaveFeedback({
+              type: "success",
+              message: `Loaded ${rulesWithFiles.length} existing rule${
+                rulesWithFiles.length > 1 ? "s" : ""
+              }.`,
             });
           }
         } else if (!appendToExisting && !returnRules) {
           // No existing rules found (only show this message when not appending and not returning)
-          setSaveFeedback({ 
-            type: 'info', 
-            message: 'No existing rules found. Start by creating a new rule from assigned rule requests.' 
+          setSaveFeedback({
+            type: "info",
+            message:
+              "No existing rules found. Start by creating a new rule from assigned rule requests.",
           });
         }
-        
+
         if (returnRules) {
           // Return empty array when no rules found
           return [];
@@ -328,7 +360,7 @@ export default function DevelopmentWorkspacePage() {
       } else {
         const errorData = await response.json();
         if (!appendToExisting && !returnRules) {
-          setError(errorData.error || 'Failed to fetch existing rules');
+          setError(errorData.error || "Failed to fetch existing rules");
         }
         if (returnRules) {
           // Return empty array on error when returnRules is true
@@ -336,9 +368,9 @@ export default function DevelopmentWorkspacePage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching existing rules:', error);
+      console.error("Error fetching existing rules:", error);
       if (!appendToExisting && !returnRules) {
-        setError('An unexpected error occurred while fetching existing rules');
+        setError("An unexpected error occurred while fetching existing rules");
       }
       if (returnRules) {
         // Return empty array on error when returnRules is true
@@ -357,30 +389,33 @@ export default function DevelopmentWorkspacePage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/custom-rule-request/${ruleRequestId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/custom-rule-request/${ruleRequestId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
         const ruleRequest = data.ruleRequest;
-        
+
         if (ruleRequest) {
           setRuleRequestData(ruleRequest); // Store rule request data
           await initializeRuleFromRequest(ruleRequest, ruleType);
         } else {
-          setError('Rule request not found');
+          setError("Rule request not found");
         }
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to fetch rule request');
+        setError(errorData.error || "Failed to fetch rule request");
       }
     } catch (error) {
-      console.error('Error fetching rule request:', error);
-      setError('An unexpected error occurred while fetching rule request');
+      console.error("Error fetching rule request:", error);
+      setError("An unexpected error occurred while fetching rule request");
     } finally {
       setIsLoading(false);
     }
@@ -388,10 +423,10 @@ export default function DevelopmentWorkspacePage() {
 
   // Initialize rule development files from rule request
   const initializeRuleFromRequest = async (ruleRequest, ruleType) => {
-    const ruleId = generateRuleId(ruleRequest, ruleType);;
+    const ruleId = generateRuleId(ruleRequest, ruleType);
     const className = toPascalCase(ruleRequest.name);
     const pythonFileName = `${toCamelCase(ruleRequest.name)}.py`;
-    
+
     const pythonContent = `import re
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -399,7 +434,7 @@ class ${className}(BaseRule):
     METADATA = {
         "rule_id": "${ruleId}",
         "rule_name": "${ruleRequest.name}",
-        "severity": "${ruleRequest.suggested_severity || 'Medium'}"
+        "severity": "${ruleRequest.suggested_severity || "Medium"}"
     }
     
     def __init__(self):
@@ -426,7 +461,11 @@ class ${className}(BaseRule):
         
         # TODO: Implement your scan logic here
         # Reference description: ${ruleRequest.description}
-        ${ruleRequest.sample_code ? `# Sample code provided: ${ruleRequest.sample_code}` : '# No sample code provided'}
+        ${
+          ruleRequest.sample_code
+            ? `# Sample code provided: ${ruleRequest.sample_code}`
+            : "# No sample code provided"
+        }
         
         return findings
 `;
@@ -435,10 +474,10 @@ class ${className}(BaseRule):
       rule_id: ruleId,
       name: ruleRequest.name,
       description: ruleRequest.description,
-      severity: ruleRequest.suggested_severity || 'Medium',
+      severity: ruleRequest.suggested_severity || "Medium",
       type: ruleType,
       original_request_id: ruleRequest._id,
-      remediation: ''
+      remediation: "",
     };
 
     const testContent = ruleRequest.sample_code || initialTestYml;
@@ -446,42 +485,42 @@ class ${className}(BaseRule):
     const newRule = {
       id: ruleId,
       name: ruleRequest.name,
-      type: 'Custom Rule',
-      status: 'Under Development',
+      type: "Custom Rule",
+      status: "Under Development",
       originalRequestId: ruleRequest._id,
       ruleOwnerId: ruleRequest.user_id, // Store the rule owner ID
       files: [
         {
           name: pythonFileName,
-          language: 'python',
-          content: pythonContent
+          language: "python",
+          content: pythonContent,
         },
         {
-          name: 'test.yml',
-          language: 'yaml',
-          content: testContent
+          name: "test.yml",
+          language: "yaml",
+          content: testContent,
         },
         {
-          name: 'metadata.json',
-          language: 'json',
-          content: JSON.stringify(metadataContent, null, 2)
-        }
-      ]
+          name: "metadata.json",
+          language: "json",
+          content: JSON.stringify(metadataContent, null, 2),
+        },
+      ],
     };
     // Add the new rule to the development state
     setRulesInDev([newRule]);
 
     setSelectedRuleId(newRule.id);
     setSelectedFile(newRule.files[2]); // Open metadata.json first
-    setSaveFeedback({ 
-      type: 'info', 
-      message: `Rule development initialized from request: "${ruleRequest.name}". Configure metadata and start coding!` 
+    setSaveFeedback({
+      type: "info",
+      message: `Rule development initialized from request: "${ruleRequest.name}". Configure metadata and start coding!`,
     });
   };
 
   // Handle folder click
   const handleFolderClick = (ruleId) => {
-    const rule = rulesInDev.find(r => r.id === ruleId);
+    const rule = rulesInDev.find((r) => r.id === ruleId);
     if (rule) {
       setSelectedRuleId(rule.id);
       if (rule.files.length > 0) {
@@ -501,22 +540,26 @@ class ${className}(BaseRule):
   const handleEditorChange = (newValue) => {
     if (selectedRuleId && selectedFile) {
       // Update the content in rulesInDev
-      setRulesInDev(prevRules => prevRules.map(rule => {
-        if (rule.id === selectedRuleId) {
-          return {
-            ...rule,
-            files: rule.files.map(file =>
-              file.name === selectedFile.name ? { ...file, content: newValue } : file
-            )
-          };
-        }
-        return rule;
-      }));
-      
+      setRulesInDev((prevRules) =>
+        prevRules.map((rule) => {
+          if (rule.id === selectedRuleId) {
+            return {
+              ...rule,
+              files: rule.files.map((file) =>
+                file.name === selectedFile.name
+                  ? { ...file, content: newValue }
+                  : file
+              ),
+            };
+          }
+          return rule;
+        })
+      );
+
       // Also update the selectedFile to reflect the current changes
-      setSelectedFile(prevFile => ({
+      setSelectedFile((prevFile) => ({
         ...prevFile,
-        content: newValue
+        content: newValue,
       }));
     }
   };
@@ -524,25 +567,25 @@ class ${className}(BaseRule):
   // Handle save file
   const handleSaveFile = async (metadataFormData) => {
     if (!selectedFile || !selectedRuleId) {
-      setSaveFeedback({ type: 'error', message: 'No file selected to save.' });
+      setSaveFeedback({ type: "error", message: "No file selected to save." });
       return false; // Return false on error
     }
-    
+
     setIsSaving(true);
     setSaveFeedback(null);
-    
+
     try {
       let updatedContent = selectedFile.content;
-      
+
       // If saving metadata.json, update with form data and call metadata API
-      if (selectedFile.name === 'metadata.json' && metadataFormData) {
+      if (selectedFile.name === "metadata.json" && metadataFormData) {
         updatedContent = JSON.stringify(metadataFormData, null, 2);
-        
+
         // Call API to save metadata
-        const response = await fetch('/api/custom-rule-metadata', {
-          method: 'POST',
+        const response = await fetch("/api/custom-rule-metadata", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             ruleId: metadataFormData.rule_id,
@@ -550,25 +593,31 @@ class ${className}(BaseRule):
             ruleDescription: metadataFormData.description,
             suggestedSeverity: metadataFormData.severity,
             remediation: metadataFormData.remediation || null,
-            ruleOwnerId: rulesInDev.find(r => r.id === metadataFormData.rule_id)?.ruleOwnerId || null,
-            requestId: rulesInDev.find(r => r.id === metadataFormData.rule_id)?.originalRequestId || null
+            ruleOwnerId:
+              rulesInDev.find((r) => r.id === metadataFormData.rule_id)
+                ?.ruleOwnerId || null,
+            requestId:
+              rulesInDev.find((r) => r.id === metadataFormData.rule_id)
+                ?.originalRequestId || null,
           }),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to save metadata to database');
+          throw new Error(
+            errorData.error || "Failed to save metadata to database"
+          );
         }
       } else {
         // For Python rule files and YAML test files, save both together
-        const rule = rulesInDev.find(r => r.id === selectedRuleId);
+        const rule = rulesInDev.find((r) => r.id === selectedRuleId);
         if (!rule) {
-          throw new Error('Rule not found');
+          throw new Error("Rule not found");
         }
 
         // Get all file contents (including current changes)
         // For the currently selected file, use the most up-to-date content from the editor
-        const currentRuleFiles = rule.files.map(file => {
+        const currentRuleFiles = rule.files.map((file) => {
           if (file.name === selectedFile.name) {
             // Use the current content from the selected file (which should include editor changes)
             return { ...file, content: selectedFile.content };
@@ -576,99 +625,118 @@ class ${className}(BaseRule):
           return file;
         });
 
-        const pythonFile = currentRuleFiles.find(f => f.language === 'python');
-        const testFile = currentRuleFiles.find(f => f.name === 'test.yml');
-        const metadataFile = currentRuleFiles.find(f => f.name === 'metadata.json');
+        const pythonFile = currentRuleFiles.find(
+          (f) => f.language === "python"
+        );
+        const testFile = currentRuleFiles.find((f) => f.name === "test.yml");
+        const metadataFile = currentRuleFiles.find(
+          (f) => f.name === "metadata.json"
+        );
 
         if (!pythonFile || !testFile || !metadataFile) {
-          throw new Error('Missing required files (Python rule, test.yml, or metadata.json)');
+          throw new Error(
+            "Missing required files (Python rule, test.yml, or metadata.json)"
+          );
         }
 
         let metadata;
         try {
           metadata = JSON.parse(metadataFile.content);
         } catch (error) {
-          throw new Error('Invalid metadata.json format');
+          throw new Error("Invalid metadata.json format");
         }
 
         // Call API to save/update rule file with both Python and YAML content
-        const response = await fetch('/api/custom-rule-file', {
-          method: 'POST',
+        const response = await fetch("/api/custom-rule-file", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             ruleId: metadata.rule_id || selectedRuleId,
             ruleName: metadata.name || rule.name,
-            ruleStatus: 'Under development',
+            ruleStatus: "Under development",
             ruleFileContent: pythonFile.content,
-            ruleOwnerId: rulesInDev.find(r => r.id === metadata.rule_id)?.ruleOwnerId || null,
-            requestId: rulesInDev.find(r => r.id === metadata.rule_id)?.originalRequestId || null,
-            yamlTestFileContent: testFile.content
+            ruleOwnerId:
+              rulesInDev.find((r) => r.id === metadata.rule_id)?.ruleOwnerId ||
+              null,
+            requestId:
+              rulesInDev.find((r) => r.id === metadata.rule_id)
+                ?.originalRequestId || null,
+            yamlTestFileContent: testFile.content,
           }),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to save rule file to database');
+          throw new Error(
+            errorData.error || "Failed to save rule file to database"
+          );
         }
 
         //update the status of the rule request
         const requestStatusResponse = await fetch(`/api/custom-rule-request`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             requestId: rule.originalRequestId,
-            status: 'Under Development' 
+            status: "Under Development",
           }),
         });
 
         if (!requestStatusResponse.ok) {
           const errorData = await requestStatusResponse.json();
-          throw new Error(errorData.error || 'Failed to update rule request status');
+          throw new Error(
+            errorData.error || "Failed to update rule request status"
+          );
         }
       }
 
       // Update the rule in state
-      setRulesInDev(prevRules => prevRules.map(rule => {
-        if (rule.id === selectedRuleId) {
-          return {
-            ...rule,
-            name: metadataFormData?.name || rule.name,
-            files: rule.files.map(file => 
-              file.name === selectedFile.name ? { ...file, content: updatedContent } : file
-            )
-          };
-        }
-        return rule;
-      }));
+      setRulesInDev((prevRules) =>
+        prevRules.map((rule) => {
+          if (rule.id === selectedRuleId) {
+            return {
+              ...rule,
+              name: metadataFormData?.name || rule.name,
+              files: rule.files.map((file) =>
+                file.name === selectedFile.name
+                  ? { ...file, content: updatedContent }
+                  : file
+              ),
+            };
+          }
+          return rule;
+        })
+      );
 
       // Also update selectedFile to reflect the new content
-      setSelectedFile(prevFile => ({
+      setSelectedFile((prevFile) => ({
         ...prevFile,
-        content: updatedContent
+        content: updatedContent,
       }));
 
       // If we saved metadata, also update the metadataForm state to prevent reversion
-      if (selectedFile.name === 'metadata.json' && metadataFormData) {
+      if (selectedFile.name === "metadata.json" && metadataFormData) {
         setMetadataForm(metadataFormData);
       }
-      
-      setSaveFeedback({ 
-        type: 'success', 
-        message: selectedFile.name === 'metadata.json' 
-          ? 'Metadata saved successfully to database!' 
-          : `Rule files (Python + YAML) saved successfully to database with Active status!` 
+
+      setSaveFeedback({
+        type: "success",
+        message:
+          selectedFile.name === "metadata.json"
+            ? "Metadata saved successfully to database!"
+            : `Rule files (Python + YAML) saved successfully to database with Active status!`,
       });
-      
+
       return true; // Return true on success
     } catch (error) {
       // console.error('Save error:', error);
-      setSaveFeedback({ 
-        type: 'error', 
-        message: error.message || 'Failed to save file. Please try again.' 
+      setSaveFeedback({
+        type: "error",
+        message: error.message || "Failed to save file. Please try again.",
       });
       return false; // Return false on error
     } finally {
@@ -679,11 +747,11 @@ class ${className}(BaseRule):
   // Handle metadata form change
   const handleMetadataFormChange = (e) => {
     const { name, value } = e.target;
-    setMetadataForm(prev => ({ ...prev, [name]: value }));
+    setMetadataForm((prev) => ({ ...prev, [name]: value }));
   };
 
   // Handle metadata form save
-  const handleMetadataFormSave = async(e) => {
+  const handleMetadataFormSave = async (e) => {
     e.preventDefault();
     await handleSaveFile(metadataForm);
   };
@@ -691,13 +759,16 @@ class ${className}(BaseRule):
   // Handle mark as ready for testing
   const handleMarkAsReady = async () => {
     if (!selectedFile || !selectedRuleId) {
-      setSaveFeedback({ type: 'error', message: 'No file selected to save.' });
+      setSaveFeedback({ type: "error", message: "No file selected to save." });
       return;
     }
 
-    const rule = rulesInDev.find(r => r.id === selectedRuleId);
+    const rule = rulesInDev.find((r) => r.id === selectedRuleId);
     if (!rule || !rule.originalRequestId) {
-      setSaveFeedback({ type: 'error', message: 'No associated rule request found for this rule.' });
+      setSaveFeedback({
+        type: "error",
+        message: "No associated rule request found for this rule.",
+      });
       return;
     }
 
@@ -711,57 +782,62 @@ class ${className}(BaseRule):
 
       // Only proceed if save was successful
       if (!saveSuccessful) {
-        setSaveFeedback({ 
-          type: 'error', 
-          message: 'Save operation failed. Cannot mark as ready for testing until metadata is saved successfully.' 
+        setSaveFeedback({
+          type: "error",
+          message:
+            "Save operation failed. Cannot mark as ready for testing until metadata is saved successfully.",
         });
         return;
       }
 
       // Step 2: Update the rule request status to "Ready for Testing"
-      const response = await fetch('/api/custom-rule-request', {
-        method: 'PATCH',
+      const response = await fetch("/api/custom-rule-request", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           requestId: rule.originalRequestId,
-          status: 'Ready for Testing'
+          status: "Ready for Testing",
         }),
       });
 
       if (response.ok) {
-        setSaveFeedback({ 
-          type: 'success', 
-          message: 'Rule saved and marked as Ready for Testing! The rule maintainer will be notified.' 
+        setSaveFeedback({
+          type: "success",
+          message:
+            "Rule saved and marked as Ready for Testing! The rule maintainer will be notified.",
         });
-        
+
         // Wait 2 seconds to let user see the success message before clearing state
         setTimeout(async () => {
           // Clear all editor and rule states before refetching
           setRulesInDev([]);
           setSelectedRuleId(null);
           setSelectedFile(null);
-          setSearchTerm('');
+          setSearchTerm("");
           setMetadataForm(null);
-          setTestOutput('');
-          
+          setTestOutput("");
+
           // Refetch rules to get updated data
           await fetchExistingRules(false);
         }, 3000);
-
       } else {
         const errorData = await response.json();
-        setSaveFeedback({ 
-          type: 'error', 
-          message: `Files saved successfully, but failed to update status: ${errorData.error || 'Unknown error'}` 
+        setSaveFeedback({
+          type: "error",
+          message: `Files saved successfully, but failed to update status: ${
+            errorData.error || "Unknown error"
+          }`,
         });
       }
     } catch (error) {
-      console.error('Mark as ready error:', error);
-      setSaveFeedback({ 
-        type: 'error', 
-        message: error.message || 'Failed to mark rule as ready for testing. Please try again.' 
+      console.error("Mark as ready error:", error);
+      setSaveFeedback({
+        type: "error",
+        message:
+          error.message ||
+          "Failed to mark rule as ready for testing. Please try again.",
       });
     } finally {
       setIsMarkingReady(false);
@@ -771,22 +847,24 @@ class ${className}(BaseRule):
   // Handle test run
   const handleRunTest = async () => {
     if (!selectedRuleId || !rulesInDev.length) {
-      setTestOutput('❌ Error: No rule selected for testing');
+      setTestOutput("❌ Error: No rule selected for testing");
       return;
     }
 
-    const rule = rulesInDev.find(r => r.id === selectedRuleId);
+    const rule = rulesInDev.find((r) => r.id === selectedRuleId);
     if (!rule) {
-      setTestOutput('❌ Error: Selected rule not found');
+      setTestOutput("❌ Error: Selected rule not found");
       return;
     }
 
-    const testFile = rule.files.find(f => f.name === 'test.yml');
-    const pythonFile = rule.files.find(f => f.language === 'python');
-    const metadataFile = rule.files.find(f => f.name === 'metadata.json');
+    const testFile = rule.files.find((f) => f.name === "test.yml");
+    const pythonFile = rule.files.find((f) => f.language === "python");
+    const metadataFile = rule.files.find((f) => f.name === "metadata.json");
 
     if (!testFile || !pythonFile || !metadataFile) {
-      setTestOutput('❌ Error: Missing required files (test.yml, python rule, or metadata.json)');
+      setTestOutput(
+        "❌ Error: Missing required files (test.yml, python rule, or metadata.json)"
+      );
       return;
     }
 
@@ -794,31 +872,33 @@ class ${className}(BaseRule):
     try {
       metadata = JSON.parse(metadataFile.content);
     } catch (error) {
-      setTestOutput('❌ Error: Invalid metadata.json format');
+      setTestOutput("❌ Error: Invalid metadata.json format");
       return;
     }
 
     setIsTesting(true);
-    setTestOutput('🚀 Starting custom rule test...\n⏳ Sending files to test engine...\n');
-    
+    setTestOutput(
+      "🚀 Starting custom rule test...\n⏳ Sending files to test engine...\n"
+    );
+
     try {
       // Prepare the request payload according to the sample JSON structure
       const requestPayload = {
         file_request: {
           filename: "test.yml",
-          content: testFile.content
+          content: testFile.content,
         },
         custom_rule: {
           rule_id: metadata.rule_id || selectedRuleId,
           rule_name: metadata.name || rule.name,
-          content: pythonFile.content
-        }
+          content: pythonFile.content,
+        },
       };
 
-      const response = await fetch('/api/custom-rule-test-scan', {
-        method: 'POST',
+      const response = await fetch("/api/custom-rule-test-scan", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestPayload),
       });
@@ -836,11 +916,17 @@ class ${className}(BaseRule):
         setTestOutput(output);
       } else {
         // Handle API error response
-        setTestOutput(`❌ Test failed: ${result.error || 'Unknown error occurred'}\n\nPlease check your rule implementation and try again.`);
+        setTestOutput(
+          `❌ Test failed: ${
+            result.error || "Unknown error occurred"
+          }\n\nPlease check your rule implementation and try again.`
+        );
       }
     } catch (error) {
-      console.error('Test error:', error);
-      setTestOutput(`❌ Network Error: ${error.message}\n\nPlease check your connection and try again.`);
+      console.error("Test error:", error);
+      setTestOutput(
+        `❌ Network Error: ${error.message}\n\nPlease check your connection and try again.`
+      );
     } finally {
       setIsTesting(false);
     }
@@ -849,13 +935,17 @@ class ${className}(BaseRule):
   // Error state
   if (error) {
     return (
-      <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} min-h-screen flex items-center justify-center`}>
+      <div
+        className={`p-6 md:p-8 lg:p-10 ${lexend.className} min-h-screen flex items-center justify-center`}
+      >
         <div className="text-center text-red-400">
           <AlertCircle size={48} className="mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold mb-2">Error Loading Development Workspace</h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            Error Loading Development Workspace
+          </h2>
           <p className="text-lg mb-4">{error}</p>
           <button
-            onClick={() => router.push('/assigned-rules')}
+            onClick={() => router.push("/assigned-rules")}
             className="bg-[var(--brand-yellow)] text-[var(--background)] px-6 py-2 rounded-lg hover:brightness-110 transition-all"
           >
             Back to Assigned Rules
@@ -868,26 +958,40 @@ class ${className}(BaseRule):
   // Loading state
   if (isLoading) {
     return (
-      <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} min-h-screen flex items-center justify-center`}>
+      <div
+        className={`p-6 md:p-8 lg:p-10 ${lexend.className} min-h-screen flex items-center justify-center`}
+      >
         <div className="text-center">
-          <Loader2 size={48} className="animate-spin text-[var(--brand-yellow)] mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold mb-2 text-[var(--foreground)]">Setting up Development Workspace</h2>
-          <p className="text-lg text-[var(--text-secondary)]">Initializing rule development environment...</p>
+          <Loader2
+            size={48}
+            className="animate-spin text-[var(--brand-yellow)] mx-auto mb-4"
+          />
+          <h2 className="text-2xl font-semibold mb-2 text-[var(--foreground)]">
+            Setting up Development Workspace
+          </h2>
+          <p className="text-lg text-[var(--text-secondary)]">
+            Initializing rule development environment...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`p-4 lg:p-4 ${lexend.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
+    <div
+      className={`p-4 lg:p-6 ${lexend.className} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
+    >
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl md:text-4xl font-bold text-[var(--foreground)] animate-fadeInUp">
-          <Code size={32} className="inline-block mr-4 text-[var(--brand-yellow)]" />
+          <Code
+            size={32}
+            className="inline-block mr-4 text-[var(--brand-yellow)]"
+          />
           Development Workspace
         </h1>
         <button
-          onClick={() => router.push('/assigned-rules')}
+          onClick={() => router.push("/assigned-rules")}
           className="inline-flex items-center gap-2 bg-[var(--button-bg)] text-[var(--foreground)] border border-[var(--border-input)] hover:border-[var(--brand-yellow)] hover:text-[var(--brand-yellow)] font-semibold px-4 py-2 rounded-lg transition-all"
         >
           Back to Assigned Rules
@@ -895,24 +999,29 @@ class ${className}(BaseRule):
       </div>
 
       {/* Main Workspace Area */}
-      <div className="flex flex-col md:flex-row gap-4 ">
-        <RuleExplorer
-          rulesInDev={rulesInDev}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedRuleId={selectedRuleId}
-          selectedFile={selectedFile}
-          onFolderClick={handleFolderClick}
-          onFileClick={handleFileClick}
-          isSidebarCollapsed={isSidebarCollapsed}
-          setIsSidebarCollapsed={setIsSidebarCollapsed}
-        />
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-200px)] w-full max-w-full">
+        {/* Rule Explorer - Fixed width */}
+        <div
+          className={clsx(
+            "flex-shrink-0 h-full overflow-hidden",
+            isSidebarCollapsed ? "w-16" : "w-full lg:w-80"
+          )}
+        >
+          <RuleExplorer
+            rulesInDev={rulesInDev}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedRuleId={selectedRuleId}
+            selectedFile={selectedFile}
+            onFolderClick={handleFolderClick}
+            onFileClick={handleFileClick}
+            isSidebarCollapsed={isSidebarCollapsed}
+            setIsSidebarCollapsed={setIsSidebarCollapsed}
+          />
+        </div>
 
-        {/* Code Editor Area */}
-        <div className={clsx(
-          "bg-[var(--input-bg)] p-6 rounded-xl shadow-2xl border border-[var(--border-input)] w-full flex flex-col overflow-hidden transition-all duration-300",
-          "flex-grow"
-        )}>
+        {/* Code Editor Area - Takes remaining space */}
+        <div className="flex-1 min-w-0 h-full bg-[var(--input-bg)] rounded-xl shadow-2xl border border-[var(--border-input)]">
           <CodeEditor
             selectedFile={selectedFile}
             selectedRuleId={selectedRuleId}

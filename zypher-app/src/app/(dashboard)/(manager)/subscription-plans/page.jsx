@@ -637,25 +637,27 @@ export default function ManagerPricingPage() {
 
   // 🔹 Update plan (PUT) — use /api/pricing-plans and robust id detection
   const handleSavePlan = async (updatedPlan) => {
-    try {
-      const id = updatedPlan._id || updatedPlan.plan_id || updatedPlan.id;
-      if (!id) throw new Error("Missing plan id for update");
-      const res = await fetch(`/api/pricing-plans/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPlan),
-      });
-      if (!res.ok) throw new Error("Failed to update plan");
-      const data = await res.json();
-      setPlans((prev) => prev.map((p) => {
-        const pId = p._id || p.plan_id || p.id;
-        const dId = data._id || data.plan_id || data.id;
-        return pId === dId ? data : p;
-      }));
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  try {
+    const planId = updatedPlan.plan_id; // use plan_id
+    if (!planId) throw new Error("Missing plan id for update");
+
+    const res = await fetch(`/api/pricing-plans/${planId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedPlan),
+    });
+
+    if (!res.ok) throw new Error("Failed to update plan");
+
+    const data = await res.json();
+    setPlans((prev) =>
+      prev.map((p) => (p.plan_id === data.plan_id ? data : p))
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 
   // 🔹 Delete plan (DELETE) — use /api/pricing-plans and robust id handling
   const handleDeletePlan = async (id) => {

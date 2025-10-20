@@ -40,19 +40,28 @@ export default function RuleMaintainerSettingsPage() {
   const [activeTab, setActiveTab] = useState("assign-roles");
   const [userData, setUserData] = useState(null);
   const [profilePic, setProfilePic] = useState("/Images/avatar.jpg");
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    if (!session?.user?.email) return;
-
-    const fetchUser = async () => {
-      const res = await fetch(`/api/users?email=${session.user.email}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setUserData(data);
-    };
-
-    fetchUser();
-  }, [session?.user?.email]);
+      const fetchUser = async () => {
+        try {
+          if (!session?.user?.email) return;
+  
+          const res = await fetch(`/api/user-settings?userId=${session.user.id}`);
+          if (!res.ok) throw new Error("Failed to fetch user");
+  
+          const data = await res.json();
+          setUser(data);
+        } catch (err) {
+          console.error("Error fetching user:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchUser();
+    }, [session?.user?.email]);
 
   // --- Assign Roles Tab States & Data ---
   const [teamMembers, setTeamMembers] = useState([
@@ -274,22 +283,18 @@ export default function RuleMaintainerSettingsPage() {
             <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">
               Your Profile Information
             </h2>
-            {session?.user && (
-              <ProfileForm
-                role={session.user.role}
-                userId={session.user.id}
-                initialEmail={session.user.email}
-                initialProfilePic={profilePic}
-                saveEndpoint="/api/user-settings"
-              />
-            )}
-
-            {session?.user && (
-              <PasswordForm
-                userId={session.user.id}
-                updateEndpoint="/api/change-password"
-              />
-            )}
+            <ProfileForm
+                          role={user.role}
+                          userId={user._id}
+                          initialEmail={user.email}
+                          initialProfilePic={user.image || "/Images/avatar.jpg"}
+                          saveEndpoint="/api/user-settings"
+                        />
+            
+                        <PasswordForm
+                          userId={user._id}
+                          updateEndpoint="/api/user-settings"
+                        />
           </div>
         )}
 
