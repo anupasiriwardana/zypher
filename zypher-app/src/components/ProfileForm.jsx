@@ -34,6 +34,7 @@ export default function ProfileForm({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          currentEmail: initialEmail, // <-- must send current email
           newEmail: email,
           image: profilePic,
         }),
