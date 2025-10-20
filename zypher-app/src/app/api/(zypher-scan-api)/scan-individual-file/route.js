@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import FileScanResult from "@/models/FileScanResult";
 import connectDB from "@/utils/db";
 
+import { 
+  checkAndUpdateRemainingScans
+ } from "@/app/api/_services/userActivityService";
+
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   const role = request.headers.get("x-user-role");
@@ -62,6 +66,15 @@ export async function POST(request) {
         { error: customRules.detail || 'Custom rule scan failed' },
         { status: customRuleRes.status }
       );
+    }
+
+    // Check and update remaining scans - after successful scans
+    const remainingScansStatus = await checkAndUpdateRemainingScans(userId);
+    if(remainingScansStatus.error){
+        return NextResponse.json(
+            { error: remainingScansStatus.error },
+            { status: remainingScansStatus.status }
+        );
     }
 
     const scanResultDoc = new FileScanResult({

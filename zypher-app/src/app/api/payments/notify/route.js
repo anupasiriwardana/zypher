@@ -8,6 +8,8 @@ import {
 import { getPlanLimitsByPlanId } from "@/app/api/_services/pricingPlanService";
 import { getPaymentByOrderId } from "@/app/api/_services/paymentService";
 
+import { createOrUpdateUserActivityLog } from "@/app/api/_services/userActivityService";
+
 /**
  * Handle payment notification from PayHere
  * 
@@ -117,6 +119,12 @@ export async function POST(request) {
                 // Log error but don't fail the request - PayHere should get success response
             } else {
                 console.log("Subscription activated successfully:", subscriptionResult.data);
+            }
+
+            //create new user activity log or update existing one
+            const userActivityLog = await createOrUpdateUserActivityLog(payment.userId);
+            if (userActivityLog.error) {
+                throw new Error(userActivityLog.error);
             }
         } else if (['0', '1'].includes(data.status_code)) {
             // Payment pending (0) or failed (1) - keep subscription paused
