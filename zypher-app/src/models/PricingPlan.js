@@ -12,15 +12,16 @@ const PricingPlanSchema = new mongoose.Schema({
         unique: true
     },
     monthly_price: {
-        type: Number,
+        type: mongoose.Schema.Types.Double,
         required: true,
         default: 0
     },
     yearly_price: {
-        type: Number,
+        type: mongoose.Schema.Types.Double,
         required: true,
         default: 0
     },
+    // -1 : unlimted scans
     scanLimit: {
         type: Number,
         required: true,
@@ -35,13 +36,9 @@ const PricingPlanSchema = new mongoose.Schema({
         type: [String],
         required: true
     },
-    notes: {
-        type: String,      
-        default: ''        
-    },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'default'],
+        enum: ['active', 'inactive','default'],
         default: 'active'
     }
 }, {
