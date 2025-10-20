@@ -84,6 +84,9 @@ export default function LoginPage() {
       case 'educator':
         router.push("/add-knowledge");
         break;
+      case 'manager':
+        router.push("/subscription-plans");
+        break;
       default:
         router.push("/");
         break;
