@@ -5,15 +5,39 @@ import PricingPlan from "@/models/PricingPlan";
 export async function PUT(req, { params }) {
   try {
     await connectDB();
-    const { id } = params;
-    const updates = await req.json();
-    const updatedPlan = await PricingPlan.findByIdAndUpdate(id, updates, { new: true });
+
+    const { id } = params; // plan_id from URL
+
+    const updates = await req.json(); // frontend must send JSON body
+
+    // Optional: whitelist fields to update
+    const allowedFields = [
+      "planName",
+      "monthly_price",
+      "yearly_discount",
+      "scanLimit",
+      "allowCustomRuleRequests",
+      "features",
+      "notes",
+    ];
+    const updateData = {};
+    allowedFields.forEach((f) => {
+      if (f in updates) updateData[f] = updates[f];
+    });
+
+    const updatedPlan = await PricingPlan.findOneAndUpdate(
+      { plan_id: id }, // search by plan_id
+      updateData,
+      { new: true }
+    );
+
     if (!updatedPlan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
+
     return NextResponse.json(updatedPlan, { status: 200 });
   } catch (error) {
-    console.error("PUT /api/plans/[id] error:", error);
+    console.error("PUT /api/pricing-plans/[id] error:", error);
     return NextResponse.json({ error: "Failed to update plan" }, { status: 500 });
   }
 }
