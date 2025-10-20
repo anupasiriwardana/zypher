@@ -116,20 +116,20 @@ export default function RuleDeveloperSidebar() {
           bg-[var(--background)]
           border-r border-[var(--border-input)]
           flex flex-col items-center
-          py-8 z-50
+          pb-8 z-50
           transition-all duration-300
         "
       >
 
 
-        <Link href="/assigned-rules" className="flex items-center justify-center w-16 h-16 rounded-xl mb-16 group relative overflow-hidden">
+        <Link href="/assigned-rules" className="flex items-center justify-center w-16 h-16 rounded-xl mb-8 group relative overflow-hidden">
             <div className="absolute inset-0 rounded-xl animate-logo-glow-pulse"></div>
             
             <Image
               src="/Images/zypher.png"
               alt="Zypher Logo"
-              width={34}
-              height={34}
+              width={24}
+              height={24}
               className="relative z-10 object-contain"
             />
         </Link>
