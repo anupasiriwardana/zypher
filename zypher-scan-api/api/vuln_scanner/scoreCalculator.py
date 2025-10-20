@@ -13,7 +13,7 @@ class PipelineScoreCalculator:
             "INFO": 5
         }
 
-        self.supported_severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        self.supported_severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW","INFO"]
 
     def calculate_per_severity_scores(self, failed_findings: List[Finding]) -> Dict[str, float]:
         failed_counts = {sev: 0 for sev in self.supported_severities}

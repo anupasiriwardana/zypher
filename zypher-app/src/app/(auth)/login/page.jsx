@@ -69,7 +69,7 @@ export default function LoginPage() {
   const redirectBasedOnRole = (role) => {
     switch (role) {
       case 'admin':
-        router.push("/admin-dashboard");
+        router.push("/analytics");
         break;
       case 'primary-user':
         router.push("/start-a-scan");
@@ -105,7 +105,7 @@ export default function LoginPage() {
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }));
+    })); 
 
     // Clear error when user starts typing
     if (errors[name]) {
