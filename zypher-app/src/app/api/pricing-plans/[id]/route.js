@@ -18,17 +18,21 @@ export async function PUT(req, { params }) {
   }
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, context) {
   try {
+    const { id } = await context.params;
+
     await connectDB();
-    const { id } = params;
-    const deleted = await PricingPlan.findByIdAndDelete(id);
+
+    const deleted = await PricingPlan.findOneAndDelete({ plan_id: id });
+
     if (!deleted) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
+
     return NextResponse.json({ message: "Plan deleted successfully" }, { status: 200 });
   } catch (error) {
-    console.error("DELETE /api/plans/[id] error:", error);
+    console.error("DELETE /api/pricing-plans/[id] error:", error);
     return NextResponse.json({ error: "Failed to delete plan" }, { status: 500 });
   }
 }

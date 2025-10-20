@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Edit, Save, X, PlusCircle, Trash2, Tag, Calendar, Gift, FileText, CheckCircle, DollarSign } from 'lucide-react';
+import { Edit, Save, X, PlusCircle, Trash2, Tag, Calendar, Gift, FileText, CheckCircle, DollarSign,ToggleLeft, ToggleRight } from 'lucide-react';
 import clsx from 'clsx';
 
 // A visually distinct button for action
@@ -21,140 +21,253 @@ const ActionButton = ({ onClick, children, icon: Icon, className = '', color = '
   </button>
 );
 
-// --- 1. Plan Edit Modal Component ---
-
 const PlanEditModal = ({ plan, onClose, onSave, onDelete }) => {
-  const [editedPlan, setEditedPlan] = useState(plan);
+  const [editedPlan, setEditedPlan] = useState({
+    ...plan,
+    notes: plan.notes || "",
+    features:
+      plan.features?.length > 0
+        ? plan.features
+        : ["Downloadable Scan Reports", "Access to Knowledge Base"],
+  });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Handle input changes (supports number, text)
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEditedPlan(prev => ({ ...prev, [name]: name === 'price' || name === 'discount' ? parseFloat(value) || 0 : value }));
+    const { name, value, type } = e.target;
+    setEditedPlan((prev) => ({
+      ...prev,
+      [name]: type === "number" ? parseFloat(value) || 0 : value,
+    }));
   };
 
-  const handlefeaturesChange = (index, value) => {
-    const newfeatures = [...editedPlan.features];
-    newfeatures[index] = value;
-    setEditedPlan(prev => ({ ...prev, features: newfeatures.filter(b => b.trim() !== '') }));
+  // Toggle custom rule request
+  const handleToggle = () => {
+    setEditedPlan((prev) => ({
+      ...prev,
+      allowCustomRuleRequests: !prev.allowCustomRuleRequests,
+    }));
   };
 
-  const addBenefit = () => {
-    setEditedPlan(prev => ({ ...prev, features: [...prev.features, ''] }));
+  // Feature handlers
+  const handleFeatureChange = (index, value) => {
+    const newFeatures = [...editedPlan.features];
+    newFeatures[index] = value;
+    setEditedPlan((prev) => ({ ...prev, features: newFeatures }));
   };
 
+  const addFeatureField = () => {
+    setEditedPlan((prev) => ({
+      ...prev,
+      features: [...prev.features, ""],
+    }));
+  };
+
+  const removeFeatureField = (index) => {
+    const newFeatures = editedPlan.features.filter((_, i) => i !== index);
+    setEditedPlan((prev) => ({
+      ...prev,
+      features: newFeatures.length ? newFeatures : [""],
+    }));
+  };
+
+  // Save changes
   const saveChanges = () => {
-    onSave(editedPlan);
+    onSave({
+      ...editedPlan,
+      yearly_price:
+        editedPlan.monthly_price * 12 - (editedPlan.yearly_discount || 0),
+    });
     onClose();
   };
 
   if (!plan) return null;
 
-  // Use fixed colors for modal background and borders
-  const MODAL_BG = 'rgba(13, 13, 13, 0.95)'; 
-  const CARD_BG = '#1A1A1A';
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300"
-      style={{ backgroundColor: MODAL_BG }}
+      style={{ backgroundColor: "rgba(13,13,13,0.95)" }}
       onClick={onClose}
     >
-      <div 
-        className="bg-[var(--background)] p-8 rounded-2xl shadow-2xl border border-[var(--border-input)] w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-100 transition-transform duration-300"
-        onClick={(e) => e.stopPropagation()} // Stop propagation to prevent closing when clicking inside
+      <div
+        className="bg-[var(--background)] p-8 rounded-2xl shadow-2xl border border-[var(--border-input)] w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="flex justify-between items-start border-b border-[var(--border-input)] pb-4 mb-6 sticky top-0 bg-[var(--background)] z-10">
-          <h2 className="text-3xl font-bold text-[var(--brand-yellow)]">Edit Plan: {plan.name}</h2>
-          <button onClick={onClose} className="p-2 rounded-full text-[var(--foreground)] hover:bg-[var(--hover-bg)] transition">
+          <h2 className="text-3xl font-bold text-[var(--brand-yellow)]">
+            Edit Plan: {plan.planName}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full text-[var(--foreground)] hover:bg-[var(--hover-bg)] transition"
+          >
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); saveChanges(); }} className="space-y-6">
-          
-          {/* Plan Name and Price */}
+        {/* Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveChanges();
+          }}
+          className="space-y-6"
+        >
+          {/* Plan Name */}
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+              <Tag size={16} /> Plan Name
+            </span>
+            <input
+              type="text"
+              name="planName"
+              value={editedPlan.planName}
+              onChange={handleChange}
+              required
+              className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg focus:ring-2 focus:ring-[var(--brand-yellow)]"
+            />
+          </label>
+
+          {/* Prices */}
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><Tag size={16} />Plan Name</span>
-              <input
-                type="text"
-                name="name"
-                value={editedPlan.name}
-                onChange={handleChange}
-                required
-                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg focus:ring-2 focus:ring-[var(--brand-yellow)]"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><DollarSign size={16} />Price (USD)</span>
+              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+                <DollarSign size={16} /> Monthly Price (USD)
+              </span>
               <input
                 type="number"
-                name="price"
-                value={editedPlan.price}
+                name="monthly_price"
+                value={editedPlan.monthly_price}
                 onChange={handleChange}
                 step="0.01"
                 min="0"
                 required
-                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg focus:ring-2 focus:ring-[var(--brand-yellow)]"
+                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+                <Gift size={16} /> Yearly Discount (USD)
+              </span>
+              <input
+                type="number"
+                name="yearly_discount"
+                value={editedPlan.yearly_discount || ""}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg"
               />
             </label>
           </div>
-          
-          {/* Discount */}
-          <label className="block">
-              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><Gift size={16} />Discount (%)</span>
+
+          {/* Toggle & Scan Limit */}
+          <div className="grid grid-cols-2 gap-4">
+            <label className="flex items-center justify-between border border-[var(--border-input)] p-4 rounded-xl cursor-pointer">
+              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
+                Allow Custom Rule Requests
+              </span>
+              <div onClick={handleToggle} className="cursor-pointer">
+                {editedPlan.allowCustomRuleRequests ? (
+                  <ToggleRight
+                    className="text-[var(--brand-yellow)]"
+                    size={24}
+                  />
+                ) : (
+                  <ToggleLeft
+                    className="text-[var(--text-secondary)]"
+                    size={24}
+                  />
+                )}
+              </div>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+                Scan Limit (per day)
+              </span>
               <input
                 type="number"
-                name="discount"
-                value={editedPlan.discount}
+                name="scanLimit"
+                value={editedPlan.scanLimit}
                 onChange={handleChange}
-                min="0"
-                max="100"
-                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg focus:ring-2 focus:ring-[var(--brand-yellow)]"
+                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg"
               />
-          </label>
+              {editedPlan.scanLimit === -1 && (
+                <p className="text-xs italic text-[var(--text-secondary)] mt-1">
+                  Unlimited scans
+                </p>
+              )}
+            </label>
+          </div>
 
-          {/* features */}
+          {/* Features */}
           <div className="border border-[var(--border-input)] p-4 rounded-xl space-y-3">
-            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><CheckCircle size={16} />features</span>
-            {editedPlan.features.map((benefit, index) => (
+            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+              <CheckCircle size={16} /> Features
+            </span>
+            {editedPlan.features.map((feature, index) => (
               <div key={index} className="flex items-center gap-2">
                 <input
                   type="text"
-                  value={benefit}
-                  onChange={(e) => handlefeaturesChange(index, e.target.value)}
-                  placeholder={`Benefit ${index + 1}`}
+                  value={feature}
+                  onChange={(e) =>
+                    handleFeatureChange(index, e.target.value)
+                  }
                   className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-2 rounded-lg"
                 />
+                {editedPlan.features.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeFeatureField(index)}
+                    className="text-red-400 hover:text-red-300 transition"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             ))}
-            <button type="button" onClick={addBenefit} className="flex items-center gap-1 text-[var(--brand-yellow)] hover:text-yellow-500 transition text-sm">
-              <PlusCircle size={16} /> Add Benefit
+            <button
+              type="button"
+              onClick={addFeatureField}
+              className="flex items-center gap-1 text-[var(--brand-yellow)] hover:text-yellow-500 transition text-sm"
+            >
+              <PlusCircle size={16} /> Add Feature
             </button>
           </div>
 
-          {/* Notes and Creation Date (Display only) */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-[var(--input-bg)] rounded-lg">
-              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><Calendar size={16} />Date Created</span>
-              <p className="text-[var(--foreground)] font-mono">{plan.created}</p>
-            </div>
-            <label className="block">
-              <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1"><FileText size={16} />Notes</span>
-              <textarea
-                name="notes"
-                value={editedPlan.notes}
-                onChange={handleChange}
-                rows="3"
-                className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg focus:ring-2 focus:ring-[var(--brand-yellow)] resize-none"
-              />
-            </label>
+          {/* Notes (Optional) */}
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+              <FileText size={16} /> Notes (optional)
+            </span>
+            <textarea
+              name="notes"
+              value={editedPlan.notes}
+              onChange={handleChange}
+              rows="3"
+              placeholder="Add extra details or comments..."
+              className="w-full bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] p-3 rounded-lg resize-none"
+            />
+          </label>
+
+          {/* Created Date */}
+          <div className="p-3 bg-[var(--input-bg)] rounded-lg">
+            <span className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2 mb-1">
+              <Calendar size={16} /> Date Created
+            </span>
+            <p className="text-[var(--foreground)] font-mono">
+              {new Date(plan.createdAt).toLocaleDateString()}
+            </p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex justify-between pt-4">
-            <button 
-              type="button" 
-              onClick={() => setIsDeleting(true)} 
+            <button
+              type="button"
+              onClick={() => setIsDeleting(true)}
               className="text-red-500 hover:text-red-400 flex items-center gap-1 transition-colors"
             >
               <Trash2 size={20} /> Delete Plan
@@ -166,17 +279,34 @@ const PlanEditModal = ({ plan, onClose, onSave, onDelete }) => {
           </div>
         </form>
 
-        {/* Delete Confirmation Modal (nested) */}
+        {/* Delete Confirmation */}
         {isDeleting && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-2xl">
             <div className="bg-[var(--background)] p-6 rounded-xl border border-red-500 w-96 text-center shadow-2xl">
-              <p className="text-xl font-semibold mb-4 text-red-400">Confirm Deletion</p>
-              <p className="text-[var(--foreground)] mb-6">Are you sure you want to delete the plan "{plan.name}"?</p>
+              <p className="text-xl font-semibold mb-4 text-red-400">
+                Confirm Deletion
+              </p>
+              <p className="text-[var(--foreground)] mb-6">
+                Are you sure you want to delete "{plan.planName}"?
+              </p>
               <div className="flex justify-center gap-4">
-                <ActionButton onClick={() => setIsDeleting(false)} color="yellow" className="w-1/2">
+                <ActionButton
+                  onClick={() => setIsDeleting(false)}
+                  color="yellow"
+                  className="w-1/2"
+                >
                   Cancel
                 </ActionButton>
-                <ActionButton onClick={() => { onDelete(plan.id); onClose(); }} color="red" icon={Trash2} className="w-1/2">
+                <ActionButton
+                  onClick={() => {
+                    console.log("Deleting plan:", plan.plan_id);
+                    onDelete(plan.plan_id);
+                    onClose();
+                  }}
+                  color="red"
+                  icon={Trash2}
+                  className="w-1/2"
+                >
                   Confirm Delete
                 </ActionButton>
               </div>
