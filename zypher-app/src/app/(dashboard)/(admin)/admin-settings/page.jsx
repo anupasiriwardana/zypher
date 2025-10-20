@@ -71,7 +71,7 @@ export default function AdminSettingsPage() {
       <div className="bg-[var(--input-bg)] p-8 rounded-xl shadow-xl border border-[var(--border-input)] space-y-10">
         <ProfileForm
           role={user.role}
-          userId={user._id}
+          userId={user._id}   // ✅ now used for identification
           initialEmail={user.email}
           initialProfilePic={user.image || "/Images/avatar.jpg"}
           saveEndpoint="/api/user-settings"

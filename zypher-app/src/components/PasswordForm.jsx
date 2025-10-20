@@ -42,6 +42,7 @@ export default function PasswordForm({ updateEndpoint, userId }) {
       if (!res.ok) throw new Error(data.error || "Password update failed");
 
       setFeedback({ type: "success", message: "Password updated successfully!" });
+      setTimeout(() => setFeedback(null), 5000);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
