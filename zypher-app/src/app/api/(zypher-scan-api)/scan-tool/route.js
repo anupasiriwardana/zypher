@@ -20,7 +20,7 @@ export async function POST(request) {
 
   try {
     //fetching vulnScan results and bpScan results in parallel
-    const [vulnScanRes, bpScanRes, customRuleScanRes] = await Promise.all([
+    const [vulnScanRes, bpScanRes, customRuleScanRes, patternScanRes] = await Promise.all([
       fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -38,11 +38,17 @@ export async function POST(request) {
           user_id: userId,
          }),
       }),
+      fetch(`${process.env.FASTAPI_URL}/pattern-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl }),
+      }),
     ]);
 
     const vulnScanData = await vulnScanRes.json();
     const bpScanData = await bpScanRes.json();
     const customRuleScanData = await customRuleScanRes.json();
+    const patternScanData = await patternScanRes.json();
 
     if (!vulnScanRes.ok) {
       return NextResponse.json(
@@ -62,6 +68,13 @@ export async function POST(request) {
       return NextResponse.json(
         { error: customRuleScanData.detail || "Custom Rule scan failed" },
         { status: customRuleScanRes.status }
+      );
+    }
+
+    if (!patternScanRes.ok) {
+      return NextResponse.json(
+        { error: patternScanData.detail || "Pattern scan failed" },
+        { status: patternScanRes.status }
       );
     }
 
@@ -132,6 +145,7 @@ export async function POST(request) {
       vulnerabilityScanResults: vulnScanData,
       bestPracticesScanResults: bpScanData,
       customRuleScanResults: customRuleScanData,
+      patternScanResults: patternScanData,
     };
 
     return NextResponse.json(combinedResults, { status: 200 });

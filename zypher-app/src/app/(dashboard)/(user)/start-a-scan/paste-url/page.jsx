@@ -312,7 +312,7 @@ export default function PasteUrlPageContent() {
       }
 
       const data = await res.json();
-      console.log("Scan response data:", data.customRuleScanResults);
+      console.log("Scan response data:", data.patternScanResults);
       if (data.vulnerabilityScanResults || data.bestPracticesScanResults || data.customRuleScanResults) {
         setScanResults(data);
         setFeedback({
@@ -422,6 +422,7 @@ export default function PasteUrlPageContent() {
                 </div>
               </div>
 
+              {scanType !== "pattern-scan" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-grow">
                 {/* Critical Findings */}
                 <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
@@ -460,6 +461,7 @@ export default function PasteUrlPageContent() {
                   </p>
                 </div>
               </div>
+              )}
             </div>
 
             {/* Progress Bar */}
@@ -605,7 +607,11 @@ export default function PasteUrlPageContent() {
                                       size={16}
                                       className="text-[var(--text-secondary)]"
                                     />{" "}
-                                    Rule:{" "}
+                                    {scanType === "pattern-scan" ? (
+                                      <span>Pattern: </span>
+                                    ) : (
+                                      <span>Rule: </span>
+                                    )}
                                     <span className="break-words">
                                       {getRuleName(ruleId, scanType)}
                                     </span>
@@ -763,6 +769,23 @@ export default function PasteUrlPageContent() {
             {/* Tabs */}
             <div className="flex border-b border-[var(--border-input)] mb-6 justify-center sm:justify-start overflow-x-auto custom-scrollbar">
               <button
+                onClick={() => setActiveTab("pattern-scan")}
+                className={clsx(
+                  "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                  activeTab === "pattern-scan"
+                    ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                )}
+              >
+                Security Patterns
+                {scanResults.patternScanResults?.stats?.total_findings > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-600/20 text-purple-400">
+                    {scanResults.patternScanResults.stats.total_findings}
+                  </span>
+                )}
+              </button>
+              
+              <button
                 onClick={() => setActiveTab("vulnerabilities")}
                 className={clsx(
                   "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
@@ -794,6 +817,7 @@ export default function PasteUrlPageContent() {
                   </span>
                 )}
               </button>
+              {scanResults.customRuleScanResults?.stats?.total_findings > 0 && (
               <button
                 onClick={() => setActiveTab("custom-rules")}
                 className={clsx(
@@ -810,8 +834,17 @@ export default function PasteUrlPageContent() {
                   </span>
                 )}
               </button>
+              )}
             </div>
 
+
+             {activeTab === "pattern-scan" &&
+              scanResults.patternScanResults &&
+              renderScanTypeResults(
+                scanResults.patternScanResults,
+                "pattern-scan",
+                scanResults.repoUrl
+              )} 
             {activeTab === "vulnerabilities" &&
               scanResults.vulnerabilityScanResults &&
               renderScanTypeResults(
