@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import clsx from "clsx";
 import {
   Send,
@@ -15,50 +15,117 @@ import {
 } from "lucide-react";
 
 export function SecurityRuleForm() {
+  const [customRules, setCustomRules] = useState([]);
+  const [selectedRule, setSelectedRule] = useState("");
   const [ruleName, setRuleName] = useState("");
   const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState("medium");
-  const [fileTypes, setFileTypes] = useState("");
+  const [severity, setSeverity] = useState("");
+  const [explanation, setExplanation] = useState("");
+  const [realWorldExamples, setRealWorldExamples] = useState("");
+  const [potentialImpacts, setPotentialImpacts] = useState("");
+  const [mitigationSteps, setMitigationSteps] = useState("");
+  const [bestPracticesSummary, setBestPracticesSummary] = useState("");
+  const [detectionMethods, setDetectionMethods] = useState("");
+  const [references, setReferences] = useState("");
   const [exampleCode, setExampleCode] = useState("");
-  const [isCustomRule, setIsCustomRule] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  const fetchVulnerabilityRules = async () => {
+  try {
+    const res = await fetch("/api/knowledgeBaseRequests?type=vulnerability");
+    if (!res.ok) throw new Error("Failed to fetch requests: " + res.statusText);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Front-end fetch error:", err);
+    return [];
+  }
+};
+
+  useEffect(() => {
+    const loadRules = async () => {
+      try {
+        const rules = await fetchVulnerabilityRules();
+        setCustomRules(rules);
+      } catch (err) {
+        console.error(err);
+        setFeedback({ type: "error", message: "Failed to load knowledge base requests" });
+      }
+    };
+    loadRules();
+  }, []);
+
+  // Rule selection
+  const handleRuleChange = (e) => {
+    const ruleId = e.target.value;
+    setSelectedRule(ruleId);
+
+    const rule = customRules.find((r) => String(r._id) === ruleId);
+    if (rule) {
+      setRuleName(rule.name);
+      setSeverity(rule.suggested_severity || "");
+      setExampleCode(rule.sample_code || "");
+    } else {
+      setRuleName("");
+      setSeverity("");
+      setExampleCode("");
+    }
+  };
+
+  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback(null);
 
-    if (!ruleName.trim() || !description.trim()) {
-      setFeedback({
-        type: "error",
-        message: "Rule Name and Description are required.",
-      });
+    if (!selectedRule || !description.trim()) {
+      setFeedback({ type: "error", message: "Rule and Description are required." });
       return;
     }
 
     setIsSubmitting(true);
+
     try {
-      console.log("Submitting Security Rule:", {
-        ruleName,
+      const payload = {
+        rule_id: selectedRule,
+        rule_name: ruleName,
         description,
         severity,
-        fileTypes,
-        exampleCode,
-        isCustomRule,
+        explanation,
+        real_world_examples: realWorldExamples.split("\n").map((e) => e.trim()).filter(Boolean),
+        potential_impacts: potentialImpacts.split("\n").map((e) => e.trim()).filter(Boolean),
+        mitigation_steps: mitigationSteps.split("\n").map((e) => e.trim()).filter(Boolean),
+        best_practices_summary: bestPracticesSummary.split("\n").map((e) => e.trim()).filter(Boolean),
+        detection_methods: detectionMethods.split("\n").map((e) => e.trim()).filter(Boolean),
+        references: references.split("\n").map((e) => e.trim()).filter(Boolean),
+        example_code: exampleCode,
+        status: "active",
+      };
+
+      const res = await fetch("/api/knowledgeBase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      await new Promise((res) => setTimeout(res, 2000));
-      setFeedback({
-        type: "success",
-        message: "Security rule submitted successfully!",
-      });
+      if (!res.ok) throw new Error("Failed to save to Knowledge Base");
 
+      setCustomRules((prev) => prev.filter((r) => String(r._id) !== selectedRule));
+
+      setSelectedRule("");
       setRuleName("");
       setDescription("");
-      setSeverity("medium");
-      setFileTypes("");
+      setSeverity("");
+      setExplanation("");
+      setRealWorldExamples("");
+      setPotentialImpacts("");
+      setMitigationSteps("");
+      setBestPracticesSummary("");
+      setDetectionMethods("");
+      setReferences("");
       setExampleCode("");
-      setIsCustomRule(false);
+
+      setFeedback({ type: "success", message: "Rule added to Knowledge Base!" });
     } catch (err) {
       setFeedback({ type: "error", message: err.message });
     } finally {
@@ -71,18 +138,24 @@ export function SecurityRuleForm() {
       onSubmit={handleSubmit}
       className="space-y-6 bg-[var(--input-bg)] p-8 rounded-2xl shadow-xl border border-[var(--border-input)]"
     >
-      {/* Rule Name */}
+      {/* Rule Selector */}
       <div>
         <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
           <Hash size={16} /> Rule Name <span className="text-red-500">*</span>
         </label>
-        <input
-          value={ruleName}
-          onChange={(e) => setRuleName(e.target.value)}
-          placeholder="e.g., Disallow Public S3 Buckets"
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+        <select
+          value={selectedRule}
+          onChange={handleRuleChange}
+          className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
           disabled={isSubmitting}
-        />
+        >
+          <option value="">-- Select security rule --</option>
+          {customRules.map((rule) => (
+            <option key={rule._id} value={rule._id}>
+              {rule.rule_name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Severity */}
@@ -90,18 +163,11 @@ export function SecurityRuleForm() {
         <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
           <SlidersHorizontal size={16} /> Severity
         </label>
-        <select
+        <input
           value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
-          className="w-full py-3 px-4 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
-          disabled={isSubmitting}
-        >
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-          <option value="informational">Informational</option>
-        </select>
+          readOnly
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
+        />
       </div>
 
       {/* Description */}
@@ -112,23 +178,100 @@ export function SecurityRuleForm() {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          rows="5"
-          placeholder="Describe the rule, its impact, and context..."
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          rows="4"
+          placeholder="Summarize the rule..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)]"
           disabled={isSubmitting}
         />
       </div>
 
-      {/* File Types */}
+      {/* Explanation */}
       <div>
-        <label className="text-sm font-medium text-[var(--foreground)] mb-2 flex items-center gap-2">
-          <FileType size={16} /> Target File Types
-        </label>
-        <input
-          value={fileTypes}
-          onChange={(e) => setFileTypes(e.target.value)}
-          placeholder="e.g., .yml, .tf, Dockerfile"
-          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">Explanation</label>
+        <textarea
+          value={explanation}
+          onChange={(e) => setExplanation(e.target.value)}
+          rows="5"
+          placeholder="Explain the security issue in detail..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Real World Examples */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">Real World Examples</label>
+        <textarea
+          value={realWorldExamples}
+          onChange={(e) => setRealWorldExamples(e.target.value)}
+          rows="4"
+          placeholder="One example per line..."
+          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Potential Impacts */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">Potential Impacts</label>
+        <textarea
+          value={potentialImpacts}
+          onChange={(e) => setPotentialImpacts(e.target.value)}
+          rows="4"
+          placeholder="One impact per line..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Mitigation Steps */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">Mitigation Steps</label>
+        <textarea
+          value={mitigationSteps}
+          onChange={(e) => setMitigationSteps(e.target.value)}
+          rows="5"
+          placeholder="Steps to mitigate..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Best Practices Summary */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">Best Practices Summary</label>
+        <textarea
+          value={bestPracticesSummary}
+          onChange={(e) => setBestPracticesSummary(e.target.value)}
+          rows="4"
+          placeholder="Summarize best practices..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Detection Methods */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">Detection Methods</label>
+        <textarea
+          value={detectionMethods}
+          onChange={(e) => setDetectionMethods(e.target.value)}
+          rows="4"
+          placeholder="How to detect this issue..."
+          className="w-full px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* References */}
+      <div>
+        <label className="text-sm font-medium text-[var(--foreground)] mb-2">References</label>
+        <textarea
+          value={references}
+          onChange={(e) => setReferences(e.target.value)}
+          rows="3"
+          placeholder="One reference per line (URLs, docs...)"
+          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
           disabled={isSubmitting}
         />
       </div>
@@ -142,28 +285,10 @@ export function SecurityRuleForm() {
           value={exampleCode}
           onChange={(e) => setExampleCode(e.target.value)}
           rows="6"
-          placeholder="Paste example YAML / JSON / Docker snippet..."
-          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
+          placeholder="Paste example snippet..."
+          className="w-full font-mono text-sm px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border-input)]"
           disabled={isSubmitting}
         />
-      </div>
-
-      {/* Custom Rule Checkbox */}
-      <div className="flex items-center gap-3">
-        <input
-          id="isCustomRule"
-          type="checkbox"
-          checked={isCustomRule}
-          onChange={(e) => setIsCustomRule(e.target.checked)}
-          disabled={isSubmitting}
-          className="w-5 h-5 text-[var(--brand-yellow)] focus:ring-[var(--brand-yellow)] border-gray-300 rounded"
-        />
-        <label
-          htmlFor="isCustomRule"
-          className="text-sm font-medium text-[var(--foreground)]"
-        >
-          Is this a custom rule?
-        </label>
       </div>
 
       {/* Feedback */}
@@ -194,11 +319,10 @@ export function SecurityRuleForm() {
           </>
         ) : (
           <>
-            Submit Rule <Send size={20} />
+            Submit Knowledge <Send size={20} />
           </>
         )}
       </button>
     </form>
   );
 }
-

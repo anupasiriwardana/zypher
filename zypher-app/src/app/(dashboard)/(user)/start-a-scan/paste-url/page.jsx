@@ -355,7 +355,7 @@ export default function PasteUrlPageContent() {
           });
         }
       } else {
-        throw new Error("Scan response missing expected results.");
+        throw new Error(data.error || "No scan results returned.");
       }
     } catch (error) {
       setFeedback({

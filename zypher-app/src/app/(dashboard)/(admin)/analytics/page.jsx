@@ -65,7 +65,7 @@ export default function AdminAnalyticsPage() {
   return (
     <div className={`p-2 md:p-8 lg:p-4 ${lexend.className} animate-fadeInUp`}>
       <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">
-        Admin Analytics
+        Analytics
       </h1>
 
       {/* Timeframe Filter */}

@@ -88,9 +88,12 @@ export default function RulesPage() {
   const [submissionFeedback, setSubmissionFeedback] = useState(null);
   const [userRequests, setUserRequests] = useState([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+  const [userActivityStatus, setUserActivityStatus] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Fetch user's custom rule requests
   useEffect(() => {
+    fetchUserActivity();
     fetchUserRequests();
   }, []);
 
@@ -117,6 +120,27 @@ export default function RulesPage() {
     }
   };
 
+  const fetchUserActivity = async () => {
+    try {
+      const response = await fetch('/api/user-activity', {
+        method: 'GET',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserActivityStatus(data.data || null);
+        // If user is not allowed to request custom rules, prompt to upgrade
+        if (data?.data && data.data.allowCustomRuleRequests === false) {
+          setShowUpgradeModal(true);
+        }
+      } else {
+        console.error('Failed to fetch user activity');
+      }
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+    }
+  };
+
   const handleSubmitRule = async (e) => {
     e.preventDefault();
     setSubmissionFeedback(null);
@@ -124,6 +148,11 @@ export default function RulesPage() {
     // Basic validation
     if (!ruleName.trim() || !description.trim()) {
       setSubmissionFeedback({ type: 'error', message: 'Rule Name and Description are required.' });
+      return;
+    }
+
+    if(userActivityStatus && userActivityStatus.allowCustomRuleRequests === false){
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -189,6 +218,20 @@ export default function RulesPage() {
 
   return (
     <div className={`p-6 md:p-8 lg:p-10 ${lexend.className} animate-fadeInUp min-h-screen`}>
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <div className="bg-[var(--background)] p-6 rounded-xl shadow-xl border border-[var(--border-input)] max-w-sm w-full text-center">
+            <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Please upgrade your plan</h3>
+            <p className="text-[var(--text-secondary)] mb-5">Custom rule requests are not available on your current plan.</p>
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              className="inline-flex items-center justify-center px-5 py-2 rounded-lg bg-[var(--brand-yellow)] text-[var(--background)] font-bold hover:brightness-110 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <h1 className="text-3xl md:text-4xl font-bold mb-8 text-[var(--foreground)]">Custom Rule Development</h1>
 
       <div className="flex flex-col lg:flex-row gap-8">

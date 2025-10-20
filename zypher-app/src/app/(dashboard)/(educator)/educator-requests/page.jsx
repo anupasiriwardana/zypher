@@ -1,63 +1,41 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Lexend } from "next/font/google";
 import clsx from "clsx";
 import {
-  Hourglass,
   ShieldCheck,
   Sparkles,
-  ClipboardCheck,
+  FileCode,
   ArrowRightCircle,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
 const lexend = Lexend({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-const educatorRequests = [
-  {
-    id: "bp-001",
-    type: "best-practice",
-    ruleName: "Use Environment Variables for Secrets",
-    description: "Avoid hardcoding credentials. Use environment variables for security.",
-    severity: "medium",
-    isCustom: true,
-    submittedDate: "2025-07-10T12:00:00Z",
-  },
-  {
-    id: "sr-001",
-    type: "security-rule",
-    ruleName: "Restrict Public EC2 Access",
-    description: "Flags Terraform resources exposing EC2 to 0.0.0.0/0.",
-    severity: "high",
-    isCustom: false,
-    submittedDate: "2025-07-11T09:00:00Z",
-  },
-  {
-    id: "sr-002",
-    type: "security-rule",
-    ruleName: "Detect Secrets in Git History",
-    description: "Scans Git commits for accidentally committed secrets using regex.",
-    severity: "critical",
-    isCustom: true,
-    submittedDate: "2025-07-12T14:00:00Z",
-  },
-];
-
 const typeMap = {
-  "best-practice": {
+  bestpractice: {
     label: "Best Practice",
     color: "text-blue-500",
     bg: "bg-blue-600/10",
     icon: Sparkles,
     href: "/add-knowledge?type=best",
   },
-  "security-rule": {
-    label: "Security Rule",
+  vulnerability: {
+    label: "Vulnerability",
     color: "text-red-500",
     bg: "bg-red-600/10",
     icon: ShieldCheck,
-    href: "/add-knowledge?type=security",
+    href: "/add-knowledge?type=vuln",
+  },
+  custom: {
+    label: "Custom Rule",
+    color: "text-purple-500",
+    bg: "bg-purple-600/10",
+    icon: FileCode,
+    href: "/add-knowledge?type=custom",
   },
 };
 
@@ -70,15 +48,61 @@ const severityColors = {
 };
 
 export default function EducatorRequestInboxPage() {
-  const [requests] = useState(educatorRequests);
+  const [requests, setRequests] = useState({
+    bestpractice: [],
+    vulnerability: [],
+    custom: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const grouped = useMemo(() => {
-    const byType = { "best-practice": [], "security-rule": [] };
-    for (const req of requests) {
-      byType[req.type].push(req);
-    }
-    return byType;
-  }, [requests]);
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setLoading(true);
+
+        // fetch all 3 types
+        const types = ["bestpractice", "vulnerability", "custom"];
+        const results = await Promise.all(
+          types.map((t) =>
+            fetch(`/api/knowledgeBaseRequests?type=${t}`, { cache: "no-store" }).then((res) =>
+              res.json()
+            )
+          )
+        );
+
+        setRequests({
+          bestpractice: results[0],
+          vulnerability: results[1],
+          custom: results[2],
+        });
+      } catch (err) {
+        setError(err.message || "Unexpected error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-[var(--text-secondary)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-yellow)] mr-3" />
+        Loading requests...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen text-red-500">
+        <AlertCircle className="h-10 w-10 mb-3" />
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className={`${lexend.className} p-6 md:p-8 lg:p-10 animate-fadeInUp`}>
@@ -86,9 +110,12 @@ export default function EducatorRequestInboxPage() {
         Rule Addition Requests
       </h1>
 
-      {Object.entries(grouped).map(([type, reqList]) => {
+      {Object.entries(requests).map(([type, reqList]) => {
+        if (!reqList || reqList.length === 0) return null;
+
         const typeData = typeMap[type];
         const Icon = typeData.icon;
+
         return (
           <div key={type} className="mb-12">
             <h2 className="text-2xl font-semibold flex items-center gap-3 mb-6 text-[var(--foreground)]">
@@ -98,31 +125,29 @@ export default function EducatorRequestInboxPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {reqList.map((req) => (
                 <div
-                  key={req.id}
+                  key={req._id}
                   className="bg-[var(--input-bg)] p-6 rounded-xl border border-[var(--border-input)] shadow-md hover:shadow-lg transition duration-300"
                 >
                   <h3 className="text-lg font-semibold text-[var(--brand-yellow)] mb-2">
-                    {req.ruleName}
+                    {req.rule_name || req.rule_id}
                   </h3>
                   <p className="text-sm text-[var(--text-secondary)] mb-4">
-                    {req.description}
+                    {req.rule_description || "No description provided."}
                   </p>
 
                   <div className="flex flex-wrap gap-2 text-xs font-medium mb-4">
                     <span className={clsx("px-2 py-1 rounded-full", typeData.bg, typeData.color)}>
                       {typeData.label}
                     </span>
-                    <span
-                      className={clsx(
-                        "px-2 py-1 rounded-full",
-                        severityColors[req.severity] || "bg-gray-400/20 text-gray-400"
-                      )}
-                    >
-                      Severity: {req.severity}
-                    </span>
-                    {req.isCustom && (
-                      <span className="px-2 py-1 rounded-full bg-purple-600/10 text-purple-500">
-                        Custom Rule
+                    {req.suggested_severity && (
+                      <span
+                        className={clsx(
+                          "px-2 py-1 rounded-full",
+                          severityColors[req.suggested_severity.toLowerCase()] ||
+                            "bg-gray-400/20 text-gray-400"
+                        )}
+                      >
+                        Severity: {req.suggested_severity}
                       </span>
                     )}
                   </div>
