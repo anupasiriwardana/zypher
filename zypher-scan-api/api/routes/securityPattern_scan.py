@@ -1,9 +1,9 @@
 import os
-import asyncio
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 import httpx
 import yaml
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Dict, List, Tuple
 
 router = APIRouter(
     prefix="/pattern-scan",
@@ -17,6 +17,57 @@ if not GITHUB_TOKEN:
 
 class RepoRequest(BaseModel):
     repo_url: str
+
+
+class PipelineParser:
+    SAST_TOOLS = ["semgrep", "codeql", "bandit", "gosec", "checkmarx", "sonar-scanner", "fortify", "veracode"]
+
+    def _fix_on_key(self, data):
+        if isinstance(data, dict):
+            new_data = {}
+            for k, v in data.items():
+                if k is True:
+                    new_data['on'] = self._fix_on_key(v)
+                else:
+                    new_data[k] = self._fix_on_key(v)
+            return new_data
+        elif isinstance(data, list):
+            return [self._fix_on_key(item) for item in data]
+        else:
+            return data
+
+    def parse_content(self, content: str) -> Tuple[Dict, List[str]]:
+        try:
+            lines = content.splitlines(keepends=True)
+            data = yaml.safe_load(content) or {}
+            data = self._fix_on_key(data)
+            return data, lines
+        except yaml.YAMLError as e:
+            line_no = e.problem_mark.line + 1 if hasattr(e, 'problem_mark') else 0
+            raise ValueError(f"YAML error at line {line_no}: {str(e)}")
+
+    def detect_push_to_branch_sast(self, data: Dict) -> bool:
+        """
+        Detects push-to-branch SAST:
+        - Must have `on: push`
+        - At least one job step using a SAST tool
+        """
+        on_section = data.get("on")
+        if not on_section or not isinstance(on_section, dict) or "push" not in on_section:
+            return False
+
+        jobs = data.get("jobs", {})
+        if not isinstance(jobs, dict):
+            return False
+
+        for job_name, job_def in jobs.items():
+            steps = job_def.get("steps", [])
+            for step in steps:
+                run = step.get("run", "").lower()
+                uses = step.get("uses", "").lower()
+                if any(tool in run or tool in uses for tool in self.SAST_TOOLS):
+                    return True
+        return False
 
 
 async def get_file_content(client: httpx.AsyncClient, download_url: str) -> str:
@@ -52,56 +103,8 @@ async def fetch_all_yaml_files(client: httpx.AsyncClient, owner: str, repo: str,
     return files
 
 
-def parse_push_event(yml_content: dict) -> bool:
-    """
-    Detect if the YAML contains a 'push' event with branch definitions.
-    """
-    if not isinstance(yml_content, dict):
-        return False
-    on_section = yml_content.get("on")
-    if not on_section:
-        return False
-    if isinstance(on_section, dict) and "push" in on_section:
-        push_section = on_section["push"]
-        if isinstance(push_section, dict) and "branches" in push_section:
-            return True
-        elif push_section is None:
-            # push: {} counts as push event
-            return True
-    elif isinstance(on_section, list) and "push" in on_section:
-        return True
-    elif isinstance(on_section, str) and on_section.lower() == "push":
-        return True
-    return False
-
-
-def check_push_pattern(file_dict: dict):
-    results = []
-
-    for fname, content in file_dict.items():
-        try:
-            yml = yaml.safe_load(content) or {}
-        except:
-            yml = {}
-
-        found = parse_push_event(yml)
-        snippet = content[:200] if found else ""
-
-        results.append({
-            "rule_id": "CICD-PATT-002",
-            "severity": "CRITICAL",
-            "description": "Push-to-Branch SAST Checkpoint",
-            "line_number": 0,
-            "filepath": fname,
-            "snippet": snippet,
-            "recommendation": f"{'Found' if found else 'Missing'}: Push-to-Branch SAST Checkpoint",
-            "confidence": "HIGH"
-        })
-    return results
-
-
-@router.post("/push-check")
-async def scan_push_pattern(repo_request: RepoRequest):
+@router.post("/")
+async def scan_repo(repo_request: RepoRequest):
     repo_url = repo_request.repo_url.strip()
     if not repo_url.startswith("https://github.com/"):
         raise HTTPException(status_code=400, detail="Invalid GitHub URL format")
@@ -113,14 +116,27 @@ async def scan_push_pattern(repo_request: RepoRequest):
     async with httpx.AsyncClient() as client:
         file_dict = await fetch_all_yaml_files(client, owner, repo)
 
-    findings = check_push_pattern(file_dict)
+    parser = PipelineParser()
+    findings = []
+
+    for fname, content in file_dict.items():
+        try:
+            data, _ = parser.parse_content(content)
+            found = parser.detect_push_to_branch_sast(data)
+            findings.append({
+                "file": fname,
+                "push_to_branch_sast_detected": found
+            })
+        except Exception as e:
+            findings.append({
+                "file": fname,
+                "push_to_branch_sast_detected": False,
+                "error": str(e)
+            })
 
     return {
         "status": "success",
         "repo_url": repo_url,
-        "patterns": findings,
-        "stats": {
-            "scanned_files": len(file_dict),
-            "total_findings": len(findings),
-        }
+        "scanned_files": len(file_dict),
+        "findings": findings
     }
