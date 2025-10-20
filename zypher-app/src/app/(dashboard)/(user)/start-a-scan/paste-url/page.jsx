@@ -768,22 +768,6 @@ export default function PasteUrlPageContent() {
 
             {/* Tabs */}
             <div className="flex border-b border-[var(--border-input)] mb-6 justify-center sm:justify-start overflow-x-auto custom-scrollbar">
-              <button
-                onClick={() => setActiveTab("pattern-scan")}
-                className={clsx(
-                  "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
-                  activeTab === "pattern-scan"
-                    ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
-                    : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
-                )}
-              >
-                Security Patterns
-                {scanResults.patternScanResults?.stats?.total_findings > 0 && (
-                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-600/20 text-purple-400">
-                    {scanResults.patternScanResults.stats.total_findings}
-                  </span>
-                )}
-              </button>
               
               <button
                 onClick={() => setActiveTab("vulnerabilities")}
@@ -817,6 +801,22 @@ export default function PasteUrlPageContent() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab("pattern-scan")}
+                className={clsx(
+                  "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                  activeTab === "pattern-scan"
+                    ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                )}
+              >
+                Security Patterns
+                {scanResults.patternScanResults?.stats?.total_findings > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600/20 text-green-400">
+                    {scanResults.patternScanResults.stats.total_findings}
+                  </span>
+                )}
+              </button>
               {scanResults.customRuleScanResults?.stats?.total_findings > 0 && (
               <button
                 onClick={() => setActiveTab("custom-rules")}
@@ -838,13 +838,7 @@ export default function PasteUrlPageContent() {
             </div>
 
 
-             {activeTab === "pattern-scan" &&
-              scanResults.patternScanResults &&
-              renderScanTypeResults(
-                scanResults.patternScanResults,
-                "pattern-scan",
-                scanResults.repoUrl
-              )} 
+             
             {activeTab === "vulnerabilities" &&
               scanResults.vulnerabilityScanResults &&
               renderScanTypeResults(
@@ -859,6 +853,13 @@ export default function PasteUrlPageContent() {
                 "best-practices",
                 scanResults.repoUrl
               )}
+              {activeTab === "pattern-scan" &&
+              scanResults.patternScanResults &&
+              renderScanTypeResults(
+                scanResults.patternScanResults,
+                "pattern-scan",
+                scanResults.repoUrl
+              )} 
             {activeTab === "custom-rules" &&
               scanResults.customRuleScanResults &&
               renderScanTypeResults(
