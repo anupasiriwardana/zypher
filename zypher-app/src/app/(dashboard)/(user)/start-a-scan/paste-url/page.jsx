@@ -294,12 +294,11 @@ export default function PasteUrlPageContent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          repoUrl: trimmedUrl, 
-          user_id: session.user.id 
+        body: JSON.stringify({
+          repoUrl: trimmedUrl,
+          user_id: session.user.id,
         }), // Use trimmedUrl here
       });
-
 
       if (!res.ok) {
         const errorData = await res
@@ -313,7 +312,11 @@ export default function PasteUrlPageContent() {
 
       const data = await res.json();
       console.log("Scan response data:", data.patternScanResults);
-      if (data.vulnerabilityScanResults || data.bestPracticesScanResults || data.customRuleScanResults) {
+      if (
+        data.vulnerabilityScanResults ||
+        data.bestPracticesScanResults ||
+        data.customRuleScanResults
+      ) {
         setScanResults(data);
         setFeedback({
           type: "success",
@@ -378,6 +381,7 @@ export default function PasteUrlPageContent() {
     }
 
     const { stats, results } = scanTypeData; // Destructure relevant data
+    console.log("results:", scanResults.patternScanResults);
 
     // Determine the max score for vulnerability progress bar
     const vulnMaxScoreForProgressBar =
@@ -394,6 +398,7 @@ export default function PasteUrlPageContent() {
         : stats?.["BSTP score"] !== undefined && stats["BSTP score"] > 0
         ? stats["BSTP score"]
         : 5000;
+    console.log(scanResults);
 
     return (
       <div className="mt-8 text-left animate-fadeIn">
@@ -423,44 +428,44 @@ export default function PasteUrlPageContent() {
               </div>
 
               {scanType !== "pattern-scan" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-grow">
-                {/* Critical Findings */}
-                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Critical Findings
-                  </p>
-                  <p className="text-4xl font-bold text-red-400">
-                    {stats.critical || 0}
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-grow">
+                  {/* Critical Findings */}
+                  <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Critical Findings
+                    </p>
+                    <p className="text-4xl font-bold text-red-400">
+                      {stats.critical || 0}
+                    </p>
+                  </div>
+                  {/* High Findings */}
+                  <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      High Findings
+                    </p>
+                    <p className="text-4xl font-bold text-orange-400">
+                      {stats.high || 0}
+                    </p>
+                  </div>
+                  {/* Medium Findings */}
+                  <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Medium Findings
+                    </p>
+                    <p className="text-4xl font-bold text-yellow-400">
+                      {stats.medium || 0}
+                    </p>
+                  </div>
+                  {/* Low Findings */}
+                  <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Low Findings
+                    </p>
+                    <p className="text-4xl font-bold text-green-400">
+                      {stats.low || 0}
+                    </p>
+                  </div>
                 </div>
-                {/* High Findings */}
-                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    High Findings
-                  </p>
-                  <p className="text-4xl font-bold text-orange-400">
-                    {stats.high || 0}
-                  </p>
-                </div>
-                {/* Medium Findings */}
-                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Medium Findings
-                  </p>
-                  <p className="text-4xl font-bold text-yellow-400">
-                    {stats.medium || 0}
-                  </p>
-                </div>
-                {/* Low Findings */}
-                <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col justify-center items-center text-center gap-2">
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Low Findings
-                  </p>
-                  <p className="text-4xl font-bold text-green-400">
-                    {stats.low || 0}
-                  </p>
-                </div>
-              </div>
               )}
             </div>
 
@@ -511,7 +516,7 @@ export default function PasteUrlPageContent() {
                 </div>
               )}
 
-              {scanType === "custom-rules" &&
+            {scanType === "custom-rules" &&
               stats["CUST score"] !== undefined && (
                 <div className="bg-[var(--background)] p-6 rounded-lg border border-[var(--border-input)] shadow-md flex flex-col items-center justify-center space-y-4 h-full">
                   <h4 className="text-md font-semibold text-[var(--text-secondary)]">
@@ -536,156 +541,220 @@ export default function PasteUrlPageContent() {
           </div>
         )}
 
-        {/* Findings Section */}
-        {results && results.length > 0 ? (
-          <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md overflow-x-auto custom-scrollbar">
-            <h3 className="text-2xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2">
-              <Bug size={24} className="text-red-400" />
-              Detailed Findings
-            </h3>
-            <div className="space-y-8">
-              {results.map((fileResult, fileIndex) => {
-                // Group findings by rule_id
-                const groupedFindings = fileResult.findings.reduce(
-                  (acc, finding) => {
-                    if (!acc[finding.rule_id]) {
-                      acc[finding.rule_id] = [];
-                    }
-                    acc[finding.rule_id].push(finding);
-                    return acc;
-                  },
-                  {}
-                );
+        {/* Findings Section (only for non-pattern scans) */}
+        {scanType !== "pattern-scan" ? (
+          results && results.length > 0 ? (
+            <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md overflow-x-auto custom-scrollbar">
+              <h3 className="text-2xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                <Bug size={24} className="text-red-400" />
+                Detailed Findings
+              </h3>
+              <div className="space-y-8">
+                {results.map((fileResult, fileIndex) => {
+                  // Group findings by rule_id
+                  const groupedFindings = fileResult.findings.reduce(
+                    (acc, finding) => {
+                      if (!acc[finding.rule_id]) {
+                        acc[finding.rule_id] = [];
+                      }
+                      acc[finding.rule_id].push(finding);
+                      return acc;
+                    },
+                    {}
+                  );
 
-                const isFileExpanded = expandedFiles.has(fileResult.path);
-                const fileHighestSeverity = getFileHighestSeverity(
-                  fileResult.findings
-                ); // Get highest severity for the file
+                  const isFileExpanded = expandedFiles.has(fileResult.path);
+                  const fileHighestSeverity = getFileHighestSeverity(
+                    fileResult.findings
+                  ); // Get highest severity for the file
 
-                return (
-                  
-                  <div
-                    key={fileIndex}
-                    className="bg-[var(--input-bg)] p-6 rounded-lg border border-[var(--border-input)] shadow-inner"
-                  >
-                    <button
-                      className="w-full text-left flex items-center justify-between gap-x-2 flex-wrap min-w-0 cursor-pointer"
-                      onClick={() => toggleFileExpansion(fileResult.path)}
+                  return (
+                    <div
+                      key={fileIndex}
+                      className="bg-[var(--input-bg)] p-6 rounded-lg border border-[var(--border-input)] shadow-inner"
                     >
-                      <h4 className="text-xl font-semibold text-[var(--brand-yellow)] flex items-center gap-x-2 flex-wrap min-w-0">
-                        <FolderOpen size={20} /> File:{" "}
-                        <span className="break-words">{fileResult.path}</span>
-                        {fileResult.findings?.length > 0 && (
-                          <>
-                            <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300">
-                              {fileResult.findings.length} findings
-                            </span>
-                            <SeverityBadge severity={scanType === "pattern-scan" ? undefined : fileHighestSeverity} />
-                          </>
-                        )}
-                      </h4>
-                      <span className="ml-auto shrink-0 text-[var(--text-secondary)]">
-                        {isFileExpanded ? (
-                          <ChevronUp size={20} />
-                        ) : (
-                          <ChevronDown size={20} />
-                        )}
-                      </span>
-                    </button>
+                      <button
+                        className="w-full text-left flex items-center justify-between gap-x-2 flex-wrap min-w-0 cursor-pointer"
+                        onClick={() => toggleFileExpansion(fileResult.path)}
+                      >
+                        <h4 className="text-xl font-semibold text-[var(--brand-yellow)] flex items-center gap-x-2 flex-wrap min-w-0">
+                          <FolderOpen size={20} /> File:{" "}
+                          <span className="break-words">{fileResult.path}</span>
+                          {fileResult.findings?.length > 0 && (
+                            <>
+                              <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300">
+                                {fileResult.findings.length} findings
+                              </span>
+                              <SeverityBadge
+                                severity={
+                                  scanType === "pattern-scan"
+                                    ? undefined
+                                    : fileHighestSeverity
+                                }
+                              />
+                            </>
+                          )}
+                        </h4>
+                        <span className="ml-auto shrink-0 text-[var(--text-secondary)]">
+                          {isFileExpanded ? (
+                            <ChevronUp size={20} />
+                          ) : (
+                            <ChevronDown size={20} />
+                          )}
+                        </span>
+                      </button>
 
-                    {isFileExpanded && (
-                      <div className="mt-4 space-y-4 animate-fadeIn">
-                        {Object.entries(groupedFindings).length > 0 ? (
-                          Object.entries(groupedFindings).map(
-                            ([ruleId, findingsForRule], ruleIndex) => (
-                              <div
-                                key={ruleIndex}
-                                className="p-4 rounded-md bg-[var(--background)] border border-[var(--border-input)]"
-                              >
-                                <div className="flex flex-wrap justify-between items-center mb-2 gap-x-4 gap-y-2 min-w-0">
-                                  <p className="text-md font-medium text-[var(--foreground)] flex items-center gap-2 min-w-0">
-                                    <Code
-                                      size={16}
-                                      className="text-[var(--text-secondary)]"
-                                    />{" "}
-                                    {scanType === "pattern-scan" ? (
-                                      <span>Pattern: </span>
-                                    ) : (
-                                      <span>Rule: </span>
-                                    )}
-                                    <span className="break-words">
-                                      {getRuleName(ruleId, scanType)}
-                                    </span>
-                                  </p>
-                                  <SeverityBadge
-                                  // dont display the severity badge for pattern scans
-                                    severity={scanType === "pattern-scan" ? undefined : findingsForRule[0].severity}
-                                  />
-                                </div>
+                      {isFileExpanded && (
+                        <div className="mt-4 space-y-4 animate-fadeIn">
+                          {Object.entries(groupedFindings).length > 0 ? (
+                            Object.entries(groupedFindings).map(
+                              ([ruleId, findingsForRule], ruleIndex) => (
+                                <div
+                                  key={ruleIndex}
+                                  className="p-4 rounded-md bg-[var(--background)] border border-[var(--border-input)]"
+                                >
+                                  <div className="flex flex-wrap justify-between items-center mb-2 gap-x-4 gap-y-2 min-w-0">
+                                    <p className="text-md font-medium text-[var(--foreground)] flex items-center gap-2 min-w-0">
+                                      <Code
+                                        size={16}
+                                        className="text-[var(--text-secondary)]"
+                                      />{" "}
+                                      {scanType === "pattern-scan" ? (
+                                        <span>Pattern: </span>
+                                      ) : (
+                                        <span>Rule: </span>
+                                      )}
+                                      <span className="break-words">
+                                        {getRuleName(ruleId, scanType)}
+                                      </span>
+                                    </p>
+                                    <SeverityBadge
+                                      // dont display the severity badge for pattern scans
+                                      severity={
+                                        scanType === "pattern-scan"
+                                          ? undefined
+                                          : findingsForRule[0].severity
+                                      }
+                                    />
+                                  </div>
 
-                                {/* List individual occurrences for a specific rule */}
-                                <div className="mt-4 space-y-3 border-t border-[var(--border-input)] pt-3">
-                                  <p className="text-[var(--text-secondary)] text-sm font-semibold flex items-center gap-2">
-                                    <TerminalSquare size={16} /> Occurrences:
-                                  </p>
-                                  {findingsForRule.map(
-                                    (occurrence, occIndex) => (
-                                      <div
-                                        key={occIndex}
-                                        className="p-3 bg-[var(--input-bg)] rounded-md border border-[var(--border-input)]"
-                                      >
-                                        <p className="text-[var(--text-secondary)] text-xs mb-1">
-                                          Line:{" "}
-                                          <span className="text-[var(--foreground)] font-mono">
-                                            {occurrence.line_number}
-                                          </span>
-                                        </p>
+                                  {/* List individual occurrences for a specific rule */}
+                                  <div className="mt-4 space-y-3 border-t border-[var(--border-input)] pt-3">
+                                    <p className="text-[var(--text-secondary)] text-sm font-semibold flex items-center gap-2">
+                                      <TerminalSquare size={16} /> Occurrences:
+                                    </p>
+                                    {findingsForRule.map(
+                                      (occurrence, occIndex) => (
+                                        <div
+                                          key={occIndex}
+                                          className="p-3 bg-[var(--input-bg)] rounded-md border border-[var(--border-input)]"
+                                        >
+                                          <p className="text-[var(--text-secondary)] text-xs mb-1">
+                                            Line:{" "}
+                                            <span className="text-[var(--foreground)] font-mono">
+                                              {occurrence.line_number}
+                                            </span>
+                                          </p>
 
-                                        <p className="text-[var(--text-secondary)] text-sm mb-1 break-words">
-                                          {occurrence.description}
-                                        </p>
+                                          <p className="text-[var(--text-secondary)] text-sm mb-1 break-words">
+                                            {occurrence.description}
+                                          </p>
 
-                                        {occurrence.recommendation && (
-                                          <div className="mt-3 p-2 rounded-md bg-[var(--input-bg)] border border-[var(--border-input)] text-xs text-[var(--text-secondary)] break-words">
-                                            <strong className="text-[var(--brand-yellow)]">
-                                              Recommendation:{" "}
-                                            </strong>{" "}
-                                            {occurrence.recommendation}
-                                          </div>
-                                        )}
-
-                                        {occurrence.snippet &&
-                                          occurrence.snippet.trim() !== "" && (
-                                            <pre className="bg-[var(--background)] p-2 rounded text-xs overflow-x-auto custom-scrollbar whitespace-pre-wrap font-mono mt-2">
-                                              <code>{occurrence.snippet}</code>
-                                            </pre>
+                                          {occurrence.recommendation && (
+                                            <div className="mt-3 p-2 rounded-md bg-[var(--input-bg)] border border-[var(--border-input)] text-xs text-[var(--text-secondary)] break-words">
+                                              <strong className="text-[var(--brand-yellow)]">
+                                                Recommendation:{" "}
+                                              </strong>{" "}
+                                              {occurrence.recommendation}
+                                            </div>
                                           )}
-                                      </div>
-                                    )
-                                  )}
+
+                                          {occurrence.snippet &&
+                                            occurrence.snippet.trim() !==
+                                              "" && (
+                                              <pre className="bg-[var(--background)] p-2 rounded text-xs overflow-x-auto custom-scrollbar whitespace-pre-wrap font-mono mt-2">
+                                                <code>
+                                                  {occurrence.snippet}
+                                                </code>
+                                              </pre>
+                                            )}
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
+                              )
                             )
-                          )
-                        ) : (
-                          <p className="text-[var(--text-secondary)] text-center py-4">
-                            No findings in this file.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                          ) : (
+                            <p className="text-[var(--text-secondary)] text-center py-4">
+                              No findings in this file.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md text-center text-[var(--text-secondary)]">
+              <p className="text-xl font-semibold mb-2">
+                No findings for this scan type! 🎉
+              </p>
+              <p>Your repository appears secure based on our current rules.</p>
+            </div>
+          )
         ) : (
-          <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md text-center text-[var(--text-secondary)]">
-            <p className="text-xl font-semibold mb-2">
-              No findings for this scan type! 🎉
-            </p>
-            <p>Your repository appears secure based on our current rules.</p>
-          </div>
+          scanResults.patternScanResults?.scanned_files > 0 && (
+            <div className="bg-[var(--background)] p-6 rounded-xl border border-[var(--border-input)] shadow-md overflow-x-auto custom-scrollbar">
+              <h3 className="text-2xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                <Bug size={24} className="text-red-400" />
+                Push Branch SAST Detection
+              </h3>
+              <div className="space-y-8">
+                {(
+                  (typeof scanResults !== "undefined" &&
+                    scanResults?.patternScanResults?.findings) ||
+                  []
+                ).length === 0 ? (
+                  <p className="text-[var(--text-secondary)] text-center py-4">
+                    No pattern scan findings.
+                  </p>
+                ) : (
+                  (scanResults.patternScanResults.findings || []).map(
+                    (item, index) => {
+                      const passed = !!item.push_to_branch_sast_detected;
+                      return (
+                        <div
+                          key={index}
+                          className="bg-[var(--input-bg)] p-6 rounded-lg border border-[var(--border-input)] shadow-inner flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 text-[var(--brand-yellow)]">
+                            <FolderOpen size={20} />
+                            <span className="text-lg font-semibold text-[var(--brand-yellow)] break-words">
+                              {item.file}
+                            </span>
+                          </div>
+
+                          <span
+                            className={
+                              "px-3 py-1 rounded-full text-sm font-semibold " +
+                              (passed
+                                ? "bg-green-500/20 text-green-300"
+                                : "bg-red-600/20 text-red-400")
+                            }
+                          >
+                            {passed ? "Pass" : "Fail"}
+                          </span>
+                        </div>
+                      );
+                    }
+                  )
+                )}
+              </div>
+            </div>
+          )
         )}
       </div>
     );
@@ -770,7 +839,6 @@ export default function PasteUrlPageContent() {
 
             {/* Tabs */}
             <div className="flex border-b border-[var(--border-input)] mb-6 justify-center sm:justify-start overflow-x-auto custom-scrollbar">
-              
               <button
                 onClick={() => setActiveTab("vulnerabilities")}
                 className={clsx(
@@ -781,7 +849,8 @@ export default function PasteUrlPageContent() {
                 )}
               >
                 Vulnerabilities
-                {scanResults.vulnerabilityScanResults?.stats?.total_findings > 0 && (
+                {scanResults.vulnerabilityScanResults?.stats?.total_findings >
+                  0 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600/20 text-red-400">
                     {scanResults.vulnerabilityScanResults.stats.total_findings}
                   </span>
@@ -797,12 +866,14 @@ export default function PasteUrlPageContent() {
                 )}
               >
                 Best Practices
-                {scanResults.bestPracticesScanResults?.stats?.total_findings > 0 && (
+                {scanResults.bestPracticesScanResults?.stats?.total_findings >
+                  0 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-600/20 text-blue-400">
                     {scanResults.bestPracticesScanResults.stats.total_findings}
                   </span>
                 )}
               </button>
+
               <button
                 onClick={() => setActiveTab("pattern-scan")}
                 className={clsx(
@@ -813,34 +884,34 @@ export default function PasteUrlPageContent() {
                 )}
               >
                 Security Patterns
-                {scanResults.patternScanResults?.stats?.total_findings > 0 && (
+                {scanResults.patternScanResults?.scanned_files > 0 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600/20 text-green-400">
-                    {scanResults.patternScanResults.stats.total_findings}
+                    {scanResults.patternScanResults.scanned_files}
                   </span>
                 )}
               </button>
+
               {scanResults.customRuleScanResults?.stats?.total_findings > 0 && (
-              <button
-                onClick={() => setActiveTab("custom-rules")}
-                className={clsx(
-                  "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
-                  activeTab === "custom-rules"
-                    ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
-                    : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
-                )}
-              >
-                Custom Rules
-                {scanResults.customRuleScanResults?.stats?.total_findings > 0 && (
-                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-600/20 text-purple-400">
-                    {scanResults.customRuleScanResults.stats.total_findings}
-                  </span>
-                )}
-              </button>
+                <button
+                  onClick={() => setActiveTab("custom-rules")}
+                  className={clsx(
+                    "px-6 py-3 text-lg font-medium border-b-2 transition-colors duration-200 whitespace-nowrap",
+                    activeTab === "custom-rules"
+                      ? "border-[var(--brand-yellow)] text-[var(--brand-yellow)]"
+                      : "border-transparent text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                  )}
+                >
+                  Custom Rules
+                  {scanResults.customRuleScanResults?.stats?.total_findings >
+                    0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-600/20 text-purple-400">
+                      {scanResults.customRuleScanResults.stats.total_findings}
+                    </span>
+                  )}
+                </button>
               )}
             </div>
 
-
-             
             {activeTab === "vulnerabilities" &&
               scanResults.vulnerabilityScanResults &&
               renderScanTypeResults(
@@ -855,13 +926,13 @@ export default function PasteUrlPageContent() {
                 "best-practices",
                 scanResults.repoUrl
               )}
-              {activeTab === "pattern-scan" &&
+            {activeTab === "pattern-scan" &&
               scanResults.patternScanResults &&
               renderScanTypeResults(
                 scanResults.patternScanResults,
                 "pattern-scan",
                 scanResults.repoUrl
-              )} 
+              )}
             {activeTab === "custom-rules" &&
               scanResults.customRuleScanResults &&
               renderScanTypeResults(
