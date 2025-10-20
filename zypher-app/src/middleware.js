@@ -84,6 +84,7 @@ export async function middleware(req) {
     '/api/custom-rule-file-reject': ['rule-maintainer'],
     '/api/custom-rule-file-publish': ['rule-maintainer'],
     '/api/custom-rule-request-start-test': ['rule-maintainer'],
+    '/api/active-rules': ['rule-maintainer'],
     '/api/pricing-plan': ['manager', 'primary-user'],
     '/api/user-plan-subscribe': ['primary-user'],
     '/api/payments/create': ['primary-user'],
