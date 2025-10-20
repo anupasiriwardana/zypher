@@ -17,27 +17,27 @@ export default function TestimonialsSection() {
     {
       name: "Alex, Senior DevOps Engineer",
       quote: "We tried 4 other scanners before Zypher. They either flooded us with false positives or ignored real risks. Zypher finally got the balance right.",
-      image: "/images/profile.png"
+      image: "/images/profile.jpeg"
     },
     {
       name: "Liam, DevSecOps Lead",
       quote: "Zypher helped us shift left without the chaos. Our security reviews now happen in minutes, not days. Total game-changer for our release cycle.",
-      image: "/images/profile.png"
+      image: "/images/profile.jpeg"
     },
     {
       name: "Emma, Security Engineer",
       quote: "Zypher's insights are spot on. It catches issues before they hit production, and the team loves the clear explanations.",
-      image: "/images/profile.png"
+      image: "/images/profile.jpeg"
     },
     {
       name: "Sarah, VP of Engineering",
       quote: "The support? Zypher knows what they're doing. Our team can wait, and we love that.",
-      image: "/images/profile.png"
+      image: "/images/profile.jpeg"
     },
     {
       name: "Jane, Senior DevOps Engineer",
       quote: "I've tried other scanners before Zypher. This either floods the CI with false positives or ignores real risks. Zypher just nails it. Fast. Precise.",
-      image: "/images/profile.png"
+      image: "/images/profile.jpeg"
     },
   ];
 
@@ -72,7 +72,7 @@ export default function TestimonialsSection() {
     <section className="min-h-[80vh] w-full px-4">
       {/* Heading & badge inside max width */}
       <div className="w-full max-w-[574px] mx-auto flex flex-col items-center gap-10 text-center">
-        <div className="inline-flex px-6 py-2 bg-transparent rounded-full outline outline-1 outline-offset-[-1px] outline-neutral-700 items-center gap-5 my-12">
+        <div className="inline-flex px-6 py-2 bg-transparent rounded-full outline-1 outline-offset-[-1px] outline-neutral-700 items-center gap-5 my-12">
           <MessageSquareMore className="w-5 h-5 text-zinc-100" />
           <div className="text-base font-bold leading-6 text-zinc-100">Why they choose Zypher</div>
         </div>
