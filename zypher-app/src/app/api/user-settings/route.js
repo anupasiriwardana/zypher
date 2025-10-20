@@ -3,68 +3,92 @@ import User from "@/models/User";
 import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 
-
-// 🟢 GET - Fetch current user's profile
+// 🟢 Helper - Format role
 function formatRole(role) {
   if (!role) return "";
   return role
-    .split('-')
+    .split("-")
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .join(" ");
 }
 
+// 🟢 GET - Fetch current user's profile
 export async function GET(req) {
   try {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
+    const userId = searchParams.get("userId");
+    const email = searchParams.get("email"); // optional fallback
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    if (!userId && !email) {
+      return NextResponse.json(
+        { error: "User ID or email is required" },
+        { status: 400 }
+      );
     }
 
-    const user = await User.findOne({ email }).select("-password");
+    // Find user by ID (preferred) or email (fallback)
+    const user = userId
+      ? await User.findById(userId).select("-password")
+      : await User.findOne({ email }).select("-password");
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Format role here
     const formattedUser = {
-      ...user.toObject(), // make sure we get a plain JS object
+      ...user.toObject(),
       role: formatRole(user.role),
     };
 
     return NextResponse.json(formattedUser, { status: 200 });
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    return NextResponse.json({ error: "Failed to fetch user profile" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch user profile" },
+      { status: 500 }
+    );
   }
 }
 
-
-// 🟡 PUT - Update profile details (image, password)
+// 🟡 PUT - Update profile details
 export async function PUT(req) {
   try {
     await connectDB();
 
-    const { currentEmail, newEmail, image, currentPassword, newPassword } = await req.json();
+    const {
+      userId,
+      currentEmail,
+      newEmail,
+      image,
+      currentPassword,
+      newPassword,
+    } = await req.json();
 
-    if (!currentEmail) {
-      return NextResponse.json({ error: "Current email is required" }, { status: 400 });
+    if (!userId && !currentEmail) {
+      return NextResponse.json(
+        { error: "User ID or email is required" },
+        { status: 400 }
+      );
     }
 
-    // Lookup using currentEmail, not newEmail
-    const user = await User.findOne({ email: currentEmail });
+    const user = userId
+      ? await User.findById(userId)
+      : await User.findOne({ email: currentEmail });
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // --- Email Update ---
-    if (newEmail && newEmail !== currentEmail) {
+    if (newEmail && newEmail !== user.email) {
       const existingUser = await User.findOne({ email: newEmail });
       if (existingUser) {
-        return NextResponse.json({ error: "Email already in use" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Email already in use" },
+          { status: 400 }
+        );
       }
       user.email = newEmail;
     }
@@ -83,7 +107,10 @@ export async function PUT(req) {
 
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) {
-        return NextResponse.json({ error: "Incorrect current password" }, { status: 401 });
+        return NextResponse.json(
+          { error: "Incorrect current password" },
+          { status: 401 }
+        );
       }
 
       user.password = await bcrypt.hash(newPassword, 10);
@@ -100,8 +127,9 @@ export async function PUT(req) {
     });
   } catch (error) {
     console.error("❌ Error updating profile:", error);
-    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update profile" },
+      { status: 500 }
+    );
   }
 }
-
-
