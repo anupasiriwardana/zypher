@@ -1,6 +1,13 @@
 "use client";
 
+
 import { useState } from 'react';
+import { Lexend } from 'next/font/google';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+
+import ProfileForm from "@/components/ProfileForm";
+import PasswordForm from "@/components/PasswordForm";
 import clsx from 'clsx';
 import {
   User, 
@@ -14,7 +21,24 @@ import BillingsSection from '@/components/BillingsSection';
 import PrivacySection from '@/components/PrivacySection';
 
 export default function UserSettingsPage() {
+  const { data: session } = useSession();
+  const [profilePic, setProfilePic] = useState("/Images/avatar.jpg");
+
+  // added missing UI state
   const [activeTab, setActiveTab] = useState('account');
+
+  useEffect(() => {
+    if (!session?.user?.email) return;
+
+    const fetchProfile = async () => {
+      const res = await fetch(`/api/user-settings?email=${session.user.email}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.image) setProfilePic(data.image);
+    };
+
+    fetchProfile();
+  }, [session?.user?.email]);
 
   return (
     <div className="p-6 md:p-8 lg:p-10 animate-fadeInUp min-h-screen">
@@ -60,7 +84,29 @@ export default function UserSettingsPage() {
       {/* Tab Content */}
       <div className="bg-[var(--input-bg)] p-8 rounded-xl shadow-xl border border-[var(--border-input)] animate-fadeInUp">
         {/* Account Tab Content */}
-        {activeTab === 'account' && <AccountSection />}
+        {activeTab === 'account' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)]">Basic Information</h2>
+            {session?.user && (
+                              <ProfileForm
+                                role={session.user.role}
+                                userId={session.user.id}
+                                initialEmail={session.user.email}
+                                initialProfilePic={profilePic}
+                                saveEndpoint="/api/user-settings"
+                              />
+                            )}
+                    
+                    
+                            {/* Password Form */}
+                            {session?.user && (
+                              <PasswordForm
+                                userId={session.user.id}
+                                updateEndpoint="/api/change-password"
+                              />
+                            )}
+          </div>
+        )}
 
         {/* Billings Tab Content */}
         {activeTab === 'billings' && <BillingsSection />}

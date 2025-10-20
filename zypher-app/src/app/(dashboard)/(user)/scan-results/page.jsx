@@ -27,6 +27,7 @@ export default function ScanResultsPage() {
           filename: scan.filename,
           vulnerabilityFindings: scan.vulnerabilityScan?.stats?.total_findings || 0,
           bestPracticeFindings: scan.bestPracticesScan?.stats?.total_findings || 0,
+          customRuleFindings: scan.customRuleScan?.stats?.total_findings || 0,
           risk: scan.vulnerabilityScan?.stats?.risk_factor || "LOW"
         }));
 
@@ -37,6 +38,7 @@ export default function ScanResultsPage() {
           repoUrl: scan.repo_url,
           vulnerabilityFindings: scan.vulnerabilityScan?.stats?.total_findings || 0,
           bestPracticeFindings: scan.bestPracticesScan?.stats?.total_findings || 0,
+          customRuleFindings: scan.customRuleScan?.stats?.total_findings || 0,
           risk: scan.vulnerabilityScan?.stats?.risk_factor || 'N/A',
         }));
 
@@ -139,6 +141,7 @@ export default function ScanResultsPage() {
                 scanDataId={scan.id}
                 vulnerabilityFindings={scan.vulnerabilityFindings}
                 bestPracticeFindings={scan.bestPracticeFindings}
+                customRuleFindings={scan.customRuleFindings}
                 risk={scan.risk}
               />
             ) : (
@@ -149,6 +152,7 @@ export default function ScanResultsPage() {
                 scanDataId={scan.id}
                 vulnerabilityFindings={scan.vulnerabilityFindings}
                 bestPracticeFindings={scan.bestPracticeFindings}
+                customRuleFindings={scan.customRuleFindings}
                 risk={scan.risk}
               />
             );

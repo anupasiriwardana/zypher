@@ -67,6 +67,9 @@ export async function middleware(req) {
     '/income-analytics': ['manager'],
 
     // Dashboard routes -> admin
+    'admin-settings': ['admin'],
+    'analytics': ['admin'],
+    'user-management': ['admin'],
 
     // API routes
     '/api/scan-tool': ['primary-user'],
@@ -86,6 +89,8 @@ export async function middleware(req) {
     '/api/payments/create': ['primary-user'],
     '/api/payments/history': ['primary-user'],
     '/api/user-activity': ['primary-user'],
+    '/api/knowledgeBaseRequests': ['educator'],
+    '/api/knowledgeBase': ['educator', 'primary-user'],
   };
 
   // Find the most specific matching route
