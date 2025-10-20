@@ -65,6 +65,9 @@ export async function middleware(req) {
     '/income-analytics': ['manager'],
 
     // Dashboard routes -> admin
+    'admin-settings': ['admin'],
+    'analytics': ['admin'],
+    'user-management': ['admin'],
 
     // API routes
     '/api/scan-tool': ['primary-user'],
@@ -79,6 +82,8 @@ export async function middleware(req) {
     '/api/custom-rule-file-reject': ['rule-maintainer'],
     '/api/custom-rule-file-publish': ['rule-maintainer'],
     '/api/custom-rule-request-start-test': ['rule-maintainer'],
+    '/api/knowledgeBaseRequests': ['educator'],
+    '/api/knowledgeBase': ['educator', 'primary-user'],
   };
 
   // Find the most specific matching route

@@ -30,7 +30,7 @@ export default function SignupSuccess() {
             setTimeout(() => {
                 switch (session.user.role) {
                     case 'admin':
-                        router.push("/admin-dashboard");
+                        router.push("/analytics");
                         break;
                     case 'primary-user':
                         router.push("/start-a-scan");
