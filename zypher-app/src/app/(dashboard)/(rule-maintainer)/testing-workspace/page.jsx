@@ -447,7 +447,7 @@ export default function TestingWorkspacePage() {
 
   return (
     <div
-      className={`p-4 lg:p-4 ${lexend.className} min-h-screen max-w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)] `}
+      className={`p-4 lg:p-4 ${lexend.className} min-h-screen max-w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]`}
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
@@ -468,7 +468,7 @@ export default function TestingWorkspacePage() {
       </div>
 
       {/* Workspace */}
-      <div className="flex flex-col md:flex-row gap-4 h-[800px] max-w-full overflow-hidden">
+      <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-200px)] max-w-full overflow-hidden">
         <TestRuleExplorer
           rulesForTesting={rulesForTesting}
           searchTerm={searchTerm}
@@ -477,7 +477,7 @@ export default function TestingWorkspacePage() {
           onRuleSelect={handleRuleSelect}
         />
 
-        <div className="bg-[var(--input-bg)] p-6 rounded-xl shadow-2xl h-full border border-[var(--border-input)] flex flex-col overflow-hidden transition-all duration-300 flex-grow min-w-0 ">
+        <div className="bg-[var(--input-bg)] p-6 rounded-xl shadow-2xl border border-[var(--border-input)] flex flex-col overflow-hidden transition-all duration-300 flex-grow min-w-0">
           <div className="flex justify-end items-center mb-4 gap-3">
             {/* ✅ Label + Dropdown */}
             <div className="flex flex-row items-center gap-3 text-right">

@@ -1,51 +1,15 @@
-// src/app/(dashboard)/(manager)/page.jsx
 'use client';
 
-import { useState, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Legend, PieChart, Pie, Cell
+} from 'recharts';
 import { DollarSign, Users, TrendingUp, Package, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 
-// --- Mock Data ---
-const kpiData = {
-  totalRevenue: 125300,
-  activeSubscriptions: 212,
-  newUsersThisMonth: 35,
-  avgPlanValue: 590,
-};
+const COLORS = ['#FCE803', '#A020F0', '#00C49F', '#FF8042'];
 
-const revenueTrendData = [
-  { name: 'Jan', revenue: 40000, subscriptions: 80 },
-  { name: 'Feb', revenue: 45000, subscriptions: 90 },
-  { name: 'Mar', revenue: 50000, subscriptions: 100 },
-  { name: 'Apr', revenue: 52000, subscriptions: 110 },
-  { name: 'May', revenue: 58000, subscriptions: 120 },
-  { name: 'Jun', revenue: 62000, subscriptions: 130 },
-  { name: 'Jul', revenue: 68000, subscriptions: 145 },
-  { name: 'Aug', revenue: 75000, subscriptions: 160 },
-  { name: 'Sep', revenue: 82000, subscriptions: 175 },
-  { name: 'Oct', revenue: 90000, subscriptions: 190 },
-  { name: 'Nov', revenue: 105000, subscriptions: 205 },
-  { name: 'Dec', revenue: 125300, subscriptions: 212 },
-];
-
-const pricingPlanPurchases = [
-  { name: 'Basic', purchases: 120, revenue: 12000 },
-  { name: 'Pro', purchases: 75, revenue: 37500 },
-  { name: 'Business', purchases: 30, revenue: 45000 },
-  { name: 'Enterprise', purchases: 15, revenue: 30000 },
-];
-
-const subscriptionStatusData = [
-  { name: 'Active', value: 180 },
-  { name: 'Trial', value: 25 },
-  { name: 'Cancelled', value: 70 },
-  { name: 'Paused', value: 10 },
-];
-
-const COLORS = ['#FCE803', '#A020F0', '#00C49F', '#FF8042']; // Brand yellow, Purple, Teal, Orange
-
-// --- Helper Components ---
 const StatCard = ({ title, value, icon: Icon, change = null, changeType = 'positive' }) => (
   <div className="bg-[var(--background-light)] p-6 rounded-xl shadow-md border border-[var(--border-input)] flex flex-col gap-2 transition-transform hover:scale-105">
     <div className="flex items-center justify-between">
@@ -62,12 +26,10 @@ const StatCard = ({ title, value, icon: Icon, change = null, changeType = 'posit
             changeType === 'negative' && 'text-red-400 transform rotate-180'
           )}
         />
-        <span
-          className={clsx(
-            changeType === 'positive' && 'text-green-400',
-            changeType === 'negative' && 'text-red-400'
-          )}
-        >
+        <span className={clsx(
+          changeType === 'positive' && 'text-green-400',
+          changeType === 'negative' && 'text-red-400'
+        )}>
           {change}
         </span>
         <span className="text-[var(--text-secondary)]">since last month</span>
@@ -76,17 +38,16 @@ const StatCard = ({ title, value, icon: Icon, change = null, changeType = 'posit
   </div>
 );
 
-// --- Custom Tooltip Component for better clarity ---
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{ 
-        backgroundColor: '#0D0D0D', 
-        border: '1px solid #FCE803', 
+      <div style={{
+        backgroundColor: '#0D0D0D',
+        border: '1px solid #FCE803',
         borderRadius: '8px',
         padding: '12px',
-        boxShadow: '0 0 10px rgba(252, 232, 3, 0.4)', 
-        color: '#F0F0F0', 
+        boxShadow: '0 0 10px rgba(252, 232, 3, 0.4)',
+        color: '#F0F0F0',
       }}>
         <p className="text-lg font-bold text-[var(--brand-yellow)] mb-1">{label}</p>
         {payload.map((p, index) => (
@@ -100,13 +61,58 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// --- Manager Dashboard Page ---
-export default function ManagerDashboardPage() {
+export default function ManagerDashboardPage () {
+  const [data, setData] = useState(null);
   const [timeframe, setTimeframe] = useState('monthly');
 
-  const filteredRevenueData = useMemo(() => {
-    return revenueTrendData;
-  }, [timeframe]);
+  useEffect(() => {
+    fetch('/api/ManagerAnalytics')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          setData(json.data);
+        } else {
+          console.error('Failed to fetch analytics');
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  if (!data) {
+    return <div>Loading analytics…</div>;
+  }
+
+  // Normalize arrays to avoid runtime map errors if backend omits fields
+  const revenueByPlan = Array.isArray(data.revenueByPlan) ? data.revenueByPlan : [];
+  const statusDistribution = Array.isArray(data.statusDistribution) ? data.statusDistribution : [];
+  const monthlyTrend = Array.isArray(data.monthlyTrend) ? data.monthlyTrend : [];
+
+  // Build KPI cards (for example revenue of each plan)
+  const kpiCards = revenueByPlan.map(plan => ({
+    title: `${plan.planId.charAt(0).toUpperCase() + plan.planId.slice(1)} Revenue`,
+    value: `$${plan.totalRevenue.toLocaleString()}`,
+    // icon etc can map based on plan
+  }));
+
+  // Build bar chart data for purchases: we have count & revenue
+  const barData = revenueByPlan.map(plan => ({
+    name: plan.planId,
+    purchases: plan.count,
+    revenue: plan.totalRevenue
+  }));
+
+  // Build pie chart data for status distribution
+  const pieData = statusDistribution.map(s => ({
+    name: s.status,
+    value: s.count
+  }));
+
+  // Build line chart data for monthly trend
+  const lineData = monthlyTrend.map(item => ({
+    name: `${item.year}-${('0'+item.month).slice(-2)}`,
+    revenue: item.revenue,
+    subscriptions: item.count
+  }));
 
   return (
     <div className="min-h-screen">
@@ -114,37 +120,12 @@ export default function ManagerDashboardPage() {
         Manager Dashboard
       </h1>
 
-      {/* KPI Cards (Unchanged) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <StatCard
-          title="Total Revenue"
-          value={`$${kpiData.totalRevenue.toLocaleString()}`}
-          icon={DollarSign}
-          change="+15%"
-          changeType="positive"
-        />
-        <StatCard
-          title="Active Subscriptions"
-          value={kpiData.activeSubscriptions.toLocaleString()}
-          icon={Users}
-          change="+8%"
-          changeType="positive"
-        />
-        <StatCard
-          title="New Users (This Month)"
-          value={kpiData.newUsersThisMonth}
-          icon={Package}
-          change="+12"
-          changeType="positive"
-        />
-        <StatCard
-          title="Avg. Plan Value"
-          value={`$${kpiData.avgPlanValue}`}
-          icon={DollarSign}
-        />
+        {kpiCards.map((card, idx) => (
+          <StatCard key={idx} title={card.title} value={card.value} icon={DollarSign} />
+        ))}
       </div>
 
-      {/* Revenue & Subscriptions Trend (Tooltip Improved) */}
       <div className="bg-[var(--background-light)] p-8 rounded-xl shadow-md border border-[var(--border-input)] mb-10">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-[var(--foreground)]">Revenue & Subscriptions Trend</h2>
@@ -155,8 +136,7 @@ export default function ManagerDashboardPage() {
               className="appearance-none bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--foreground)] py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]"
             >
               <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="yearly">Yearly</option>
+              {/* you can add quarterly/yearly */}
             </select>
             <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
           </div>
@@ -164,7 +144,7 @@ export default function ManagerDashboardPage() {
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer>
             <LineChart
-              data={filteredRevenueData}
+              data={lineData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-input)" />
@@ -172,10 +152,7 @@ export default function ManagerDashboardPage() {
               <YAxis yId="left" stroke="var(--text-secondary)" />
               <YAxis yId="right" orientation="right" stroke="var(--text-secondary)" />
               <Legend wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: '10px' }} />
-              
-              {/* Using the custom tooltip component */}
               <Tooltip content={<CustomTooltip />} />
-              
               <Line yId="left" type="monotone" dataKey="revenue" stroke="#FCE803" activeDot={{ r: 8 }} name="Revenue ($)" />
               <Line yId="right" type="monotone" dataKey="subscriptions" stroke="#A020F0" activeDot={{ r: 8 }} name="Subscriptions" />
             </LineChart>
@@ -183,24 +160,20 @@ export default function ManagerDashboardPage() {
         </div>
       </div>
 
-      {/* Pricing Plan Purchases (Tooltip Improved) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         <div className="bg-[var(--background-light)] p-8 rounded-xl shadow-md border border-[var(--border-input)]">
           <h2 className="text-xl font-semibold text-[var(--foreground)] mb-6">Pricing Plan Purchases</h2>
           <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer>
               <BarChart
-                data={pricingPlanPurchases}
+                data={barData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-input)" />
                 <XAxis dataKey="name" stroke="var(--text-secondary)" />
                 <YAxis stroke="var(--text-secondary)" />
                 <Legend wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: '10px' }} />
-
-                {/* Using the custom tooltip component */}
                 <Tooltip content={<CustomTooltip />} />
-                
                 <Bar dataKey="purchases" fill="#FCE803" name="Purchases" />
                 <Bar dataKey="revenue" fill="#A020F0" name="Revenue ($)" />
               </BarChart>
@@ -208,14 +181,13 @@ export default function ManagerDashboardPage() {
           </div>
         </div>
 
-        {/* Subscription Status Distribution (Tooltip Improved) */}
         <div className="bg-[var(--background-light)] p-8 rounded-xl shadow-md border border-[var(--border-input)]">
           <h2 className="text-xl font-semibold text-[var(--foreground)] mb-6">Subscription Status Distribution</h2>
           <div style={{ width: '100%', height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <ResponsiveContainer width="90%" height="90%">
               <PieChart>
                 <Pie
-                  data={subscriptionStatusData}
+                  data={pieData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -224,13 +196,11 @@ export default function ManagerDashboardPage() {
                   dataKey="value"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
-                  {subscriptionStatusData.map((entry, index) => (
+                  {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Legend wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: '10px' }} />
-
-                {/* Using the custom tooltip component */}
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
@@ -238,51 +208,7 @@ export default function ManagerDashboardPage() {
         </div>
       </div>
 
-      {/* Recent Transactions (Unchanged) */}
-      <div className="bg-[var(--background-light)] p-8 rounded-xl shadow-md border border-[var(--border-input)]">
-        <h2 className="text-xl font-semibold text-[var(--foreground)] mb-6">Recent Transactions</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="border-b border-[var(--border-input)]">
-                <th className="py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">User</th>
-                <th className="py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Plan</th>
-                <th className="py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Amount</th>
-                <th className="py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Date</th>
-                <th className="py-3 px-4 text-sm font-medium text-[var(--text-secondary)]">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { id: 1, user: 'john.doe@example.com', plan: 'Pro', amount: 49.99, date: '2023-11-28', status: 'Completed' },
-                { id: 2, user: 'jane.smith@example.com', plan: 'Basic', amount: 9.99, date: '2023-11-27', status: 'Completed' },
-                { id: 3, user: 'bob.johnson@example.com', plan: 'Business', amount: 149.99, date: '2023-11-26', status: 'Pending' },
-                { id: 4, user: 'alice.w@example.com', plan: 'Enterprise', amount: 999.99, date: '2023-11-25', status: 'Completed' },
-                { id: 5, user: 'charlie.m@example.com', plan: 'Pro', amount: 49.99, date: '2023-11-24', status: 'Failed' },
-              ].map(transaction => (
-                <tr key={transaction.id} className="border-b border-[var(--border-input)] last:border-b-0 hover:bg-[var(--input-bg)]">
-                  <td className="py-3 px-4 text-[var(--foreground)]">{transaction.user}</td>
-                  <td className="py-3 px-4 text-[var(--foreground)]">{transaction.plan}</td>
-                  <td className="py-3 px-4 text-[var(--foreground)]">${transaction.amount}</td>
-                  <td className="py-3 px-4 text-[var(--text-secondary)]">{transaction.date}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={clsx(
-                        "px-2 py-1 rounded-full text-xs font-semibold",
-                        transaction.status === 'Completed' && 'bg-green-500/20 text-green-400',
-                        transaction.status === 'Pending' && 'bg-yellow-500/20 text-yellow-400',
-                        transaction.status === 'Failed' && 'bg-red-500/20 text-red-400'
-                      )}
-                    >
-                      {transaction.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* You can still include your Recent Transactions table */}
     </div>
   );
 }

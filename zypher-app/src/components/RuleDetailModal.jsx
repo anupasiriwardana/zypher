@@ -97,22 +97,13 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
   };
   const StatusIcon = statusData.icon;
 
-  const handleRemove = useCallback(() => {
-    if (
-      window.confirm(`Are you sure you want to remove rule "${rule.ruleName}"?`)
-    ) {
-      onRemove(rule.id);
-      onClose();
-    }
-  }, [rule, onClose, onRemove]);
-
   const handleUpgrade = () => {
-
+      console.log("Initiating upgrade for rule:", rule);
       setRuleToEdit(rule);
       setRuleName(rule.ruleName || "");
-      setDescription(rule.description || "");
+      setDescription('');
       setSeverity(rule.severity || "medium");
-      setExampleCode(rule.exampleCode || "");
+      setExampleCode(rule.description || "");
       setSubmissionFeedback(null);
       setIsNewRuleModalOpen(true);
 
@@ -264,12 +255,7 @@ const RuleDetailModal = ({ rule, onClose, onRemove, onUpgrade }) => {
             )}
 
             <div className="mt-8 flex justify-end gap-4">
-              <button
-                onClick={handleRemove}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2 transition-colors duration-200"
-              >
-                <Trash2 size={20} /> Remove Rule
-              </button>
+              
               <button
                 onClick={handleUpgrade}
                 className="bg-[var(--brand-yellow)] hover:bg-yellow-500 text-black font-semibold py-2 px-5 rounded-lg flex items-center gap-2 transition-all duration-200 active:scale-95"
