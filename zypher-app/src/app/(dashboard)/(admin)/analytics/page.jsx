@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lexend } from "next/font/google";
 import {
   Users,
@@ -25,41 +25,145 @@ const lexend = Lexend({ subsets: ["latin"], weight: ["400", "500", "600", "700"]
 
 export default function AdminAnalyticsPage() {
   const [timeframe, setTimeframe] = useState("month");
+  const [users, setUsers] = useState(null);
+  const [rolesCount, setRolesCount] = useState({});
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [computedStats, setComputedStats] = useState({
+    day: { users: 0, retention: "0%", customRules: 0 },
+    week: { users: 0, retention: "0%", customRules: 0 },
+    month: { users: 0, retention: "0%", customRules: 0 },
+  });
+  const [computedActivityData, setComputedActivityData] = useState({ day: [], week: [], month: [] });
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [dateRangeData, setDateRangeData] = useState([]);
 
-  const stats = {
-    day: { users: 12, retention: "67%", customRules: 3 },
-    week: { users: 73, retention: "72%", customRules: 14 },
-    month: { users: 310, retention: "81%", customRules: 52 },
-  };
+  // We'll compute stats from the users collection. If users are not loaded yet,
+  // fall back to the computedStats state (initialized to zeroes).
 
-  const mostCommonVuln = "Hardcoded credentials";
-  const mostMissedPractice = "Missing input validation";
+  // these are not available from the User model; removed from UI per request
 
-  const activityData = {
-  day: [
-    { name: "12 AM", users: 1 },
-    { name: "4 AM", users: 2 },
-    { name: "8 AM", users: 3 },
-    { name: "12 PM", users: 4 },
-    { name: "4 PM", users: 1 },
-    { name: "8 PM", users: 1 },
-  ],
-  week: [
-    { name: "Mon", users: 12 },
-    { name: "Tue", users: 18 },
-    { name: "Wed", users: 10 },
-    { name: "Thu", users: 23 },
-    { name: "Fri", users: 17 },
-    { name: "Sat", users: 25 },
-    { name: "Sun", users: 14 },
-  ],
-  month: [
-    { name: "Week 1", users: 65 },
-    { name: "Week 2", users: 80 },
-    { name: "Week 3", users: 92 },
-    { name: "Week 4", users: 73 },
-  ],
-};
+  // placeholder until users load; computedActivityData will be used instead
+
+
+  // helper to format YYYY-MM-DD
+  function toYMD(d) {
+    const dt = new Date(d);
+    if (isNaN(dt)) return null;
+    return dt.toISOString().slice(0, 10);
+  }
+
+  // Build per-date buckets between start and end (inclusive)
+  function buildDateBuckets(usersList, start, end) {
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s) || isNaN(e) || s > e) return [];
+    const days = [];
+    for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d).toISOString().slice(0, 10));
+    }
+    const counts = Object.fromEntries(days.map((dt) => [dt, 0]));
+    usersList.forEach((u) => {
+      const created = u.createdAt || u.created_at || u.created;
+      const day = created ? toYMD(created) : null;
+      if (day && counts.hasOwnProperty(day)) counts[day] += 1;
+    });
+    return days.map((dt) => ({ name: dt, users: counts[dt] }));
+  }
+
+  // Fetch users from API and compute analytics
+  useEffect(() => {
+    let mounted = true;
+    async function fetchUsers() {
+      try {
+        const res = await fetch('/api/users');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+        // data may be an object with users array or array directly depending on API
+        const usersList = Array.isArray(data) ? data : data.users || [];
+        setUsers(usersList);
+        setTotalUsers(usersList.length);
+
+        // Roles breakdown
+        const roles = {};
+        usersList.forEach((u) => {
+          const r = (u.role || 'user').toString();
+          roles[r] = (roles[r] || 0) + 1;
+        });
+        setRolesCount(roles);
+
+        const now = new Date();
+        // timeframe cutoffs
+        const dayAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24);
+        const weekAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 7);
+        const monthAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30);
+
+        function safeDate(d) {
+          if (!d) return null;
+          const dt = new Date(d);
+          return isNaN(dt.getTime()) ? null : dt;
+        }
+
+        const statsAcc = { day: { users: 0, active: 0 }, week: { users: 0, active: 0 }, month: { users: 0, active: 0 } };
+
+        usersList.forEach((u) => {
+          const created = safeDate(u.createdAt || u.created_at || u.created);
+          const updated = safeDate(u.updatedAt || u.updated_at || u.updated);
+          if (!created) return;
+          if (created >= dayAgo) {
+            statsAcc.day.users += 1;
+            if (updated && updated >= dayAgo) statsAcc.day.active += 1;
+          }
+          if (created >= weekAgo) {
+            statsAcc.week.users += 1;
+            if (updated && updated >= weekAgo) statsAcc.week.active += 1;
+          }
+          if (created >= monthAgo) {
+            statsAcc.month.users += 1;
+            if (updated && updated >= monthAgo) statsAcc.month.active += 1;
+          }
+        });
+
+        function makeRetention(active, total) {
+          if (!total) return '0%';
+          return Math.round((active / total) * 100) + '%';
+        }
+
+        const computed = {
+          day: { users: statsAcc.day.users, retention: makeRetention(statsAcc.day.active, statsAcc.day.users), customRules: roles['rule-developer'] || 0 },
+          week: { users: statsAcc.week.users, retention: makeRetention(statsAcc.week.active, statsAcc.week.users), customRules: roles['rule-developer'] || 0 },
+          month: { users: statsAcc.month.users, retention: makeRetention(statsAcc.month.active, statsAcc.month.users), customRules: roles['rule-developer'] || 0 },
+        };
+
+        setComputedStats(computed);
+
+        // initialize date range to last 30 days if not set
+        const defaultStart = monthAgo.toISOString().slice(0, 10);
+        const defaultEnd = now.toISOString().slice(0, 10);
+        if (!startDate && !endDate) {
+          setStartDate(defaultStart);
+          setEndDate(defaultEnd);
+          const dr = buildDateBuckets(usersList, defaultStart, defaultEnd);
+          setDateRangeData(dr);
+        } else if (startDate && endDate) {
+          const dr = buildDateBuckets(usersList, startDate, endDate);
+          setDateRangeData(dr);
+        }
+      } catch (err) {
+        console.error('Failed to fetch users for analytics', err);
+      }
+    }
+    fetchUsers();
+    return () => { mounted = false; };
+  }, []);
+
+  // recompute dateRangeData when users or manual date range changes
+  useEffect(() => {
+    if (!users || !startDate || !endDate) return;
+    const dr = buildDateBuckets(users, startDate, endDate);
+    setDateRangeData(dr);
+  }, [users, startDate, endDate]);
 
 
   return (
@@ -86,29 +190,53 @@ export default function AdminAnalyticsPage() {
         <StatCard
           icon={<Users size={28} />}
           title="Total Users"
-          value={stats[timeframe].users}
+          value={totalUsers}
         />
         <StatCard
           icon={<TrendingUp size={28} />}
-          title="User Retention"
-          value={stats[timeframe].retention}
+          title="New Signups"
+          value={computedStats[timeframe]?.users ?? 0}
         />
         <StatCard
           icon={<Wrench size={28} />}
           title="Custom Rule Requests"
-          value={stats[timeframe].customRules}
+          value={computedStats[timeframe]?.customRules ?? 0}
         />
-        <StatCard
-          icon={<Bug size={28} />}
-          title="Top Vulnerability"
-          value={mostCommonVuln}
-        />
-        <StatCard
-          icon={<AlertTriangle size={28} />}
-          title="Most Missed Best Practice"
-          value={mostMissedPractice}
-        />
+        {/* removed cards that cannot be derived from User model */}
       </div>
+
+      {/* Date range controls */}
+      <div className="flex items-center gap-3 mb-6">
+        <label className="text-sm text-[var(--text-secondary)]">Range:</label>
+        <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)} className="bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-1 px-2 rounded">
+          <option value="day">Last 24h</option>
+          <option value="week">Last 7 days</option>
+          <option value="month">Last 30 days</option>
+        </select>
+
+        <div className="flex items-center gap-2 ml-4">
+          <input type="date" value={startDate||''} onChange={(e)=>setStartDate(e.target.value)} className="bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-1 px-2 rounded" />
+          <span className="text-[var(--text-secondary)]">to</span>
+          <input type="date" value={endDate||''} onChange={(e)=>setEndDate(e.target.value)} className="bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] py-1 px-2 rounded" />
+          <button onClick={()=>{ if (startDate && endDate) { const dr = buildDateBuckets(users||[], startDate, endDate); setDateRangeData(dr); } }} className="ml-2 bg-[var(--brand-yellow)] text-black py-1 px-3 rounded">Apply</button>
+        </div>
+        <div className="ml-auto text-sm text-[var(--text-secondary)]">Total users: <span className="font-semibold text-[var(--foreground)]">{totalUsers}</span></div>
+      </div>
+
+      {/* Roles breakdown */}
+      {users && (
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-2 text-[var(--foreground)]">Roles</h3>
+          <div className="flex gap-4 flex-wrap">
+            {Object.entries(rolesCount).map(([role, count]) => (
+              <div key={role} className="bg-[var(--input-bg)] p-3 rounded-lg border border-[var(--border-input)]">
+                <div className="text-sm text-[var(--text-secondary)]">{role}</div>
+                <div className="text-xl font-bold text-[var(--foreground)]">{count}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Graph Section */}
       <div className="bg-[var(--input-bg)] rounded-xl p-6 border border-[var(--border-input)] shadow-lg">
@@ -117,15 +245,19 @@ export default function AdminAnalyticsPage() {
           User Activity Graph
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData[timeframe]}>
-              <XAxis dataKey="name" stroke="var(--text-secondary)" />
-              <YAxis stroke="var(--text-secondary)" />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="users" fill="var(--brand-yellow)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {dateRangeData && dateRangeData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dateRangeData}>
+                <XAxis dataKey="name" stroke="var(--text-secondary)" />
+                <YAxis stroke="var(--text-secondary)" />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="users" fill="var(--brand-yellow)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-[var(--text-secondary)]">No activity data for selected range</div>
+          )}
         </div>
       </div>
     </div>
