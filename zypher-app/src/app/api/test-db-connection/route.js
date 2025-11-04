@@ -6,19 +6,19 @@ export async function GET() {
     try {
         console.log("Testing MongoDB connection...");
         
-        // Log the MONGO_URI (masked)
-        const mongoUri = process.env.MONGO_URI;
+        // Log the MONGODB_URI (masked)
+        const mongoUri = process.env.MONGODB_URI;
         if (mongoUri) {
             const maskedUri = mongoUri.replace(
                 /mongodb(\+srv)?:\/\/([^:]+)(:[^@]+)?@([^\/]+)(\/.*)?/,
                 (_, srv, user, pass, host, db) => `mongodb${srv || ''}://${user}:***@${host}${db || ''}`
             );
-            console.log('Using MONGO_URI:', maskedUri);
+            console.log('Using MONGODB_URI:', maskedUri);
         } else {
-            console.log('MONGO_URI is not defined');
+            console.log('MONGODB_URI is not defined');
             return NextResponse.json({ 
                 success: false, 
-                error: "MONGO_URI is not defined",
+                error: "MONGODB_URI is not defined",
                 timestamp: new Date().toISOString()
             }, { status: 500 });
         }

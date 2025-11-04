@@ -4,6 +4,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
 
 const handler = NextAuth({
   providers: [
@@ -26,8 +27,8 @@ const handler = NextAuth({
 
           // Prevent Google users from using password
           if (user.provider !== "local") {
-            const provider = user.provider || "Google";
-            throw new Error(`Please sign in with ${provider}`);
+            const providerName = user.provider === "google" ? "Google" : user.provider === "github" ? "GitHub" : user.provider;
+            throw new Error(`Please sign in with ${providerName}`);
           }
 
           const isPasswordValid = await bcrypt.compare(
@@ -65,6 +66,20 @@ const handler = NextAuth({
           provider: 'google'
         };
       }
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+          role: 'primary-user', // Default role for GitHub users
+          provider: 'github'
+        };
+      }
     })
   ],
   pages: {
@@ -99,14 +114,20 @@ const handler = NextAuth({
       return session;
     },
     async signIn({ user, account, profile }) {
-      if (account.provider === "google") {
+      if (account.provider === "google" || account.provider === "github") {
         await connectDB();
 
         const existingUser = await User.findOne({ email: user.email });
 
-        // Prevent local users from using Google
-        if (existingUser && existingUser.provider !== "google") {
-          return `/login?error=This email is already registered with a local account`;
+        // Prevent local users from using OAuth
+        if (existingUser && existingUser.provider !== account.provider) {
+          const providerName = account.provider === "google" ? "Google" : "GitHub";
+          if (existingUser.provider === "local") {
+            return `/login?error=This email is already registered with a local account`;
+          } else {
+            const existingProviderName = existingUser.provider === "google" ? "Google" : "GitHub";
+            return `/login?error=This email is already registered with ${existingProviderName}`;
+          }
         }
 
         // If user doesn't exist and it's a signup
@@ -115,7 +136,7 @@ const handler = NextAuth({
             name: user.name,
             email: user.email,
             role: user.role || 'primary-user',
-            provider: user.provider || 'google',
+            provider: user.provider || account.provider,
             image: user.image || null // Handle image if available
           });
 
@@ -125,7 +146,7 @@ const handler = NextAuth({
           user.id = existingUser._id.toString();
           user.role = existingUser.role;
 
-          // Update image if it's changed on Google
+          // Update image if it's changed on the provider
           if (user.image && existingUser.image !== user.image) {
             existingUser.image = user.image;
             await existingUser.save();
