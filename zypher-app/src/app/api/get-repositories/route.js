@@ -43,8 +43,9 @@ export async function GET(request) {
         }
 
         // Fetch repositories from GitHub API using the access token
+        // Use visibility + affiliation (cannot be combined with type) to include public and private repos
         const response = await fetch(
-            `https://api.github.com/user/repos?sort=updated&per_page=100&type=all`,
+            `https://api.github.com/user/repos?sort=updated&per_page=100&visibility=all&affiliation=owner,collaborator,organization_member`,
             {
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
