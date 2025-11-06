@@ -5,7 +5,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { useState, useEffect } from 'react';
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FaExclamationCircle } from 'react-icons/fa';
+import { FaExclamationCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -26,6 +26,8 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
 
   // Handle session status changes for already logged-in users
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function LoginPage() {
   const redirectBasedOnRole = (role) => {
     switch (role) {
       case 'admin':
-        router.push("/admin-dashboard");
+        router.push("/analytics");
         break;
       case 'primary-user':
         router.push("/start-a-scan");
@@ -83,6 +85,9 @@ export default function LoginPage() {
         break;
       case 'educator':
         router.push("/add-knowledge");
+        break;
+      case 'manager':
+        router.push("/subscription-plans");
         break;
       default:
         router.push("/");
@@ -252,6 +257,7 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-[var(--text-secondary)]" />
         </div>
 
+
         {/* Form */}
         <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
           <div>
@@ -264,7 +270,16 @@ export default function LoginPage() {
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter email address"
-              className={`w-full rounded-xl border ${errors.email ? 'border-red-500' : 'border-[var(--border-input)]'} bg-[var(--input-bg)] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent`}
+              className={`w-full rounded-xl border ${errors.email ? 'border-red-500' : 'border-[#333]'} 
+              bg-[#111] text-white px-4 py-3 
+              focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] 
+              focus:border-transparent placeholder-gray-400 
+              transition duration-200 ease-in-out 
+              appearance-none`}
+              style={{
+              backgroundColor: "#111", // double ensure dark background
+              color: "white",           // double ensure white text
+        }}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-500 flex items-center">
@@ -273,23 +288,33 @@ export default function LoginPage() {
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="text-sm mb-2 block font-medium" htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              className={`w-full rounded-xl border ${errors.password ? 'border-red-500' : 'border-[var(--border-input)]'} bg-[var(--input-bg)] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent`}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter password"
+                className={`w-full rounded-xl border ${errors.password ? 'border-red-500' : 'border-[var(--border-input)]'} bg-[var(--input-bg)] px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-black hover:text-gray-800 focus:outline-none"
+              >
+                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </div>
             {errors.password && (
               <p className="mt-1 text-sm text-red-500 flex items-center">
                 <FaExclamationCircle className="mr-1 text-xs" /> {errors.password}
               </p>
             )}
-          </div>
+        </div>
+
 
           <div className="text-right">
             <Link

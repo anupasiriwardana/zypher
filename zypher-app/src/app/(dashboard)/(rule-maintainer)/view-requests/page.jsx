@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 
 import RuleRequestDetailModal from '@/components/RuleRequestDetailModal';
+import NewRuleRequestModal from '@/components/NewRuleRequestModal';
 import { useRouter } from 'next/navigation';
-import NewRuleRequestModal from './newRule';
 import { useSession } from "next-auth/react";
 
 const lexend = Lexend({
@@ -231,6 +231,7 @@ export default function ViewRequestsPage() {
   const router = useRouter();
   const [ruleRequests, setRuleRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequestSource, setSelectedRequestSource] = useState(null); // Track which table opened the modal
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -387,12 +388,14 @@ export default function ViewRequestsPage() {
     return ruleRequests.filter(req => req.status === 'Ready for Testing');
   }, [ruleRequests]);
 
-  const openModal = (request) => {
+  const openModal = (request, source = 'all') => {
     setSelectedRequest(request);
+    setSelectedRequestSource(source);
   };
 
   const closeModal = () => {
     setSelectedRequest(null);
+    setSelectedRequestSource(null);
   };
 
   const handleStatusUpdate = async (requestId, status, developerId = null, rejectedReason = null) => {
@@ -483,7 +486,7 @@ export default function ViewRequestsPage() {
         setFilterSeverity={setPrFilterSeverity}
         sortOrder={prSortOrder}
         setSortOrder={setPrSortOrder}
-        onRowClick={openModal}
+        onRowClick={(request) => openModal(request, 'pending')}
         showStatusFilter={false}
         availableStatuses={['Pending Review']}
         isLoading={isLoading}
@@ -501,7 +504,7 @@ export default function ViewRequestsPage() {
         setFilterSeverity={setRtFilterSeverity}
         sortOrder={rtSortOrder}
         setSortOrder={setRtSortOrder}
-        onRowClick={openModal}
+        onRowClick={(request) => openModal(request, 'testing')}
         showStatusFilter={false}
         availableStatuses={['Ready for Testing']}
         isLoading={isLoading}
@@ -521,7 +524,7 @@ export default function ViewRequestsPage() {
         setFilterSeverity={setClFilterSeverity}
         sortOrder={clSortOrder}
         setSortOrder={setClSortOrder}
-        onRowClick={openModal}
+        onRowClick={(request) => openModal(request, 'all')}
         showStatusFilter={true}
         availableStatuses={Object.keys(statusMap)}
         isLoading={isLoading}
@@ -534,6 +537,7 @@ export default function ViewRequestsPage() {
           onClose={closeModal}
           onUpdateStatus={handleStatusUpdate}
           onStartTesting={handleStartTesting}
+          showActions={selectedRequestSource !== 'all'} // Hide buttons for "All Requests" table
         />
       )}
     </div>

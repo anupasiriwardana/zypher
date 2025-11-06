@@ -1,3 +1,6 @@
+"use client";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { 
     X, Hash, AlignLeft, SlidersHorizontal, ServerCog, 
     CheckCircle, XCircle, Loader2, Send 
@@ -19,10 +22,24 @@ import {
     handleSubmitRule,
     submissionFeedback
   }) {
+    // Prevent scrolling when modal is open
+    useEffect(() => {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+
+      // Cleanup function to reset overflow when component unmounts
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }, [isOpen]);
+
     if (!isOpen) return null;
-  
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+
+    const modal = (
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="w-full max-w-lg bg-[var(--input-bg)] p-6 rounded-xl shadow-2xl border border-[var(--border-input)] relative animate-fadeInUp max-h-[90vh] overflow-y-auto">
           
           {/* Close button */}
@@ -180,5 +197,10 @@ import {
         </div>
       </div>
     );
+
+    // Avoid SSR mismatch and ensure we render into body so overlay always centers in viewport
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
+    return createPortal(modal, document.body);
   }
-  

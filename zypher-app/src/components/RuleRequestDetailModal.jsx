@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import {
   X, User, ChevronsRight, CheckCircle, XCircle, Hourglass,
@@ -25,8 +26,8 @@ const severityMap = {
   'info': { label: 'Informational', color: 'text-gray-400', bg: 'bg-gray-400/20' },
 };
 
-// Add onStartTesting to props
-const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesting }) => {
+// Add onStartTesting and showActions to props
+const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesting, showActions = true }) => {
   const [modalError, setModalError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -38,6 +39,16 @@ const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesti
     developer: '',
     rejectReason: ''
   });
+
+  // Prevent scrolling when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   useEffect(() => {
     if (request?.status === 'Pending Review' || request?.status === 'Assigned') {
@@ -124,9 +135,9 @@ const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesti
   };
 
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] animate-fadeIn">
-      <div className="bg-[var(--background)] rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform scale-95 animate-scaleIn border border-[var(--border-input)]">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[1000]">
+      <div className="bg-[var(--background)] rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[var(--border-input)] my-8">
         <div className="flex justify-between items-center p-6 border-b border-[var(--border-input)]">
           <h3 className="text-2xl font-bold text-[var(--foreground)]">{request.name}</h3>
           <button
@@ -189,127 +200,132 @@ const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesti
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="mt-8 space-y-4">
-            {request.status === 'Pending Review' && (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <select
-                      value={selectedDeveloper}
-                      onChange={(e) => setSelectedDeveloper(e.target.value)}
-                      className={clsx(
-                        "w-full bg-[var(--input-bg)] border text-[var(--foreground)] py-2 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]",
-                        formErrors.developer ? "border-red-500" : "border-[var(--border-input)]"
-                      )}
-                      disabled={isSubmitting || isLoadingDevelopers}
-                    >
-                      <option value="">Select a developer...</option>
-                      {isLoadingDevelopers ? (
-                        <option value="" disabled>Loading developers...</option>
-                      ) : developers.length === 0 ? (
-                        <option value="" disabled>No developers available</option>
-                      ) : (
-                        developers.map(dev => (
-                          <option key={dev._id} value={dev._id}>
-                            {dev.email}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    {formErrors.developer && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.developer}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleAssignDeveloper}
-                    disabled={isSubmitting || !selectedDeveloper || isLoadingDevelopers}
-                    className="bg-[var(--brand-yellow)] text-black font-semibold py-2 px-4 rounded-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
-                  >
-                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <User size={16} />}
-                    Assign Developer
-                  </button>
-                </div>
-
-                {!showRejectForm ? (
-                  <button
-                    onClick={() => setShowRejectForm(true)}
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center"
-                    disabled={isSubmitting}
-                  >
-                    <XCircle size={16} /> Reject Request
-                  </button>
-                ) : (
-                  <div className="space-y-3 p-4 bg-red-600/10 border border-red-600/20 rounded-md">
-                    <div>
-                      <textarea
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="Please provide a reason for rejection..."
+          {/* Action Buttons - only show if showActions is true */}
+          {showActions && (
+            <div className="mt-8 space-y-4">
+              {request.status === 'Pending Review' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <select
+                        value={selectedDeveloper}
+                        onChange={(e) => setSelectedDeveloper(e.target.value)}
                         className={clsx(
-                          "w-full bg-[var(--input-bg)] border text-[var(--foreground)] py-2 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500",
-                          formErrors.rejectReason ? "border-red-500" : "border-[var(--border-input)]"
+                          "w-full bg-[var(--input-bg)] border text-[var(--foreground)] py-2 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)]",
+                          formErrors.developer ? "border-red-500" : "border-[var(--border-input)]"
                         )}
-                        rows={3}
-                        disabled={isSubmitting}
-                      />
-                      {formErrors.rejectReason && (
-                        <p className="text-red-500 text-sm mt-1">{formErrors.rejectReason}</p>
+                        disabled={isSubmitting || isLoadingDevelopers}
+                      >
+                        <option value="">Select a developer...</option>
+                        {isLoadingDevelopers ? (
+                          <option value="" disabled>Loading developers...</option>
+                        ) : developers.length === 0 ? (
+                          <option value="" disabled>No developers available</option>
+                        ) : (
+                          developers.map(dev => (
+                            <option key={dev._id} value={dev._id}>
+                              {dev.email}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      {formErrors.developer && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.developer}</p>
                       )}
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleReject}
-                        disabled={isSubmitting || !rejectReason.trim()}
-                        className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Reject'}
-                      </button>
-                      <button
-                        onClick={() => setShowRejectForm(false)}
-                        className="bg-gray-600 text-white font-semibold py-2 px-4 rounded-md flex-1"
-                        disabled={isSubmitting}
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleAssignDeveloper}
+                      disabled={isSubmitting || !selectedDeveloper || isLoadingDevelopers}
+                      className="bg-[var(--brand-yellow)] text-black font-semibold py-2 px-4 rounded-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
+                    >
+                      {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <User size={16} />}
+                      Assign Developer
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
 
-            {request.status === 'Ready for Testing' && (
-              <>
-                {modalError && (
-                  <div className="mb-2 text-red-500 text-sm text-center bg-red-100 rounded p-2">{modalError}</div>
-                )}
+                  {!showRejectForm ? (
+                    <button
+                      onClick={() => setShowRejectForm(true)}
+                      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center"
+                      disabled={isSubmitting}
+                    >
+                      <XCircle size={16} /> Reject Request
+                    </button>
+                  ) : (
+                    <div className="space-y-3 p-4 bg-red-600/10 border border-red-600/20 rounded-md">
+                      <div>
+                        <textarea
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          placeholder="Please provide a reason for rejection..."
+                          className={clsx(
+                            "w-full bg-[var(--input-bg)] border text-[var(--foreground)] py-2 px-3 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500",
+                            formErrors.rejectReason ? "border-red-500" : "border-[var(--border-input)]"
+                          )}
+                          rows={3}
+                          disabled={isSubmitting}
+                        />
+                        {formErrors.rejectReason && (
+                          <p className="text-red-500 text-sm mt-1">{formErrors.rejectReason}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleReject}
+                          disabled={isSubmitting || !rejectReason.trim()}
+                          className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Confirm Reject'}
+                        </button>
+                        <button
+                          onClick={() => setShowRejectForm(false)}
+                          className="bg-gray-600 text-white font-semibold py-2 px-4 rounded-md flex-1"
+                          disabled={isSubmitting}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {request.status === 'Ready for Testing' && (
+                <>
+                  {modalError && (
+                    <div className="mb-2 text-red-500 text-sm text-center bg-red-100 rounded p-2">{modalError}</div>
+                  )}
+                  <button
+                    onClick={async () => {
+                      setModalError(null);
+                      setIsStartTesting(true);
+                      await onStartTesting(request._id, setModalError);
+                      setIsStartTesting(false);
+                    }}
+                    disabled={isStartTesting}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center disabled:opacity-50"
+                  >
+                    {isStartTesting ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
+                    Start Testing
+                  </button>
+                </>
+              )}
+
+              {request.status === 'Being Tested' && (
                 <button
-                  onClick={async () => {
-                    setModalError(null);
-                    setIsStartTesting(true);
-                    await onStartTesting(request._id, setModalError);
-                    setIsStartTesting(false);
-                  }}
-                  disabled={isStartTesting}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center disabled:opacity-50"
+                  onClick={() => handleStatusUpdate('Approved')}
+                  disabled={isSubmitting}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center disabled:opacity-50"
                 >
-                  {isStartTesting ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
-                  Start Testing
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                  Approve Rule
                 </button>
-              </>
-            )}
+              )}
+            </div>
+          )}
 
-            {request.status === 'Being Tested' && (
-              <button
-                onClick={() => handleStatusUpdate('Approved')}
-                disabled={isSubmitting}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md flex items-center gap-2 w-full justify-center disabled:opacity-50"
-              >
-                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-                Approve Rule
-              </button>
-            )}
-
+          {/* Always show close button */}
+          <div className="mt-6">
             <button
               onClick={onClose}
               disabled={isSubmitting}
@@ -322,6 +338,12 @@ const RuleRequestDetailModal = ({ request, onClose, onUpdateStatus, onStartTesti
       </div>
     </div>
   );
+
+  // Avoid SSR/DOM mismatch and ensure we render into body for correct positioning over the viewport
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(modalContent, document.body);
 };
 
 export default RuleRequestDetailModal;

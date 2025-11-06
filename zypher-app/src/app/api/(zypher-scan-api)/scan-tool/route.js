@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import RepoScanResult from "@/models/RepoScanResult";
 import connectDB from "@/utils/db";
 
+import {
+  checkAndUpdateRemainingScans
+} from "@/app/api/_services/userActivityService";
+
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
-  const role = request.headers.get("x-user-role"); 
+  const role = request.headers.get("x-user-role");
   await connectDB();
 
   if (!userId || !role) {
@@ -20,7 +24,7 @@ export async function POST(request) {
 
   try {
     //fetching vulnScan results and bpScan results in parallel
-    const [vulnScanRes, bpScanRes, customRuleScanRes] = await Promise.all([
+    const [vulnScanRes, bpScanRes, customRuleScanRes, patternScanRes] = await Promise.all([
       fetch(`${process.env.FASTAPI_URL}/vulnerability-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -34,15 +38,22 @@ export async function POST(request) {
       fetch(`${process.env.FASTAPI_URL}/customeRule-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo_url: repoUrl,
+        body: JSON.stringify({
+          repo_url: repoUrl,
           user_id: userId,
-         }),
+        }),
+      }),
+      fetch(`${process.env.FASTAPI_URL}/pattern-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl }),
       }),
     ]);
 
     const vulnScanData = await vulnScanRes.json();
     const bpScanData = await bpScanRes.json();
     const customRuleScanData = await customRuleScanRes.json();
+    const patternScanData = await patternScanRes.json();
 
     if (!vulnScanRes.ok) {
       return NextResponse.json(
@@ -65,10 +76,26 @@ export async function POST(request) {
       );
     }
 
+    if (!patternScanRes.ok) {
+      return NextResponse.json(
+        { error: patternScanData.detail || "Pattern scan failed" },
+        { status: patternScanRes.status }
+      );
+    }
+
+    // Check and update remaining scans - after successful scans
+    const remainingScansStatus = await checkAndUpdateRemainingScans(userId);
+    if (remainingScansStatus.error) {
+      return NextResponse.json(
+        { error: remainingScansStatus.error },
+        { status: remainingScansStatus.status }
+      );
+    }
+
     try {
       // saving scan result in MongoDB
       const scanDoc = new RepoScanResult({
-        user_id : userId ,
+        user_id: userId,
         repo_url: repoUrl,
         bestPracticesScan: {
           status: bpScanData.status,
@@ -82,7 +109,7 @@ export async function POST(request) {
             low: bpScanData.stats.low,
             bp_score: bpScanData.stats["BSTP score"],
             bp_per_severity: bpScanData.stats["BSTP per_severity"],
-            risk_factor : bpScanData.stats.risk_factor,
+            risk_factor: bpScanData.stats.risk_factor,
           },
         },
         vulnerabilityScan: {
@@ -132,6 +159,7 @@ export async function POST(request) {
       vulnerabilityScanResults: vulnScanData,
       bestPracticesScanResults: bpScanData,
       customRuleScanResults: customRuleScanData,
+      patternScanResults: patternScanData,
     };
 
     return NextResponse.json(combinedResults, { status: 200 });

@@ -22,6 +22,8 @@ export async function middleware(req) {
 
     //API routes
     "/api/auth",  // Auth routes
+    "/api/pricing-plan-landing-page", // Public pricing plans
+    "/api/payments/notify", // Payment notifications
   ];
 
   const isExcluded =
@@ -60,7 +62,14 @@ export async function middleware(req) {
     '/educator-requests': ['educator'],
     '/educator-settings': ['educator'],
 
+    //dashboard routes -> manager
+    '/subscription-plans': ['manager'],
+    '/income-analytics': ['manager'],
+
     // Dashboard routes -> admin
+    'admin-settings': ['admin'],
+    'analytics': ['admin'],
+    'user-management': ['admin'],
 
     // API routes
     '/api/scan-tool': ['primary-user'],
@@ -75,6 +84,14 @@ export async function middleware(req) {
     '/api/custom-rule-file-reject': ['rule-maintainer'],
     '/api/custom-rule-file-publish': ['rule-maintainer'],
     '/api/custom-rule-request-start-test': ['rule-maintainer'],
+    '/api/active-rules': ['rule-maintainer'],
+    '/api/pricing-plan': ['manager', 'primary-user'],
+    '/api/user-plan-subscribe': ['primary-user'],
+    '/api/payments/create': ['primary-user'],
+    '/api/payments/history': ['primary-user'],
+    '/api/user-activity': ['primary-user'],
+    '/api/knowledgeBaseRequests': ['educator'],
+    '/api/knowledgeBase': ['educator', 'primary-user'],
   };
 
   // Find the most specific matching route
@@ -91,6 +108,10 @@ export async function middleware(req) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   if (!token) {
+    // If this is an API route, return a JSON 401 instead of redirecting to login (which returns HTML)
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('callbackUrl', req.url);
     return NextResponse.redirect(loginUrl);
@@ -98,6 +119,10 @@ export async function middleware(req) {
 
   // Check if user has required role
   if (!requiredRoles.includes(token.role)) {
+    // For API routes return JSON 403
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     return NextResponse.redirect(new URL('/unauthorized', req.url));
   }
 

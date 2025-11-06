@@ -3,6 +3,10 @@ import mongoose from "mongoose";
 const { Schema, Types } = mongoose;
 
 const customRuleRequestSchema = new Schema({
+    rule_id: {
+        type: String,
+        default: null,
+    },
     name: {
         type: String,
         required: true,

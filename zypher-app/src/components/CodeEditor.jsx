@@ -70,9 +70,9 @@ const CodeEditor = ({
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full p-4">
       {/* Editor Header */}
-      <div className="flex justify-between items-center border-b border-[var(--border-input)] pb-4 mb-4">
+      <div className="flex justify-between items-center border-b border-[var(--border-input)] pb-4 mb-4 flex-shrink-0">
         <h2 className="text-xl font-bold text-[var(--foreground)] flex items-center gap-2">
           {getFileIcon(selectedFile.name)} {selectedFile.name}
           <span className="text-sm text-[var(--text-secondary)] ml-2">({selectedRuleId})</span>
@@ -110,9 +110,11 @@ const CodeEditor = ({
         </div>
       )}
 
-      {/* Metadata Form */}
-      {selectedFile.name === 'metadata.json' && metadataForm ? (
-        <form onSubmit={onMetadataFormSave} className="mb-4 p-4 rounded-lg border border-[var(--border-input)] bg-[var(--background)] shadow-inner max-h-[500px] overflow-y-auto custom-scrollbar">
+      {/* Content Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {/* Metadata Form */}
+        {selectedFile.name === 'metadata.json' && metadataForm ? (
+          <form onSubmit={onMetadataFormSave} className="p-4 rounded-lg border border-[var(--border-input)] bg-[var(--background)] shadow-inner">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block font-semibold mb-1 text-[var(--text-secondary)]">Rule ID</label>
@@ -220,29 +222,34 @@ const CodeEditor = ({
             </button>
           </div>
         </form>
-      ) : selectedFile.name === 'test.yml' ? (
-        <>
-          <div className="flex-grow rounded-lg overflow-hidden border border-[var(--border-input)] shadow-inner w-[90%] mb-4">
-            <MonacoEditor
-              height="100%"
-              width="100%"
-              language="yaml"
-              theme="vs-dark"
-              value={selectedFile.content}
-              onChange={onEditorChange}
-              options={{
-                minimap: { enabled: false },
-                wordWrap: 'on',
-                fontSize: 14,
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
+        ) : selectedFile.name === 'test.yml' ? (
+          <>
+            <div className="flex-1 h-96 w-full overflow-hidden rounded-lg border border-[var(--border-input)] shadow-inner mb-4">
+      
+               <MonacoEditor
+                height="100%"
+                width="70%"
+                language="yaml"
+                theme="vs-dark"
+                value={selectedFile.content}
+                onChange={onEditorChange}
+                options={{
+                  minimap: { enabled: false },
+                  wordWrap: 'on',
+                  fontSize: 14,
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,  
                 automaticLayout: true,
                 renderLineHighlight: 'all',
                 contextmenu: true,
                 folding: false,
                 quickSuggestions: true,
+                
               }}
             />
+               
+
+              
           </div>
           <TestConsole
             testOutput={testOutput}
@@ -251,37 +258,40 @@ const CodeEditor = ({
           />
         </>
       ) : (
-        <div className="flex-grow rounded-lg overflow-hidden border border-[var(--border-input)] shadow-inner w-[90%]">
-          <MonacoEditor
-            height="100%"
-            width="100%"
-            language={currentFileLanguage}
-            theme="vs-dark"
-            value={currentFileContent}
-            onChange={onEditorChange}
-            options={{
-              minimap: { enabled: false },
-              wordWrap: 'off',
-              fontSize: 14,
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              renderLineHighlight: 'all',
-              contextmenu: true,
-              folding: false,
-              quickSuggestions: true,
+          <div className="flex-1 h-96 w-full overflow-hidden rounded-lg border border-[var(--border-input)] shadow-inner">
+          
+            <MonacoEditor
+              height="100%"
+              width="70%"
+              language={currentFileLanguage}
+              theme="vs-dark"
+              value={currentFileContent}
+              onChange={onEditorChange}
+              options={{
+                minimap: { enabled: false },
+                wordWrap: 'off',
+                fontSize: 14,
+                lineNumbers: 'on',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                renderLineHighlight: 'all',
+                contextmenu: true,
+                folding: false,
+                quickSuggestions: true,
             }}
           />
+    
         </div>
-      )}
-    </>
+        )}
+      </div>
+    </div>
   );
 };
 
 // Test Console Component
 const TestConsole = ({ testOutput, isTesting, onRunTest }) => {
   return (
-    <div className="bg-[var(--background)] border border-[var(--border-input)] rounded-lg p-4 shadow-inner w-[90%] mb-4">
+    <div className="bg-[var(--background)] border border-[var(--border-input)] rounded-lg p-4 shadow-inner w-full">
       <div className="flex items-center gap-4 mb-2">
         <button
           onClick={onRunTest}

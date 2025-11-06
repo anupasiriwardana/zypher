@@ -31,7 +31,7 @@ export default function AboutPage() {
           <div className="flex flex-col lg:flex-row gap-16 items-center justify-between w-full">
             <div className="w-full lg:w-1/2">
               <Image
-                src="/images/scan.png" 
+                src="/Images/scan.png" 
                 alt="Scan Results"
                 className="w-full max-w-md mx-auto rounded-2xl shadow-xl"
                 width={500}
