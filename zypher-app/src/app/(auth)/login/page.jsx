@@ -34,20 +34,30 @@ export default function LoginPage() {
   // Handle session status changes for already logged-in users
   useEffect(() => {
     setSuccessMsg('');
-    if (status === "authenticated" && !loginSuccess) {
-      setSuccessMsg("You are already logged in");
-
-      // Redirect based on role for already authenticated users
-      redirectBasedOnRole(session.user.role);
+    
+    try {
+      if (status === "authenticated" && session?.user && !loginSuccess) {
+        setSuccessMsg("You are already logged in");
+        // Redirect based on role for already authenticated users
+        redirectBasedOnRole(session.user.role);
+      }
+    } catch (error) {
+      console.error("Session error:", error);
+      // If there's an error accessing session, redirect to login with error message
+      router.push('/login?error=Session timeout, please login again');
     }
   }, [session, status, loginSuccess]);
 
   // Handle redirection after successful login
   useEffect(() => {
-    if (loginSuccess && status === "authenticated") {
-
-      //redirect to login success page
-      router.push('/signup-success?loginType=login');
+    try {
+      if (loginSuccess && status === "authenticated" && session?.user) {
+        //redirect to login success page
+        router.push('/signup-success?loginType=login');
+      }
+    } catch (error) {
+      console.error("Login redirection error:", error);
+      router.push('/login?error=Login verification failed, please try again');
     }
   }, [loginSuccess, session, status]);
 

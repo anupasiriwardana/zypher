@@ -20,6 +20,7 @@ import {
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import RepositorySelector from "@/components/RepositorySelector";
 
 const SeverityBadge = ({ severity }) => {
   const normalizedSeverity = severity?.toUpperCase();
@@ -791,25 +792,18 @@ export default function PasteUrlPageContent() {
               className="w-full pl-12 pr-4 py-4 rounded-xl bg-[var(--background)] border border-[var(--border-input)] text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-yellow)] focus:border-transparent transition-all duration-200 text-lg"
               disabled={isLoading}
             />
+            
+            {/* Repository Selector - positioned at lower left corner */}
+            <div className="absolute -bottom-12 left-0">
+              <RepositorySelector 
+                onRepositorySelect={(repoUrl) => setUrl(repoUrl)}
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
-          {feedback && (
-            <div
-              className={clsx(
-                "p-3 rounded-lg text-sm mb-6 flex items-center justify-center gap-2",
-                feedback.type === "success"
-                  ? "bg-green-600/20 text-green-400"
-                  : "bg-red-600/20 text-red-400"
-              )}
-            >
-              {feedback.type === "success" ? (
-                <CheckCircle size={18} />
-              ) : (
-                <XCircle size={18} />
-              )}
-              <span>{feedback.message}</span>
-            </div>
-          )}
+          {/* Add extra spacing to accommodate the repository selector */}
+          <div className="mb-6"></div>
 
           <button
             type="submit"
@@ -827,6 +821,24 @@ export default function PasteUrlPageContent() {
               </>
             )}
           </button>
+
+          {feedback && (
+            <div
+              className={clsx(
+                "p-3 rounded-lg text-sm mt-6 flex items-center justify-center gap-2",
+                feedback.type === "success"
+                  ? "bg-green-600/20 text-green-400"
+                  : "bg-red-600/20 text-red-400"
+              )}
+            >
+              {feedback.type === "success" ? (
+                <CheckCircle size={18} />
+              ) : (
+                <XCircle size={18} />
+              )}
+              <span>{feedback.message}</span>
+            </div>
+          )}
         </form>
 
         {/* --- Scan Results Display --- */}

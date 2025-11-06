@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -93,7 +93,7 @@ const handler = NextAuth({
     updateAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       // Add user role to the token on initial sign in
       if (user) {
         token.id = user.id;
@@ -101,6 +101,12 @@ const handler = NextAuth({
         token.image = user.image || null; // Handle image if available
         token.provider = user.provider;
       }
+      
+      // Store GitHub access token for API calls
+      if (account && account.provider === "github") {
+        token.githubAccessToken = account.access_token;
+      }
+      
       return token;
     },
     async session({ session, token }) {
@@ -110,6 +116,7 @@ const handler = NextAuth({
         session.user.role = token.role;
         session.user.image = token.image || null; // Handle image if available
         session.user.provider = token.provider;
+        session.githubAccessToken = token.githubAccessToken; // Add GitHub access token to session
       }
       return session;
     },
@@ -158,6 +165,8 @@ const handler = NextAuth({
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
