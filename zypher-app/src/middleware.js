@@ -92,6 +92,7 @@ export async function middleware(req) {
     '/api/user-activity': ['primary-user'],
     '/api/knowledgeBaseRequests': ['educator'],
     '/api/knowledgeBase': ['educator', 'primary-user'],
+    '/api/get-repositories': ['primary-user'],
   };
 
   // Find the most specific matching route

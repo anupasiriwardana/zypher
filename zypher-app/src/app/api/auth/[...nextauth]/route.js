@@ -4,8 +4,9 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -26,8 +27,8 @@ const handler = NextAuth({
 
           // Prevent Google users from using password
           if (user.provider !== "local") {
-            const provider = user.provider || "Google";
-            throw new Error(`Please sign in with ${provider}`);
+            const providerName = user.provider === "google" ? "Google" : user.provider === "github" ? "GitHub" : user.provider;
+            throw new Error(`Please sign in with ${providerName}`);
           }
 
           const isPasswordValid = await bcrypt.compare(
@@ -65,6 +66,25 @@ const handler = NextAuth({
           provider: 'google'
         };
       }
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      authorization: {
+        params: {
+          scope: "read:user user:email repo"
+        }
+      },
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+          role: 'primary-user', // Default role for GitHub users
+          provider: 'github'
+        };
+      }
     })
   ],
   pages: {
@@ -78,7 +98,7 @@ const handler = NextAuth({
     updateAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       // Add user role to the token on initial sign in
       if (user) {
         token.id = user.id;
@@ -86,6 +106,12 @@ const handler = NextAuth({
         token.image = user.image || null; // Handle image if available
         token.provider = user.provider;
       }
+      
+      // Store GitHub access token for API calls
+      if (account && account.provider === "github") {
+        token.githubAccessToken = account.access_token;
+      }
+      
       return token;
     },
     async session({ session, token }) {
@@ -95,18 +121,25 @@ const handler = NextAuth({
         session.user.role = token.role;
         session.user.image = token.image || null; // Handle image if available
         session.user.provider = token.provider;
+        session.githubAccessToken = token.githubAccessToken; // Add GitHub access token to session
       }
       return session;
     },
     async signIn({ user, account, profile }) {
-      if (account.provider === "google") {
+      if (account.provider === "google" || account.provider === "github") {
         await connectDB();
 
         const existingUser = await User.findOne({ email: user.email });
 
-        // Prevent local users from using Google
-        if (existingUser && existingUser.provider !== "google") {
-          return `/login?error=This email is already registered with a local account`;
+        // Prevent local users from using OAuth
+        if (existingUser && existingUser.provider !== account.provider) {
+          const providerName = account.provider === "google" ? "Google" : "GitHub";
+          if (existingUser.provider === "local") {
+            return `/login?error=This email is already registered with a local account`;
+          } else {
+            const existingProviderName = existingUser.provider === "google" ? "Google" : "GitHub";
+            return `/login?error=This email is already registered with ${existingProviderName}`;
+          }
         }
 
         // If user doesn't exist and it's a signup
@@ -115,7 +148,7 @@ const handler = NextAuth({
             name: user.name,
             email: user.email,
             role: user.role || 'primary-user',
-            provider: user.provider || 'google',
+            provider: user.provider || account.provider,
             image: user.image || null // Handle image if available
           });
 
@@ -125,7 +158,7 @@ const handler = NextAuth({
           user.id = existingUser._id.toString();
           user.role = existingUser.role;
 
-          // Update image if it's changed on Google
+          // Update image if it's changed on the provider
           if (user.image && existingUser.image !== user.image) {
             existingUser.image = user.image;
             await existingUser.save();
@@ -137,6 +170,8 @@ const handler = NextAuth({
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
