@@ -793,13 +793,15 @@ export default function PasteUrlPageContent() {
               disabled={isLoading}
             />
             
-            {/* Repository Selector - positioned at lower left corner */}
-            <div className="absolute -bottom-12 left-0">
-              <RepositorySelector 
-                onRepositorySelect={(repoUrl) => setUrl(repoUrl)}
-                disabled={isLoading}
-              />
-            </div>
+            {/* Repository Selector - positioned at lower left corner (only for GitHub accounts) */}
+            {session?.user?.provider === 'github' && (
+              <div className="absolute -bottom-12 left-0">
+                <RepositorySelector
+                  onRepositorySelect={(repoUrl) => setUrl(repoUrl)}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
           </div>
 
           {/* Add extra spacing to accommodate the repository selector */}
