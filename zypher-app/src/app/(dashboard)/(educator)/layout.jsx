@@ -4,8 +4,9 @@ import '@/app/globals.css';
 import { Lexend } from 'next/font/google';
 import EducatorSidebar from '@/components/sidebars/educatorSidebar';
 import { Bell, UserCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const lexend = Lexend({
@@ -17,6 +18,28 @@ export default function DashboardLayout({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Error handling for session access
+  useEffect(() => {
+    try {
+      // Check if session is expected but user data is missing
+      if (status === "authenticated" && (!session || !session.user)) {
+        console.error("Session authenticated but user data missing");
+        router.push('/login?error=Session expired, please login again');
+        return;
+      }
+      
+      // Check if session is unauthenticated
+      if (status === "unauthenticated") {
+        router.push('/login?error=Please login');
+        return;
+      }
+    } catch (error) {
+      console.error("Dashboard session error:", error);
+      router.push('/login?error=Session expired, please login again');
+    }
+  }, [session, status, router]);
 
   const hasNotifications = true;
 
@@ -28,10 +51,32 @@ export default function DashboardLayout({ children }) {
   });
 
   const handleSignOut = () => {
-    signOut({
-      callbackUrl: '/login', // Redirect to login after signout
-    });
+    try {
+      signOut({
+        callbackUrl: '/login', // Redirect to login after signout
+      });
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Fallback: force redirect to login
+      router.push('/login?error=Sign out completed');
+    }
   };
+
+  // Show loading or return null while session is loading
+  if (status === "loading") {
+    return (
+      <div className={lexend.className}>
+        <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
+          <div className="text-[var(--foreground)]">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no session or user data, don't render the dashboard
+  if (!session || !session.user) {
+    return null;
+  }
 
   return (
     <div className={lexend.className}>
@@ -87,16 +132,25 @@ export default function DashboardLayout({ children }) {
                       width={36}
                       height={36}
                       className="rounded-full object-cover border border-[var(--border-input)]"
+                      onError={(e) => {
+                        // Fallback to default icon if image fails to load
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
                     />
                   ) : (
                     <UserCircle size={36} />
                   )}
+                  {/* Fallback icon (hidden by default) */}
+                  <UserCircle size={36} style={{ display: 'none' }} />
                 </button>
 
                 {showProfile && (
                   <div className="absolute right-0 mt-3 w-64 bg-[var(--input-bg)] text-md rounded-xl shadow-lg p-8 z-50">
                     <p className="font-semibold mb-2">Signed in as</p>
-                    <p className="text-[var(--text-secondary)] mb-4">{session.user.email}</p>
+                    <p className="text-[var(--text-secondary)] mb-4">
+                      {session?.user?.email || 'Unknown user'}
+                    </p>
                     <button 
                       onClick={handleSignOut}
                       className="w-full text-left hover:text-[var(--brand-yellow)] transition">
